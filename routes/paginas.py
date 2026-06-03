@@ -234,9 +234,21 @@ def registrar_rutas_paginas(app):
     @app.route("/envios")
     def ver_envio():
         db = SessionLocal()
-        envios = db.query(Envio).filter(Envio.e_estado == "pendiente").all()
+        envios = (
+            db.query(Envio)
+            .filter(Envio.e_estado == "pendiente")
+            .order_by(Envio.e_fecha_creacion.desc(), Envio.id.desc())
+            .all()
+        )
+        resumen = {
+            "total": len(envios),
+            "bultos": sum(envio.e_bultos or 0 for envio in envios),
+            "kilos": sum(envio.e_kilos or 0 for envio in envios),
+            "domicilio": sum(1 for envio in envios if envio.e_tipo_envio == "Domicilio"),
+            "agencia": sum(1 for envio in envios if envio.e_tipo_envio == "Agencia"),
+        }
         db.close()
-        return render_template("envios.html", envios=envios)
+        return render_template("envios.html", envios=envios, resumen=resumen)
 
     @app.route("/en_proceso")
     def ver_en_proceso():

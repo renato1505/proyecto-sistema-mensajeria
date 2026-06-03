@@ -1,93 +1,137 @@
 {% extends "base.html" %}
 
-{% block title %}Ver envios{% endblock %}
+{% block title %}Pendientes{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/envios.css') }}">
+{% endblock %}
 
 {% block content %}
-<div class="page-envios">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/envios.css') }}">
+<div class="pendientes-page">
+    <section class="pendientes-hero">
+        <div>
+            <span class="pendientes-kicker">Revision previa</span>
+            <h1>Envios pendientes</h1>
+            <p>Valida la informacion antes de generar el lote CSV para Starken.</p>
+        </div>
 
-    <div class="container mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2 class="titulo-envios">Envios registrados</h2>
+        <div class="pendientes-actions">
+            <a href="/nuevo_envio" class="btn btn-primary btn-sm">Nuevo envio</a>
+            <form action="/generar_excel" method="POST"
+                  onsubmit="return confirm('Seguro que deseas generar y enviar el CSV Starken?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-success btn-sm" {% if not envios %}disabled{% endif %}>
+                    Generar CSV Starken
+                </button>
+            </form>
+        </div>
+    </section>
 
-            <div class="acciones-superiores">
-                <a href="/nuevo_envio" class="btn btn-primary btn-sm px-3">Nuevo envio</a>
-                <form action="/generar_excel" method="POST" class="d-inline"
-                      onsubmit="return confirm('Seguro que deseas generar y enviar el CSV Starken?');">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-success btn-sm px-3">
-                        Generar CSV Starken
-                    </button>
-                </form>
+    <section class="pendientes-metrics">
+        <article>
+            <span>Pendientes</span>
+            <strong>{{ resumen.total }}</strong>
+        </article>
+        <article>
+            <span>Bultos</span>
+            <strong>{{ resumen.bultos }}</strong>
+        </article>
+        <article>
+            <span>Kilos</span>
+            <strong>{{ resumen.kilos }}</strong>
+        </article>
+        <article>
+            <span>Domicilio / Agencia</span>
+            <strong>{{ resumen.domicilio }} / {{ resumen.agencia }}</strong>
+        </article>
+    </section>
+
+    {% if not envios %}
+        <section class="pendientes-empty">
+            <h2>Sin envios pendientes</h2>
+            <p>No hay registros esperando revision. Cuando ingreses un nuevo envio aparecera en esta pantalla antes de generar el lote Starken.</p>
+            <a href="/nuevo_envio" class="btn btn-success">Registrar nuevo envio</a>
+        </section>
+    {% else %}
+        <section class="pendientes-notice">
+            <div>
+                <h2>Lote listo para revision</h2>
+                <p>El CSV se generara con {{ resumen.total }} envio(s). Revisa destinatario, direccion, comuna, tipo de entrega, bultos y kilos antes de continuar.</p>
             </div>
-        </div>
+        </section>
 
-        <div class="tabla-wrap">
-            <table class="table table-bordered table-striped align-middle">
-                <thead>
-                    <tr>
-                        <th class="col-id">ID</th>
-                        <th class="col-remitente">Remitente</th>
-                        <th class="col-destinatario">Destinatario</th>
-                        <th class="col-telefono">Telefono</th>
-                        <th class="col-direccion">Direccion</th>
-                        <th class="col-region">Region</th>
-                        <th class="col-comuna">Comuna</th>
-                        <th class="col-tipo">Tipo envio</th>
-                        <th class="col-agencia">Codigo agencia</th>
-                        <th class="col-centro">Centro costo</th>
-                        <th class="col-num">Bultos</th>
-                        <th class="col-num">Kilos</th>
-                        <th class="col-acciones text-center">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for envio in envios %}
-                    <tr>
-                        <td class="col-id">{{ envio.id }}</td>
-                        <td class="col-remitente">{{ envio.e_remitente }}</td>
-                        <td class="col-destinatario">{{ envio.e_destinatario }}</td>
-                        <td class="col-telefono">{{ envio.e_telefono_destinatario }}</td>
-                        <td class="col-direccion">{{ envio.e_direccion }}</td>
-                        <td class="col-region">{{ envio.e_region }}</td>
-                        <td class="col-comuna">{{ envio.e_comuna }}</td>
-                        <td class="col-tipo">{{ envio.e_tipo_envio }}</td>
-                        <td class="col-agencia">
-                            {% if envio.e_tipo_envio == "Agencia" %}
-                                <span class="codigo-agencia">{{ envio.e_codigo_agencia }}</span>
-                            {% else %}
-                                <span class="badge-agencia-na">No aplica</span>
-                            {% endif %}
-                        </td>
-                        <td class="col-centro">{{ envio.e_centro_costo }}</td>
-                        <td class="col-num">{{ envio.e_bultos }}</td>
-                        <td class="col-num">{{ envio.e_kilos }}</td>
-                        <td class="col-acciones">
-                            <div class="acciones-tabla">
-                                <a href="/editar_envio/{{ envio.id }}" class="icon-btn icon-btn-edit" title="Editar">
-                                    <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                                        <path d="M12.146.854a.5.5 0 0 1 .708 0l2.292 2.292a.5.5 0 0 1 0 .708l-9.5 9.5L3 14l.646-2.646 9.5-9.5zM11.207 2 4 9.207V10h.793L12 2.793 11.207 2z"/>
-                                        <path fill-rule="evenodd" d="M1 13.5V16h2.5l7.373-7.373-2.5-2.5L1 13.5z"/>
-                                    </svg>
-                                </a>
+        <section class="pendientes-table-panel">
+            <div class="table-panel-head">
+                <div>
+                    <h2>Registros pendientes</h2>
+                    <span>{{ resumen.total }} envio(s) en espera</span>
+                </div>
+                <span class="table-status">Pendiente de Starken</span>
+            </div>
 
-                                <form action="/eliminar_envio/{{ envio.id }}" method="POST" class="d-inline"
-                                      onsubmit="return confirm('Seguro que deseas eliminar este envio? Esta accion no se puede deshacer.');">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" class="icon-btn icon-btn-delete" title="Eliminar">
-                                        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                                            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm4.5.5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
-                                            <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1 0-2H5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1h2.5a1 1 0 0 1 1 1zM6 2v1h4V2H6zm-2 2v9a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4H4z"/>
-                                        </svg>
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0 pendientes-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Remitente</th>
+                            <th>Destinatario</th>
+                            <th>Entrega</th>
+                            <th>Destino</th>
+                            <th>Centro costo</th>
+                            <th class="text-center">Bultos</th>
+                            <th class="text-center">Kilos</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for envio in envios %}
+                        <tr>
+                            <td class="id-cell">#{{ envio.id }}</td>
+                            <td>
+                                <strong>{{ envio.e_remitente }}</strong>
+                                <small>{{ envio.e_correo_remitente }}</small>
+                            </td>
+                            <td>
+                                <strong>{{ envio.e_destinatario }}</strong>
+                                <small>RUT: {{ envio.e_rut_destinatario }}</small>
+                            </td>
+                            <td>
+                                <span class="delivery-badge {% if envio.e_tipo_envio == 'Agencia' %}agencia{% else %}domicilio{% endif %}">
+                                    {{ envio.e_tipo_envio }}
+                                </span>
+                                {% if envio.e_tipo_envio == "Agencia" %}
+                                    <small>Codigo {{ envio.e_codigo_agencia }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>{{ envio.e_comuna }}</strong>
+                                <small>{{ envio.e_direccion }}</small>
+                            </td>
+                            <td>{{ envio.e_centro_costo }}</td>
+                            <td class="text-center number-cell">{{ envio.e_bultos }}</td>
+                            <td class="text-center number-cell">{{ envio.e_kilos }}</td>
+                            <td>
+                                <div class="row-actions">
+                                    <a href="/editar_envio/{{ envio.id }}" class="action-btn edit" title="Editar">
+                                        Editar
+                                    </a>
+
+                                    <form action="/eliminar_envio/{{ envio.id }}" method="POST"
+                                          onsubmit="return confirm('Seguro que deseas eliminar este envio? Esta accion no se puede deshacer.');">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="action-btn delete" title="Eliminar">
+                                            Eliminar
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    {% endif %}
 </div>
 {% endblock %}
