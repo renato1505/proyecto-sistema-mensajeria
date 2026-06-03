@@ -1,128 +1,139 @@
 {% extends "base.html" %}
 
-{% block title %}Envíos históricos{% endblock %}
+{% block title %}Historico{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/historico.css') }}">
+{% endblock %}
 
 {% block content %}
-<div class="page-historico">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/historico.css') }}">
+<div class="historico-page">
+    <section class="historico-hero">
+        <div>
+            <span class="historico-kicker">Consulta operativa</span>
+            <h1>Historico de envios</h1>
+            <p>Busca, revisa, exporta y respalda los envios procesados por el sistema.</p>
+        </div>
 
-    <div class="container mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="historico-actions">
+            <a
+                href="/exportar_historico?mes={{ mes_seleccionado|urlencode }}&of={{ filtro_of|urlencode }}&destinatario={{ filtro_destinatario|urlencode }}&remitente={{ filtro_remitente|urlencode }}&fecha={{ filtro_fecha|urlencode }}&fecha_desde={{ fecha_desde|urlencode }}&fecha_hasta={{ fecha_hasta|urlencode }}"
+                class="btn btn-primary btn-sm"
+            >
+                Exportar Excel
+            </a>
+            <button class="btn btn-outline-secondary btn-sm" type="button" onclick="descargarSeleccionados()">
+                Descargar seleccionados
+            </button>
+            <button class="btn btn-outline-danger btn-sm" type="button" onclick="abrirModalEliminar()">
+                Eliminar filtrados
+            </button>
+        </div>
+    </section>
+
+    <section class="historico-metrics">
+        <article>
+            <span>Registros</span>
+            <strong>{{ total_registros }}</strong>
+        </article>
+        <article>
+            <span>Bultos</span>
+            <strong>{{ total_bultos }}</strong>
+        </article>
+        <article>
+            <span>Domicilio</span>
+            <strong>{{ total_domicilio }}</strong>
+        </article>
+        <article>
+            <span>Agencia</span>
+            <strong>{{ total_agencia }}</strong>
+        </article>
+    </section>
+
+    <section class="historico-filter-panel">
+        <div class="filter-panel-head">
             <div>
-                <h2 class="titulo-historico">Histórico de envíos</h2>
-                <p class="subtitulo-historico">Consulta y revisión de envíos registrados</p>
+                <h2>Filtros</h2>
+                <p>La vista muestra todos los registros hasta que selecciones un criterio.</p>
             </div>
-
-            <div class="acciones-superiores d-flex gap-2 flex-wrap">
-                <a
-                    href="/exportar_historico?mes={{ mes_seleccionado|urlencode }}&of={{ filtro_of|urlencode }}&destinatario={{ filtro_destinatario|urlencode }}&remitente={{ filtro_remitente|urlencode }}&fecha={{ filtro_fecha|urlencode }}&fecha_desde={{ fecha_desde|urlencode }}&fecha_hasta={{ fecha_hasta|urlencode }}"
-                    class="btn btn-outline-secondary btn-sm px-3"
-                >
-                    Exportar Excel
-                </a>
-
-                <button class="btn btn-outline-success btn-sm px-3" type="button" onclick="descargarSeleccionados()">
-                    Descargar seleccionados
-                </button>
-
-                <button class="btn btn-outline-danger btn-sm px-3" type="button" onclick="abrirModalEliminar()">
-                    Eliminar registros
-                </button>
-            </div>
+            <a href="/historico" class="btn btn-outline-secondary btn-sm">Limpiar filtros</a>
         </div>
 
-        <div class="historico-filtro-box mb-4">
-            <form method="GET" action="/historico">
-                <div class="row g-3 align-items-end">
-                    <div class="col-lg-3 col-md-6">
-                        <label for="mes" class="form-label fw-semibold">Mes seleccionado</label>
-                        <select name="mes" id="mes" class="form-select">
-                            {% for item in meses_disponibles %}
-                                <option value="{{ item.valor }}" {% if item.valor == mes_seleccionado %}selected{% endif %}>
-                                    {{ item.nombre }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <div class="col-lg-3 col-md-6 autocomplete-wrap">
-                        <label for="of" class="form-label fw-semibold">OF</label>
-                        <input type="text" name="of" id="of" class="form-control" value="{{ filtro_of }}" placeholder="Buscar OF" autocomplete="off">
-                        <div id="lista_of_historico" class="list-group autocomplete-list"></div>
-                    </div>
-
-                    <div class="col-lg-3 col-md-6 autocomplete-wrap">
-                        <label for="destinatario" class="form-label fw-semibold">Destinatario</label>
-                        <input type="text" name="destinatario" id="destinatario" class="form-control" value="{{ filtro_destinatario }}" placeholder="Buscar destinatario" autocomplete="off">
-                        <div id="lista_destinatario_historico" class="list-group autocomplete-list"></div>
-                    </div>
-
-                    <div class="col-lg-3 col-md-6 autocomplete-wrap">
-                        <label for="remitente" class="form-label fw-semibold">Remitente</label>
-                        <input type="text" name="remitente" id="remitente" class="form-control" value="{{ filtro_remitente }}" placeholder="Buscar remitente" autocomplete="off">
-                        <div id="lista_remitente_historico" class="list-group autocomplete-list"></div>
-                    </div>
-
-                    <div class="col-lg-3 col-md-6">
-                        <label for="fecha" class="form-label fw-semibold">Fecha exacta</label>
-                        <input type="date" name="fecha" id="fecha" class="form-control" value="{{ filtro_fecha }}">
-                    </div>
-
-                    <div class="col-lg-3 col-md-6">
-                        <label for="fecha_desde" class="form-label fw-semibold">Desde</label>
-                        <input type="date" name="fecha_desde" id="fecha_desde" class="form-control" value="{{ fecha_desde }}">
-                    </div>
-
-                    <div class="col-lg-3 col-md-6">
-                        <label for="fecha_hasta" class="form-label fw-semibold">Hasta</label>
-                        <input type="date" name="fecha_hasta" id="fecha_hasta" class="form-control" value="{{ fecha_hasta }}">
-                    </div>
-
-                    <div class="col-12 d-flex gap-2 flex-wrap">
-                        <button type="submit" class="btn btn-outline-primary">Filtrar</button>
-                        <a href="/historico?mes={{ mes_seleccionado|urlencode }}" class="btn btn-outline-secondary">Limpiar</a>
-                    </div>
+        <form method="GET" action="/historico">
+            <div class="filter-grid">
+                <div class="filter-field">
+                    <label for="mes">Periodo</label>
+                    <select name="mes" id="mes" class="form-select">
+                        {% for item in meses_disponibles %}
+                            <option value="{{ item.valor }}" {% if item.valor == mes_seleccionado %}selected{% endif %}>
+                                {{ item.nombre }}
+                            </option>
+                        {% endfor %}
+                    </select>
                 </div>
-            </form>
-        </div>
 
-        <div class="historico-cards mb-4">
-            <div class="historico-card">
-                <div class="historico-card-label">Registros encontrados</div>
-                <div class="historico-card-value">{{ total_registros }}</div>
+                <div class="filter-field autocomplete-wrap">
+                    <label for="of">Orden de flete</label>
+                    <input type="text" name="of" id="of" class="form-control" value="{{ filtro_of }}" placeholder="Ej: 123456" autocomplete="off">
+                    <div id="lista_of_historico" class="list-group autocomplete-list"></div>
+                </div>
+
+                <div class="filter-field autocomplete-wrap">
+                    <label for="destinatario">Destinatario</label>
+                    <input type="text" name="destinatario" id="destinatario" class="form-control" value="{{ filtro_destinatario }}" placeholder="Nombre destinatario" autocomplete="off">
+                    <div id="lista_destinatario_historico" class="list-group autocomplete-list"></div>
+                </div>
+
+                <div class="filter-field autocomplete-wrap">
+                    <label for="remitente">Remitente</label>
+                    <input type="text" name="remitente" id="remitente" class="form-control" value="{{ filtro_remitente }}" placeholder="Nombre remitente" autocomplete="off">
+                    <div id="lista_remitente_historico" class="list-group autocomplete-list"></div>
+                </div>
+
+                <div class="filter-field">
+                    <label for="fecha">Fecha exacta</label>
+                    <input type="date" name="fecha" id="fecha" class="form-control" value="{{ filtro_fecha }}">
+                </div>
+
+                <div class="filter-field">
+                    <label for="fecha_desde">Desde</label>
+                    <input type="date" name="fecha_desde" id="fecha_desde" class="form-control" value="{{ fecha_desde }}">
+                </div>
+
+                <div class="filter-field">
+                    <label for="fecha_hasta">Hasta</label>
+                    <input type="date" name="fecha_hasta" id="fecha_hasta" class="form-control" value="{{ fecha_hasta }}">
+                </div>
+
+                <div class="filter-field filter-submit">
+                    <button type="submit" class="btn btn-success">Aplicar filtros</button>
+                </div>
+            </div>
+        </form>
+    </section>
+
+    <form id="formDescargaSeleccionados" method="POST" action="/descargar_historico_seleccionados">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <section class="historico-table-panel">
+            <div class="table-panel-head">
+                <h2>Resultados</h2>
+                <span>{{ total_registros }} registro(s)</span>
             </div>
 
-            <div class="historico-card">
-                <div class="historico-card-label">Bultos</div>
-                <div class="historico-card-value">{{ total_bultos }}</div>
-            </div>
-
-            <div class="historico-card">
-                <div class="historico-card-label">Domicilio</div>
-                <div class="historico-card-value">{{ total_domicilio }}</div>
-            </div>
-
-            <div class="historico-card">
-                <div class="historico-card-label">Agencia</div>
-                <div class="historico-card-value">{{ total_agencia }}</div>
-            </div>
-        </div>
-
-        <form id="formDescargaSeleccionados" method="POST" action="/descargar_historico_seleccionados">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="historico-tabla-box">
-                <table class="table table-bordered align-middle mb-0 historico-tabla">
+            <div class="table-responsive">
+                <table class="table align-middle mb-0 historico-tabla">
                     <thead>
                         <tr>
-                            <th style="width: 40px;" class="text-center">
+                            <th class="text-center select-col">
                                 <input type="checkbox" id="checkTodos">
                             </th>
-                            <th style="width: 50px;"></th>
+                            <th class="text-center detail-col"></th>
                             <th>Fecha</th>
                             <th>Remitente</th>
                             <th>Destinatario</th>
                             <th>Orden de flete</th>
-                            <th style="width: 110px;">Acción</th>
+                            <th class="text-center action-col">Accion</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -134,8 +145,9 @@
                             <td class="text-center">
                                 <button type="button"
                                         class="btn-toggle-detalle"
-                                        onclick="toggleDetalle('{{ envio.id }}')">
-                                    ▼
+                                        onclick="toggleDetalle('{{ envio.id }}')"
+                                        title="Ver detalle">
+                                    v
                                 </button>
                             </td>
                             <td>
@@ -145,7 +157,11 @@
                             </td>
                             <td>{{ envio.e_remitente }}</td>
                             <td>{{ envio.e_destinatario }}</td>
-                            <td>{{ envio.e_orden_flete if envio.e_orden_flete else 'Sin OF' }}</td>
+                            <td>
+                                <span class="of-badge">
+                                    {{ envio.e_orden_flete if envio.e_orden_flete else 'Sin OF' }}
+                                </span>
+                            </td>
                             <td class="text-center">
                                 <a href="/descargar_envio_historico/{{ envio.id }}"
                                    class="btn btn-outline-success btn-sm">
@@ -157,42 +173,47 @@
                         <tr id="detalle-{{ envio.id }}" class="fila-detalle d-none">
                             <td colspan="7">
                                 <div class="detalle-box">
-                                    <h6 class="detalle-titulo">Detalle del envío</h6>
+                                    <div class="detalle-box-head">
+                                        <h3>Detalle del envio</h3>
+                                        <span>{{ envio.e_tipo_envio }}</span>
+                                    </div>
 
                                     <div class="detalle-grid">
-                                        <div class="detalle-col">
-                                            <p><strong>Remitente:</strong> {{ envio.e_remitente }}</p>
-                                            <p><strong>Correo remitente:</strong> {{ envio.e_correo_remitente }}</p>
-                                            <p><strong>División:</strong> {{ envio.e_division }}</p>
-                                            <p><strong>Centro de costo:</strong> {{ envio.e_centro_costo }}</p>
+                                        <div>
+                                            <h4>Remitente</h4>
+                                            <p><strong>Nombre:</strong> {{ envio.e_remitente }}</p>
+                                            <p><strong>Correo:</strong> {{ envio.e_correo_remitente }}</p>
+                                            <p><strong>Division:</strong> {{ envio.e_division }}</p>
+                                            <p><strong>Centro costo:</strong> {{ envio.e_centro_costo }}</p>
                                         </div>
 
-                                        <div class="detalle-col">
-                                            <p><strong>Destinatario:</strong> {{ envio.e_destinatario }}</p>
+                                        <div>
+                                            <h4>Destinatario</h4>
+                                            <p><strong>Nombre:</strong> {{ envio.e_destinatario }}</p>
                                             <p><strong>RUT:</strong> {{ envio.e_rut_destinatario }}</p>
-                                            <p><strong>Dirección:</strong> {{ envio.e_direccion }}</p>
+                                            <p><strong>Direccion:</strong> {{ envio.e_direccion }}</p>
                                             <p><strong>Comuna:</strong> {{ envio.e_comuna }}</p>
                                         </div>
 
-                                        <div class="detalle-col">
-                                            <p><strong>Región:</strong> {{ envio.e_region }}</p>
-                                            <p><strong>Teléfono:</strong> {{ envio.e_telefono_destinatario }}</p>
-                                            <p><strong>Tipo envío:</strong> {{ envio.e_tipo_envio }}</p>
-                                            <p><strong>Código agencia:</strong>
+                                        <div>
+                                            <h4>Entrega</h4>
+                                            <p><strong>Region:</strong> {{ envio.e_region }}</p>
+                                            <p><strong>Telefono:</strong> {{ envio.e_telefono_destinatario }}</p>
+                                            <p><strong>Codigo agencia:</strong>
                                                 {% if envio.e_tipo_envio == 'Agencia' %}
                                                     {{ envio.e_codigo_agencia }}
                                                 {% else %}
                                                     No aplica
                                                 {% endif %}
                                             </p>
+                                            <p><strong>OF:</strong> {{ envio.e_orden_flete if envio.e_orden_flete else 'Sin OF' }}</p>
                                         </div>
 
-                                        <div class="detalle-col">
+                                        <div>
+                                            <h4>Carga</h4>
                                             <p><strong>Bultos:</strong> {{ envio.e_bultos }}</p>
                                             <p><strong>Kilos:</strong> {{ envio.e_kilos }}</p>
-                                            <p><strong>Orden de flete:</strong> {{ envio.e_orden_flete if envio.e_orden_flete else 'Sin OF' }}</p>
-                                            <p>
-                                                <strong>Fecha:</strong>
+                                            <p><strong>Fecha:</strong>
                                                 {% if envio.e_fecha_creacion %}
                                                     {{ envio.e_fecha_creacion.strftime('%d/%m/%Y %H:%M') }}
                                                 {% endif %}
@@ -206,20 +227,28 @@
 
                         {% if not envios %}
                         <tr>
-                            <td colspan="7" class="text-center py-4">No hay registros para este criterio de búsqueda.</td>
+                            <td colspan="7" class="empty-state">
+                                No hay registros para este criterio de busqueda.
+                            </td>
                         </tr>
                         {% endif %}
                     </tbody>
                 </table>
             </div>
-        </form>
-    </div>
+        </section>
+    </form>
 </div>
 
-<div id="modalEliminarHistorico" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.35); z-index:2000;">
-    <div style="background:#fff; width:100%; max-width:430px; margin:120px auto; padding:24px; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.15);">
-        <h5 class="mb-3">Eliminar registros filtrados</h5>
-        <p class="mb-3">Ingresa la contraseña para eliminar solo los registros que aparecen con los filtros actuales.</p>
+<div id="modalEliminarHistorico" class="historico-modal">
+    <div class="historico-modal-card">
+        <h2>Eliminar registros filtrados</h2>
+        <p>Se eliminara lo que coincida con los filtros actuales. Antes de eliminar, el sistema genera un respaldo Excel.</p>
+
+        {% if mes_seleccionado == "todos" and not filtro_of and not filtro_destinatario and not filtro_remitente and not filtro_fecha and not fecha_desde and not fecha_hasta %}
+            <div class="delete-warning">
+                No hay filtros activos. Esta accion intentara eliminar todos los registros visibles del historico.
+            </div>
+        {% endif %}
 
         <form method="POST" action="/eliminar_historico">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -232,12 +261,12 @@
             <input type="hidden" name="fecha_hasta" value="{{ fecha_hasta }}">
 
             <div class="mb-3">
-                <label for="clave" class="form-label fw-semibold">Contraseña</label>
+                <label for="clave" class="form-label fw-semibold">Contrasena</label>
                 <input type="password" class="form-control" id="clave" name="clave" required>
             </div>
 
             <div class="d-flex gap-2 justify-content-end">
-                <button type="button" class="btn btn-secondary btn-sm" onclick="cerrarModalEliminar()">Cancelar</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="cerrarModalEliminar()">Cancelar</button>
                 <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
             </div>
         </form>

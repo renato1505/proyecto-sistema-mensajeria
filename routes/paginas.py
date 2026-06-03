@@ -47,17 +47,17 @@ def construir_query_historico(
     fecha_desde,
     fecha_hasta,
 ):
-    if not mes_seleccionado:
-        mes_seleccionado = datetime.now().strftime("%Y-%m")
-
-    try:
-        mes_obj = datetime.strptime(mes_seleccionado, "%Y-%m")
-    except ValueError:
-        mes_obj = datetime.now()
-
     query = db.query(Envio).filter(Envio.e_estado == "historico")
 
-    if not fecha_desde and not fecha_hasta and not filtro_fecha:
+    if mes_seleccionado and mes_seleccionado != "todos":
+        try:
+            mes_obj = datetime.strptime(mes_seleccionado, "%Y-%m")
+        except ValueError:
+            mes_obj = None
+    else:
+        mes_obj = None
+
+    if mes_obj and not fecha_desde and not fecha_hasta and not filtro_fecha:
         query = query.filter(
             func.extract("year", Envio.e_fecha_creacion) == mes_obj.year,
             func.extract("month", Envio.e_fecha_creacion) == mes_obj.month,
@@ -155,7 +155,7 @@ def _leer_filtros(args):
 
 
 def _query_desde_filtros(db, filtros):
-    mes = filtros["mes"] or datetime.now().strftime("%Y-%m")
+    mes = filtros["mes"] or "todos"
     return construir_query_historico(
         db,
         mes,
@@ -253,7 +253,7 @@ def registrar_rutas_paginas(app):
 
         filtros = _leer_filtros(request.args)
         if not filtros["mes"]:
-            filtros["mes"] = datetime.now().strftime("%Y-%m")
+            filtros["mes"] = "todos"
 
         query = _query_desde_filtros(db, filtros)
         envios = query.order_by(Envio.e_fecha_creacion.desc()).all()
@@ -267,6 +267,7 @@ def registrar_rutas_paginas(app):
 
         meses_disponibles = []
         meses_vistos = set()
+        meses_disponibles.append({"valor": "todos", "nombre": "Todos los registros"})
 
         for envio in registros_historicos:
             if envio.e_fecha_creacion:
@@ -307,7 +308,7 @@ def registrar_rutas_paginas(app):
 
         filtros = _leer_filtros(request.args)
         if not filtros["mes"]:
-            filtros["mes"] = datetime.now().strftime("%Y-%m")
+            filtros["mes"] = "todos"
 
         query = _query_desde_filtros(db, filtros)
         envios = query.order_by(Envio.e_fecha_creacion.desc()).all()
@@ -437,7 +438,7 @@ def registrar_rutas_paginas(app):
             ))
 
         if not filtros["mes"]:
-            filtros["mes"] = datetime.now().strftime("%Y-%m")
+            filtros["mes"] = "todos"
 
         query = _query_desde_filtros(db, filtros)
         envios_a_eliminar = query.all()
