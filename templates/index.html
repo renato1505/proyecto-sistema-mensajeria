@@ -2,14 +2,105 @@
 
 {% block title %}Inicio{% endblock %}
 
-{% block content %}
-<div class="container mt-5">
-    <h1 class="mb-4">Sistema de gestión de mensajería</h1>
-    <p>Bienvenido al sistema de gestión de mensajería.</p>
-    <p>En este momento la app web se encuentra en construcción y estamos en una fase inicial.</p>
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+{% endblock %}
 
-    <a href="/nuevo_envio" class="btn btn-primary">
-        Registrar nuevo envío
-    </a>
+{% block content %}
+<div class="home-shell">
+    <section class="home-hero">
+        <div class="home-hero-copy">
+            <span class="home-kicker">Operacion interna</span>
+            <h1>Centro de Mensajeria</h1>
+            <p>Gestion de envios, lotes Starken, carga OF e historico operativo.</p>
+        </div>
+
+        <div class="home-system-status {% if estado.general_ok %}ok{% else %}alerta{% endif %}">
+            <span></span>
+            <strong>{% if estado.general_ok %}Sistema operativo{% else %}Requiere revision{% endif %}</strong>
+        </div>
+    </section>
+
+    <section class="home-actions" aria-label="Accesos rapidos">
+        <a href="/nuevo_envio" class="home-action primary">
+            <span>Nuevo envio</span>
+            <strong>Registrar solicitud</strong>
+        </a>
+        <a href="/envios" class="home-action">
+            <span>Pendientes</span>
+            <strong>Revisar antes de Starken</strong>
+        </a>
+        <a href="/en_proceso" class="home-action">
+            <span>En proceso</span>
+            <strong>Cargar archivo OF</strong>
+        </a>
+        <a href="/historico" class="home-action">
+            <span>Historico</span>
+            <strong>Buscar y exportar</strong>
+        </a>
+    </section>
+
+    <section class="home-metrics">
+        <article>
+            <span>Pendientes</span>
+            <strong>{{ estado.conteos.get("pendientes", 0) }}</strong>
+        </article>
+        <article>
+            <span>En proceso</span>
+            <strong>{{ estado.conteos.get("en_proceso", 0) }}</strong>
+        </article>
+        <article>
+            <span>Historico</span>
+            <strong>{{ estado.conteos.get("historico", 0) }}</strong>
+        </article>
+        <article>
+            <span>Total envios</span>
+            <strong>{{ estado.conteos.get("envios_total", 0) }}</strong>
+        </article>
+    </section>
+
+    <section class="home-panels">
+        <div class="home-panel">
+            <h2>Resumen operativo</h2>
+            <dl>
+                <div>
+                    <dt>Ultimo lote</dt>
+                    <dd>{{ estado.conteos.get("ultimo_lote", "Sin lotes registrados") }}</dd>
+                </div>
+                <div>
+                    <dt>Ultimo envio</dt>
+                    <dd>
+                        {% if estado.conteos.get("ultimo_envio_fecha") %}
+                            {{ estado.conteos.get("ultimo_envio_fecha").strftime("%d/%m/%Y %H:%M") }}
+                        {% else %}
+                            Sin envios
+                        {% endif %}
+                    </dd>
+                </div>
+                <div>
+                    <dt>Correo Starken</dt>
+                    <dd>{% if estado.correo.ok %}Configurado{% else %}Falta configurar{% endif %}</dd>
+                </div>
+            </dl>
+        </div>
+
+        <div class="home-panel">
+            <h2>Catalogos</h2>
+            <dl>
+                <div>
+                    <dt>Remitentes</dt>
+                    <dd>{{ estado.conteos.get("remitentes", 0) }}</dd>
+                </div>
+                <div>
+                    <dt>Destinatarios</dt>
+                    <dd>{{ estado.conteos.get("destinatarios", 0) }}</dd>
+                </div>
+                <div>
+                    <dt>Comunas</dt>
+                    <dd>{{ estado.conteos.get("comunas", 0) }}</dd>
+                </div>
+            </dl>
+        </div>
+    </section>
 </div>
 {% endblock %}

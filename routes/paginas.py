@@ -171,7 +171,8 @@ def _query_desde_filtros(db, filtros):
 def registrar_rutas_paginas(app):
     @app.route("/")
     def inicio():
-        return render_template("index.html")
+        estado = obtener_estado_sistema()
+        return render_template("index.html", estado=estado)
 
     @app.route("/estado_sistema")
     def estado_sistema():

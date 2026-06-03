@@ -1,0 +1,240 @@
+:root {
+    --app-bg: #f3f5f7;
+    --surface: #ffffff;
+    --surface-muted: #f8fafb;
+    --line: #d9dee5;
+    --line-soft: #e8ebef;
+    --text: #161a1f;
+    --muted: #667085;
+    --muted-strong: #475467;
+    --brand-black: #050505;
+    --brand-green: #169b4d;
+    --brand-green-dark: #0d6f36;
+    --brand-red: #b4232f;
+    --brand-gold: #b08a3c;
+    --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+html {
+    min-height: 100%;
+}
+
+body {
+    min-height: 100%;
+    color: var(--text);
+    background:
+        linear-gradient(180deg, #eef1f4 0, var(--app-bg) 240px),
+        var(--app-bg);
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+a {
+    text-decoration: none;
+}
+
+.app-header {
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+    background: rgba(255, 255, 255, 0.96);
+    border-bottom: 1px solid var(--line);
+    box-shadow: 0 1px 8px rgba(15, 23, 42, 0.06);
+}
+
+.app-header-inner {
+    display: grid;
+    grid-template-columns: minmax(210px, 260px) 1fr minmax(160px, 220px);
+    align-items: center;
+    gap: 18px;
+    min-height: 72px;
+    padding: 10px 24px;
+}
+
+.brand-main {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    color: var(--brand-black);
+}
+
+.brand-main img {
+    max-width: 178px;
+    max-height: 48px;
+    object-fit: contain;
+}
+
+.brand-fallback {
+    display: inline-flex;
+    flex-direction: column;
+    line-height: 1.05;
+}
+
+.brand-fallback strong {
+    color: var(--brand-black);
+    font-size: 1.1rem;
+    letter-spacing: 0;
+}
+
+.brand-fallback small {
+    color: var(--muted);
+    font-size: 0.78rem;
+}
+
+.app-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 0;
+}
+
+.app-nav a {
+    color: #2e3440;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.app-nav a:hover,
+.app-nav a:focus {
+    color: var(--brand-black);
+    background: #eef2f5;
+}
+
+.brand-partner {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    color: var(--muted-strong);
+    min-width: 0;
+}
+
+.brand-partner img {
+    max-width: 92px;
+    max-height: 34px;
+    object-fit: contain;
+}
+
+.brand-partner strong {
+    color: var(--brand-green-dark);
+    font-size: 0.95rem;
+}
+
+.partner-text {
+    color: var(--muted);
+    font-size: 0.76rem;
+}
+
+.status-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--brand-green);
+    box-shadow: 0 0 0 3px rgba(22, 155, 77, 0.12);
+}
+
+.app-main {
+    margin-top: 18px;
+    padding-bottom: 36px;
+}
+
+.alert {
+    border-radius: 8px;
+    border-width: 1px;
+}
+
+.alert-auto-hide {
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.alert-auto-hide.ocultando {
+    opacity: 0;
+    transform: translateY(-8px);
+}
+
+.btn {
+    border-radius: 6px;
+    font-weight: 700;
+}
+
+.btn-primary {
+    background: var(--brand-black);
+    border-color: var(--brand-black);
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background: #2a2f36;
+    border-color: #2a2f36;
+}
+
+.btn-success {
+    background: var(--brand-green);
+    border-color: var(--brand-green);
+}
+
+.btn-success:hover,
+.btn-success:focus {
+    background: var(--brand-green-dark);
+    border-color: var(--brand-green-dark);
+}
+
+.table {
+    --bs-table-hover-bg: #f5f7f9;
+}
+
+.table thead th {
+    color: #344054;
+    background: #eef1f4;
+    border-color: var(--line);
+    font-size: 0.84rem;
+}
+
+.form-control,
+.form-select {
+    border-color: #cfd6df;
+    border-radius: 6px;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #8f9aaa;
+    box-shadow: 0 0 0 0.2rem rgba(17, 24, 39, 0.08);
+}
+
+@media (max-width: 1100px) {
+    .app-header-inner {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .brand-main,
+    .brand-partner {
+        justify-content: center;
+    }
+
+    .app-nav {
+        justify-content: flex-start;
+        overflow-x: auto;
+        padding-bottom: 4px;
+    }
+}
+
+@media (max-width: 576px) {
+    .app-header-inner {
+        padding: 10px 14px;
+    }
+
+    .app-nav a {
+        padding: 7px 9px;
+        font-size: 0.84rem;
+    }
+
+    .brand-partner {
+        display: none;
+    }
+}
