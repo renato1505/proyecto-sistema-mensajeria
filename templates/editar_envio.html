@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}Editar envío{% endblock %}
+
+{% block content %}
+<div class="page-editar-envio">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/editar_envio.css') }}">
+
+    <div class="container-fluid mt-3">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light py-2">
+                <h5 class="mb-0">Editar envío</h5>
+            </div>
+
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="row g-3 top-row-compact mb-3">
+                        <div class="col-lg-3 col-md-4">
+                            <label class="form-label">Número de cuenta</label>
+                            <input type="text" class="form-control form-control-sm" value="42315-7" readonly>
+                        </div>
+
+                        <div class="col-lg-3 col-md-4">
+                            <label class="form-label">Tipo de envío</label>
+                            <select class="form-select form-select-sm" name="tipo_envio" id="tipo_envio" required>
+                                <option value="Domicilio" {% if envio.e_tipo_envio == "Domicilio" %}selected{% endif %}>Domicilio</option>
+                                <option value="Agencia" {% if envio.e_tipo_envio == "Agencia" %}selected{% endif %}>Agencia</option>
+                            </select>
+                        </div>
+
+                        <div class="col-lg-4 col-md-4" id="bloque_agencia" style="display: none;">
+                            <label class="form-label">Código de agencia</label>
+                            <div class="d-flex gap-2 align-items-center">
+                                <input
+                                    type="text"
+                                    class="form-control form-control-sm"
+                                    name="codigo_agencia"
+                                    id="codigo_agencia"
+                                    value="{{ envio.e_codigo_agencia or '' }}"
+                                    pattern="[0-9]*"
+                                    maxlength="5"
+                                    inputmode="numeric"
+                                >
+                                <small class="text-primary">Solo para envío a agencia</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="bloque-form">
+                                <h6>Datos del remitente</h6>
+
+                                <div class="mb-2">
+                                    <label class="form-label">Nombre completo</label>
+                                    <input
+                                        type="text"
+                                        class="form-control form-control-sm"
+                                        name="remitente"
+                                        value="{{ envio.e_remitente }}"
+                                        maxlength="80"
+                                        required
+                                    >
+                                </div>
+
+                                <div class="mb-2">
+                                    <label class="form-label">Correo</label>
+                                    <input
+                                        type="email"
+                                        class="form-control form-control-sm"
+                                        name="correo_remitente"
+                                        value="{{ envio.e_correo_remitente or '' }}"
+                                        maxlength="100"
+                                        required
+                                    >
+                                </div>
+
+                                <div class="mb-2">
+                                    <label class="form-label">Centro de costo</label>
+                                    <input
+                                        type="text"
+                                        class="form-control form-control-sm"
+                                        name="centro_costo"
+                                        value="{{ envio.e_centro_costo or '' }}"
+                                        maxlength="20"
+                                        required
+                                    >
+                                </div>
+
+                                <div class="mb-2">
+                                    <label class="form-label">División</label>
+                                    <select class="form-select form-select-sm" name="division" required>
+                                        <option value="">Seleccionar división</option>
+                                        <option value="DPGP" {% if envio.e_division == "DPGP" %}selected{% endif %}>DPGP</option>
+                                        <option value="DOP" {% if envio.e_division == "DOP" %}selected{% endif %}>DOP</option>
+                                        <option value="LDB" {% if envio.e_division == "LDB" %}selected{% endif %}>LDB</option>
+                                        <option value="DL" {% if envio.e_division == "DL" %}selected{% endif %}>DL</option>
+                                        <option value="DPP" {% if envio.e_division == "DPP" %}selected{% endif %}>DPP</option>
+                                    </select>
+                                </div>
+
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <label class="form-label">Bultos</label>
+                                        <input
+                                            type="number"
+                                            class="form-control form-control-sm"
+                                            name="bultos"
+                                            value="{{ envio.e_bultos }}"
+                                            min="1"
+                                            max="9999"
+                                            required
+                                        >
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label">Kilos</label>
+                                        <input
+                                            type="number"
+                                            class="form-control form-control-sm"
+                                            name="kilos"
+                                            value="{{ envio.e_kilos }}"
+                                            min="1"
+                                            max="9999"
+                                            required
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="bloque-form">
+                                <h6>Datos del destinatario</h6>
+
+                                <div class="mb-2">
+                                    <label class="form-label">Nombre completo</label>
+                                    <input
+                                        type="text"
+                                        class="form-control form-control-sm"
+                                        name="destinatario"
+                                        value="{{ envio.e_destinatario }}"
+                                        maxlength="80"
+                                        required
+                                    >
+                                </div>
+
+                                <div class="mb-2">
+                                    <label class="form-label">RUT destinatario</label>
+                                    <input
+                                        type="text"
+                                        class="form-control form-control-sm"
+                                        name="rut_destinatario"
+                                        id="rut_destinatario"
+                                        value="{{ envio.e_rut_destinatario or '' }}"
+                                        maxlength="10"
+                                        inputmode="text"
+                                        placeholder="0 si no fue informado"
+                                        required
+                                    >
+                                </div>
+
+                                <div class="mb-2">
+                                    <label class="form-label">Dirección</label>
+                                    <input
+                                        type="text"
+                                        class="form-control form-control-sm"
+                                        name="direccion"
+                                        value="{{ envio.e_direccion }}"
+                                        maxlength="120"
+                                        required
+                                    >
+                                </div>
+
+                                <div class="row g-2 mb-2">
+                                    <div class="col-6">
+                                        <label class="form-label">Comuna</label>
+                                        <input
+                                            type="text"
+                                            class="form-control form-control-sm"
+                                            name="comuna"
+                                            value="{{ envio.e_comuna }}"
+                                            maxlength="40"
+                                            required
+                                        >
+                                    </div>
+
+                                    <div class="col-6">
+                                        <label class="form-label">Región</label>
+                                        <input
+                                            type="text"
+                                            class="form-control form-control-sm"
+                                            name="region"
+                                            value="{{ envio.e_region or '' }}"
+                                            maxlength="40"
+                                            required
+                                        >
+                                    </div>
+                                </div>
+
+                                <div class="mb-2">
+                                    <label class="form-label">Teléfono</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text">+56</span>
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            name="telefono_destinatario"
+                                            id="telefono_destinatario"
+                                            value="{{ envio.e_telefono_destinatario or '' }}"
+                                            maxlength="9"
+                                            inputmode="numeric"
+                                            placeholder="999999999"
+                                            required
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="acciones-finales d-flex gap-2 mt-3">
+                        <button type="submit" class="btn btn-success btn-sm px-4">Guardar cambios</button>
+                        <a href="/envios" class="btn btn-secondary btn-sm px-4">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const tipoEnvio = document.getElementById("tipo_envio");
+        const bloqueAgencia = document.getElementById("bloque_agencia");
+        const codigoAgencia = document.getElementById("codigo_agencia");
+        const telefono = document.getElementById("telefono_destinatario");
+        const rut = document.getElementById("rut_destinatario");
+
+        function actualizarBloqueAgencia() {
+            if (tipoEnvio.value === "Agencia") {
+                bloqueAgencia.style.display = "block";
+                codigoAgencia.required = true;
+            } else {
+                bloqueAgencia.style.display = "none";
+                codigoAgencia.required = false;
+                codigoAgencia.value = "";
+            }
+        }
+
+        tipoEnvio.addEventListener("change", actualizarBloqueAgencia);
+        actualizarBloqueAgencia();
+
+        codigoAgencia.addEventListener("input", function () {
+            this.value = this.value.replace(/\D/g, "").slice(0, 5);
+        });
+
+        telefono.addEventListener("input", function () {
+            this.value = this.value.replace(/\D/g, "").slice(0, 9);
+        });
+
+        rut.addEventListener("input", function () {
+            this.value = this.value.replace(/[^0-9kK-]/g, "").slice(0, 10);
+        });
+    </script>
+</div>
+{% endblock %}

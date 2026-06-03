@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}En proceso{% endblock %}
+
+{% block content %}
+<div class="page-en-proceso">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/en_proceso.css') }}">
+
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h2 class="titulo-en-proceso">En proceso</h2>
+                <p class="subtitulo-en-proceso">Exportaciones enviadas a Starken y esperando respuesta OF</p>
+            </div>
+        </div>
+
+        <div class="tabla-wrap">
+            <table class="table table-bordered align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;"></th>
+                        <th>Fecha exportación</th>
+                        <th>Lote</th>
+                        <th>Cantidad envíos</th>
+                        <th>Estado general</th>
+                        <th style="width: 100px;">Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lote in lotes %}
+                    <tr class="fila-principal">
+                        <td class="text-center">
+                            <button type="button"
+                                    class="btn-toggle-detalle"
+                                    onclick="toggleDetalle('detalle-{{ loop.index }}')">
+                                ▼
+                            </button>
+                        </td>
+
+                        <td>
+                            {% if lote.fecha_exportacion %}
+                                {{ lote.fecha_exportacion.strftime('%d/%m/%Y %H:%M') }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+
+                        <td>{{ lote.lote }}</td>
+                        <td>{{ lote.cantidad_envios }}</td>
+                        <td>
+                            <span class="badge-estado
+                                {% if lote.estado_general == 'Esperando OF' %}estado-esperando
+                                {% elif lote.estado_general == 'Completado' %}estado-ok
+                                {% else %}estado-parcial{% endif %}">
+                                {{ lote.estado_general }}
+                            </span>
+                        </td>
+
+                        <td class="text-center">
+                            <button type="button"
+                                    class="btn btn-outline-primary btn-sm"
+                                    onclick="toggleDetalle('detalle-{{ loop.index }}')">
+                                Ver
+                            </button>
+                        </td>
+                    </tr>
+
+                    <tr id="detalle-{{ loop.index }}" class="fila-detalle d-none">
+                        <td colspan="6">
+                            <div class="detalle-box">
+                                <div class="detalle-top">
+                                    <div>
+                                        <h6 class="detalle-titulo mb-1">Detalle del lote</h6>
+                                        <p class="detalle-subtitulo mb-0">
+                                            {{ lote.lote }} · {{ lote.cantidad_envios }} envío(s)
+                                        </p>
+                                    </div>
+
+                                    <div class="acciones-lote">
+                                        <form action="/cargar_of/{{ lote.lote }}" method="POST" enctype="multipart/form-data" class="form-cargar-of">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="file" name="archivo_of" class="form-control form-control-sm" accept=".xlsx,.xls" required>
+                                            <button type="submit" class="btn btn-success btn-sm">
+                                                Cargar archivo OF
+                                            </button>
+                                        </form>
+
+                                        <form action="/cancelar_lote/{{ lote.lote }}" method="POST"
+                                              onsubmit="return confirm('¿Seguro que deseas cancelar este lote? Los envíos volverán a pendientes.');">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                Cancelar lote
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                <div class="tabla-interna-wrap">
+                                    <table class="table table-sm table-bordered align-middle mb-0 tabla-interna">
+                                        <thead>
+                                            <tr>
+                                                <th>Fila Excel</th>
+                                                <th>Destinatario</th>
+                                                <th>Tipo envío</th>
+                                                <th>Código agencia</th>
+                                                <th>Orden de flete</th>
+                                                <th>Resultado</th>
+                                                <th>Detalle</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for envio in lote.envios %}
+                                            <tr>
+                                                <td>{{ envio.e_fila_excel or '-' }}</td>
+                                                <td>{{ envio.e_destinatario }}</td>
+                                                <td>{{ envio.e_tipo_envio }}</td>
+                                                <td>
+                                                    {% if envio.e_tipo_envio == "Agencia" %}
+                                                        {{ envio.e_codigo_agencia }}
+                                                    {% else %}
+                                                        No aplica
+                                                    {% endif %}
+                                                </td>
+                                                <td>{{ envio.e_orden_flete if envio.e_orden_flete else 'Pendiente' }}</td>
+                                                <td>
+                                                    {% if envio.e_resultado_of %}
+                                                        {{ envio.e_resultado_of }}
+                                                    {% else %}
+                                                        Esperando
+                                                    {% endif %}
+                                                </td>
+                                                <td>{{ envio.e_detalle_of if envio.e_detalle_of else '-' }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+
+                    {% if not lotes %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4">No hay lotes en proceso.</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleDetalle(id) {
+    const fila = document.getElementById(id);
+    fila.classList.toggle("d-none");
+}
+</script>
+{% endblock %}

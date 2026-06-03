@@ -1,0 +1,389 @@
+{% extends "base.html" %}
+
+{% block title %}Envíos históricos{% endblock %}
+
+{% block content %}
+<div class="page-historico">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/historico.css') }}">
+
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h2 class="titulo-historico">Histórico de envíos</h2>
+                <p class="subtitulo-historico">Consulta y revisión de envíos registrados</p>
+            </div>
+
+            <div class="acciones-superiores d-flex gap-2 flex-wrap">
+                <a
+                    href="/exportar_historico?mes={{ mes_seleccionado|urlencode }}&of={{ filtro_of|urlencode }}&destinatario={{ filtro_destinatario|urlencode }}&remitente={{ filtro_remitente|urlencode }}&fecha={{ filtro_fecha|urlencode }}&fecha_desde={{ fecha_desde|urlencode }}&fecha_hasta={{ fecha_hasta|urlencode }}"
+                    class="btn btn-outline-secondary btn-sm px-3"
+                >
+                    Exportar Excel
+                </a>
+
+                <button class="btn btn-outline-success btn-sm px-3" type="button" onclick="descargarSeleccionados()">
+                    Descargar seleccionados
+                </button>
+
+                <button class="btn btn-outline-danger btn-sm px-3" type="button" onclick="abrirModalEliminar()">
+                    Eliminar registros
+                </button>
+            </div>
+        </div>
+
+        <div class="historico-filtro-box mb-4">
+            <form method="GET" action="/historico">
+                <div class="row g-3 align-items-end">
+                    <div class="col-lg-3 col-md-6">
+                        <label for="mes" class="form-label fw-semibold">Mes seleccionado</label>
+                        <select name="mes" id="mes" class="form-select">
+                            {% for item in meses_disponibles %}
+                                <option value="{{ item.valor }}" {% if item.valor == mes_seleccionado %}selected{% endif %}>
+                                    {{ item.nombre }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-lg-3 col-md-6 autocomplete-wrap">
+                        <label for="of" class="form-label fw-semibold">OF</label>
+                        <input type="text" name="of" id="of" class="form-control" value="{{ filtro_of }}" placeholder="Buscar OF" autocomplete="off">
+                        <div id="lista_of_historico" class="list-group autocomplete-list"></div>
+                    </div>
+
+                    <div class="col-lg-3 col-md-6 autocomplete-wrap">
+                        <label for="destinatario" class="form-label fw-semibold">Destinatario</label>
+                        <input type="text" name="destinatario" id="destinatario" class="form-control" value="{{ filtro_destinatario }}" placeholder="Buscar destinatario" autocomplete="off">
+                        <div id="lista_destinatario_historico" class="list-group autocomplete-list"></div>
+                    </div>
+
+                    <div class="col-lg-3 col-md-6 autocomplete-wrap">
+                        <label for="remitente" class="form-label fw-semibold">Remitente</label>
+                        <input type="text" name="remitente" id="remitente" class="form-control" value="{{ filtro_remitente }}" placeholder="Buscar remitente" autocomplete="off">
+                        <div id="lista_remitente_historico" class="list-group autocomplete-list"></div>
+                    </div>
+
+                    <div class="col-lg-3 col-md-6">
+                        <label for="fecha" class="form-label fw-semibold">Fecha exacta</label>
+                        <input type="date" name="fecha" id="fecha" class="form-control" value="{{ filtro_fecha }}">
+                    </div>
+
+                    <div class="col-lg-3 col-md-6">
+                        <label for="fecha_desde" class="form-label fw-semibold">Desde</label>
+                        <input type="date" name="fecha_desde" id="fecha_desde" class="form-control" value="{{ fecha_desde }}">
+                    </div>
+
+                    <div class="col-lg-3 col-md-6">
+                        <label for="fecha_hasta" class="form-label fw-semibold">Hasta</label>
+                        <input type="date" name="fecha_hasta" id="fecha_hasta" class="form-control" value="{{ fecha_hasta }}">
+                    </div>
+
+                    <div class="col-12 d-flex gap-2 flex-wrap">
+                        <button type="submit" class="btn btn-outline-primary">Filtrar</button>
+                        <a href="/historico?mes={{ mes_seleccionado|urlencode }}" class="btn btn-outline-secondary">Limpiar</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="historico-cards mb-4">
+            <div class="historico-card">
+                <div class="historico-card-label">Registros encontrados</div>
+                <div class="historico-card-value">{{ total_registros }}</div>
+            </div>
+
+            <div class="historico-card">
+                <div class="historico-card-label">Bultos</div>
+                <div class="historico-card-value">{{ total_bultos }}</div>
+            </div>
+
+            <div class="historico-card">
+                <div class="historico-card-label">Domicilio</div>
+                <div class="historico-card-value">{{ total_domicilio }}</div>
+            </div>
+
+            <div class="historico-card">
+                <div class="historico-card-label">Agencia</div>
+                <div class="historico-card-value">{{ total_agencia }}</div>
+            </div>
+        </div>
+
+        <form id="formDescargaSeleccionados" method="POST" action="/descargar_historico_seleccionados">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="historico-tabla-box">
+                <table class="table table-bordered align-middle mb-0 historico-tabla">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;" class="text-center">
+                                <input type="checkbox" id="checkTodos">
+                            </th>
+                            <th style="width: 50px;"></th>
+                            <th>Fecha</th>
+                            <th>Remitente</th>
+                            <th>Destinatario</th>
+                            <th>Orden de flete</th>
+                            <th style="width: 110px;">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for envio in envios %}
+                        <tr class="fila-principal">
+                            <td class="text-center">
+                                <input type="checkbox" name="envio_ids" value="{{ envio.id }}" class="check-envio">
+                            </td>
+                            <td class="text-center">
+                                <button type="button"
+                                        class="btn-toggle-detalle"
+                                        onclick="toggleDetalle('{{ envio.id }}')">
+                                    ▼
+                                </button>
+                            </td>
+                            <td>
+                                {% if envio.e_fecha_creacion %}
+                                    {{ envio.e_fecha_creacion.strftime('%d/%m/%Y %H:%M') }}
+                                {% endif %}
+                            </td>
+                            <td>{{ envio.e_remitente }}</td>
+                            <td>{{ envio.e_destinatario }}</td>
+                            <td>{{ envio.e_orden_flete if envio.e_orden_flete else 'Sin OF' }}</td>
+                            <td class="text-center">
+                                <a href="/descargar_envio_historico/{{ envio.id }}"
+                                   class="btn btn-outline-success btn-sm">
+                                    Descargar
+                                </a>
+                            </td>
+                        </tr>
+
+                        <tr id="detalle-{{ envio.id }}" class="fila-detalle d-none">
+                            <td colspan="7">
+                                <div class="detalle-box">
+                                    <h6 class="detalle-titulo">Detalle del envío</h6>
+
+                                    <div class="detalle-grid">
+                                        <div class="detalle-col">
+                                            <p><strong>Remitente:</strong> {{ envio.e_remitente }}</p>
+                                            <p><strong>Correo remitente:</strong> {{ envio.e_correo_remitente }}</p>
+                                            <p><strong>División:</strong> {{ envio.e_division }}</p>
+                                            <p><strong>Centro de costo:</strong> {{ envio.e_centro_costo }}</p>
+                                        </div>
+
+                                        <div class="detalle-col">
+                                            <p><strong>Destinatario:</strong> {{ envio.e_destinatario }}</p>
+                                            <p><strong>RUT:</strong> {{ envio.e_rut_destinatario }}</p>
+                                            <p><strong>Dirección:</strong> {{ envio.e_direccion }}</p>
+                                            <p><strong>Comuna:</strong> {{ envio.e_comuna }}</p>
+                                        </div>
+
+                                        <div class="detalle-col">
+                                            <p><strong>Región:</strong> {{ envio.e_region }}</p>
+                                            <p><strong>Teléfono:</strong> {{ envio.e_telefono_destinatario }}</p>
+                                            <p><strong>Tipo envío:</strong> {{ envio.e_tipo_envio }}</p>
+                                            <p><strong>Código agencia:</strong>
+                                                {% if envio.e_tipo_envio == 'Agencia' %}
+                                                    {{ envio.e_codigo_agencia }}
+                                                {% else %}
+                                                    No aplica
+                                                {% endif %}
+                                            </p>
+                                        </div>
+
+                                        <div class="detalle-col">
+                                            <p><strong>Bultos:</strong> {{ envio.e_bultos }}</p>
+                                            <p><strong>Kilos:</strong> {{ envio.e_kilos }}</p>
+                                            <p><strong>Orden de flete:</strong> {{ envio.e_orden_flete if envio.e_orden_flete else 'Sin OF' }}</p>
+                                            <p>
+                                                <strong>Fecha:</strong>
+                                                {% if envio.e_fecha_creacion %}
+                                                    {{ envio.e_fecha_creacion.strftime('%d/%m/%Y %H:%M') }}
+                                                {% endif %}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+
+                        {% if not envios %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4">No hay registros para este criterio de búsqueda.</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modalEliminarHistorico" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.35); z-index:2000;">
+    <div style="background:#fff; width:100%; max-width:430px; margin:120px auto; padding:24px; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.15);">
+        <h5 class="mb-3">Eliminar registros filtrados</h5>
+        <p class="mb-3">Ingresa la contraseña para eliminar solo los registros que aparecen con los filtros actuales.</p>
+
+        <form method="POST" action="/eliminar_historico">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="mes" value="{{ mes_seleccionado }}">
+            <input type="hidden" name="of" value="{{ filtro_of }}">
+            <input type="hidden" name="destinatario" value="{{ filtro_destinatario }}">
+            <input type="hidden" name="remitente" value="{{ filtro_remitente }}">
+            <input type="hidden" name="fecha" value="{{ filtro_fecha }}">
+            <input type="hidden" name="fecha_desde" value="{{ fecha_desde }}">
+            <input type="hidden" name="fecha_hasta" value="{{ fecha_hasta }}">
+
+            <div class="mb-3">
+                <label for="clave" class="form-label fw-semibold">Contraseña</label>
+                <input type="password" class="form-control" id="clave" name="clave" required>
+            </div>
+
+            <div class="d-flex gap-2 justify-content-end">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="cerrarModalEliminar()">Cancelar</button>
+                <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function toggleDetalle(id) {
+    const fila = document.getElementById("detalle-" + id);
+    fila.classList.toggle("d-none");
+}
+
+function abrirModalEliminar() {
+    document.getElementById("modalEliminarHistorico").style.display = "block";
+}
+
+function cerrarModalEliminar() {
+    document.getElementById("modalEliminarHistorico").style.display = "none";
+}
+
+function descargarSeleccionados() {
+    const checks = document.querySelectorAll(".check-envio:checked");
+    if (!checks.length) {
+        alert("Debes seleccionar al menos un registro.");
+        return;
+    }
+    document.getElementById("formDescargaSeleccionados").submit();
+}
+
+const checkTodos = document.getElementById("checkTodos");
+if (checkTodos) {
+    checkTodos.addEventListener("change", function() {
+        document.querySelectorAll(".check-envio").forEach(chk => {
+            chk.checked = this.checked;
+        });
+    });
+}
+
+function crearAutocomplete(config) {
+    const input = document.getElementById(config.inputId);
+    const lista = document.getElementById(config.listId);
+    let index = -1;
+
+    function limpiar() {
+        lista.innerHTML = "";
+        index = -1;
+    }
+
+    function items() {
+        return Array.from(lista.querySelectorAll(".list-group-item"));
+    }
+
+    function marcarActivo() {
+        items().forEach((item, i) => {
+            item.classList.toggle("active", i === index);
+        });
+
+        const activo = items()[index];
+        if (activo) {
+            activo.scrollIntoView({ block: "nearest" });
+        }
+    }
+
+    input.addEventListener("keydown", function(e) {
+        const elementos = items();
+        if (!elementos.length) return;
+
+        if (e.key === "ArrowDown") {
+            e.preventDefault();
+            index++;
+            if (index >= elementos.length) index = 0;
+            marcarActivo();
+        }
+
+        if (e.key === "ArrowUp") {
+            e.preventDefault();
+            index--;
+            if (index < 0) index = elementos.length - 1;
+            marcarActivo();
+        }
+
+        if (e.key === "Enter" && index >= 0) {
+            e.preventDefault();
+            elementos[index].click();
+        }
+
+        if (e.key === "Escape") {
+            limpiar();
+        }
+    });
+
+    input.addEventListener("input", async function() {
+        const texto = this.value.trim();
+
+        if (texto.length < config.minLength) {
+            limpiar();
+            return;
+        }
+
+        const response = await fetch(`${config.url}?q=${encodeURIComponent(texto)}`);
+        const resultados = await response.json();
+
+        lista.innerHTML = "";
+        index = -1;
+
+        resultados.forEach(valor => {
+            const item = document.createElement("button");
+            item.type = "button";
+            item.className = "list-group-item list-group-item-action";
+            item.textContent = valor;
+
+            item.addEventListener("click", function() {
+                input.value = valor;
+                limpiar();
+            });
+
+            lista.appendChild(item);
+        });
+    });
+
+    document.addEventListener("click", function(e) {
+        if (!input.contains(e.target) && !lista.contains(e.target)) {
+            limpiar();
+        }
+    });
+}
+
+crearAutocomplete({
+    inputId: "of",
+    listId: "lista_of_historico",
+    url: "/buscar_of_historico",
+    minLength: 1
+});
+
+crearAutocomplete({
+    inputId: "destinatario",
+    listId: "lista_destinatario_historico",
+    url: "/buscar_destinatarios_historico",
+    minLength: 2
+});
+
+crearAutocomplete({
+    inputId: "remitente",
+    listId: "lista_remitente_historico",
+    url: "/buscar_remitentes_historico",
+    minLength: 2
+});
+</script>
+{% endblock %}

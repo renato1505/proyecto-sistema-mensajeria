@@ -1,0 +1,88 @@
+.page-editar-envio .container-fluid {
+    max-width: 1480px;
+}
+
+.page-editar-envio .card {
+    margin-bottom: 0;
+}
+
+.page-editar-envio .card-header {
+    padding: 0.45rem 0.75rem !important;
+}
+
+.page-editar-envio .card-header h5 {
+    font-size: 1rem;
+    margin: 0;
+}
+
+.page-editar-envio .card-body {
+    padding: 0.6rem 0.7rem;
+}
+
+.page-editar-envio form {
+    margin-bottom: 0;
+}
+
+.page-editar-envio .top-row-compact {
+    margin-bottom: 0.55rem !important;
+}
+
+.page-editar-envio .form-label {
+    font-size: 0.78rem;
+    margin-bottom: 0.1rem;
+    line-height: 1.1;
+}
+
+.page-editar-envio .form-control,
+.page-editar-envio .form-select {
+    font-size: 0.84rem;
+    padding-top: 0.28rem;
+    padding-bottom: 0.28rem;
+    min-height: calc(1.5em + 0.55rem + 2px);
+}
+
+.page-editar-envio .bloque-form {
+    border: 1px solid #d9dee5;
+    border-radius: 0.5rem;
+    padding: 0.6rem;
+    height: 100%;
+    background: #fff;
+}
+
+.page-editar-envio .bloque-form h6 {
+    font-size: 0.92rem;
+    margin-bottom: 0.35rem;
+    font-weight: 700;
+}
+
+.page-editar-envio .mb-2 {
+    margin-bottom: 0.45rem !important;
+}
+
+.page-editar-envio .row.g-2 {
+    --bs-gutter-x: 0.45rem;
+    --bs-gutter-y: 0.45rem;
+}
+
+.page-editar-envio .row.g-3 {
+    --bs-gutter-x: 0.75rem;
+    --bs-gutter-y: 0.75rem;
+}
+
+.page-editar-envio .acciones-finales {
+    border-top: 1px solid #e3e7ec;
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.page-editar-envio .acciones-finales .btn {
+    padding-top: 0.3rem;
+    padding-bottom: 0.3rem;
+    font-size: 0.82rem;
+}
+
+@media (max-width: 1400px) {
+    .page-editar-envio .container-fluid {
+        max-width: 100%;
+    }
+}

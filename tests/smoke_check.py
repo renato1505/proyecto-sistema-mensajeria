@@ -1,0 +1,77 @@
+import re
+import sys
+from pathlib import Path
+
+
+PROJECT_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_DIR))
+
+from main import app
+
+
+def extraer_csrf(html):
+    match = re.search(r'name="csrf_token" value="([^"]+)"', html)
+    if not match:
+        raise RuntimeError("No se encontro csrf_token")
+    return match.group(1)
+
+
+def main():
+    client = app.test_client()
+
+    for ruta in ["/", "/nuevo_envio", "/envios", "/en_proceso", "/historico"]:
+        response = client.get(ruta)
+        print(f"{ruta}: {response.status_code}")
+        if response.status_code != 200:
+            raise SystemExit(1)
+
+    sin_token = client.post("/descargar_historico_seleccionados")
+
+    historico_html = client.get("/historico").data.decode("utf-8", errors="ignore")
+    token = extraer_csrf(historico_html)
+    con_token = client.post(
+        "/descargar_historico_seleccionados",
+        data={"csrf_token": token},
+        follow_redirects=False,
+    )
+
+    print(f"POST sin CSRF: {sin_token.status_code}")
+    print(f"POST con CSRF: {con_token.status_code} -> {con_token.headers.get('Location')}")
+
+    if sin_token.status_code != 400:
+        raise SystemExit(1)
+
+    if con_token.status_code != 302:
+        raise SystemExit(1)
+
+    for ruta in [
+        "/buscar_comunas?q=Santiago",
+        "/buscar_remitentes?q=a",
+        "/buscar_destinatarios?q=a",
+    ]:
+        response = client.get(ruta)
+        print(f"{ruta}: {response.status_code}")
+        if response.status_code != 200:
+            raise SystemExit(1)
+
+    nuevo_envio_html = client.get("/nuevo_envio").data.decode("utf-8", errors="ignore")
+    token_catalogo = extraer_csrf(nuevo_envio_html)
+
+    ajax_sin_token = client.post("/guardar_remitente")
+    ajax_invalido = client.post(
+        "/guardar_destinatario",
+        data={"csrf_token": token_catalogo, "rut_destinatario": "0"},
+    )
+
+    print(f"AJAX sin CSRF: {ajax_sin_token.status_code}")
+    print(f"Destinatario invalido: {ajax_invalido.status_code}")
+
+    if ajax_sin_token.status_code != 400:
+        raise SystemExit(1)
+
+    if ajax_invalido.status_code != 400:
+        raise SystemExit(1)
+
+
+if __name__ == "__main__":
+    main()

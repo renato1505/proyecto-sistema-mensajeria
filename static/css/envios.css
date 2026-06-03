@@ -1,0 +1,174 @@
+.page-envios .container {
+    max-width: 1530px;
+}
+
+.page-envios .titulo-envios {
+    font-size: 1.12rem;
+    font-weight: 700;
+    margin-bottom: 0;
+}
+
+.page-envios .acciones-superiores {
+    display: flex;
+    gap: 0.45rem;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.page-envios .tabla-wrap {
+    background: #fff;
+    border: 1px solid #d9dee5;
+    border-radius: 0.55rem;
+    overflow: hidden;
+}
+
+.page-envios .table {
+    margin-bottom: 0;
+    font-size: 0.80rem;
+    table-layout: fixed;
+    width: 100%;
+}
+
+.page-envios .table thead th {
+    background: #f8f9fa;
+    font-size: 0.75rem;
+    font-weight: 700;
+    vertical-align: middle;
+    padding: 0.42rem 0.34rem;
+    line-height: 1.15;
+    text-align: center;
+    word-break: break-word;
+}
+
+.page-envios .table tbody td {
+    vertical-align: middle;
+    padding: 0.4rem 0.35rem;
+    line-height: 1.18;
+    word-break: break-word;
+}
+
+.page-envios .col-id {
+    width: 38px;
+    text-align: center;
+}
+
+.page-envios .col-remitente {
+    width: 120px;
+}
+
+.page-envios .col-destinatario {
+    width: 105px;
+}
+
+.page-envios .col-telefono {
+    width: 90px;
+    text-align: center;
+}
+
+.page-envios .col-direccion {
+    width: 115px;
+}
+
+.page-envios .col-region {
+    width: 115px;
+}
+
+.page-envios .col-comuna {
+    width: 80px;
+}
+
+.page-envios .col-tipo {
+    width: 70px;
+    text-align: center;
+}
+
+.page-envios .col-agencia {
+    width: 85px;
+    text-align: center;
+}
+
+.page-envios .col-centro {
+    width: 85px;
+    text-align: center;
+}
+
+.page-envios .col-num {
+    width: 56px;
+    text-align: center;
+}
+
+.page-envios .col-acciones {
+    width: 72px;
+    text-align: center;
+}
+
+.page-envios .badge-agencia-na {
+    background: #eef0f3;
+    color: #5f6875;
+    font-size: 0.72rem;
+    padding: 0.22rem 0.4rem;
+    border-radius: 0.38rem;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.page-envios .codigo-agencia {
+    font-weight: 600;
+    color: #333;
+    font-size: 0.78rem;
+}
+
+.page-envios .acciones-tabla {
+    display: flex;
+    gap: 0.25rem;
+    justify-content: center;
+}
+
+.page-envios .icon-btn {
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.38rem;
+    border: 1px solid transparent;
+    text-decoration: none;
+    background: #fff;
+    cursor: pointer;
+    font: inherit;
+    transition: 0.15s ease-in-out;
+}
+
+.page-envios .icon-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+.page-envios .icon-btn-edit {
+    color: #0d6efd;
+    border-color: #9dc4ff;
+}
+
+.page-envios .icon-btn-edit:hover {
+    background: #eaf3ff;
+}
+
+.page-envios .icon-btn-delete {
+    color: #dc3545;
+    border-color: #f3b3ba;
+}
+
+.page-envios .icon-btn-delete:hover {
+    background: #fff0f1;
+}
+
+@media (max-width: 1400px) {
+    .page-envios .table {
+        font-size: 0.78rem;
+    }
+
+    .page-envios .table thead th,
+    .page-envios .table tbody td {
+        padding: 0.34rem 0.28rem;
+    }
+}
