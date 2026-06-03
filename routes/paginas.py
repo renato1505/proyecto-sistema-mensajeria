@@ -3,6 +3,7 @@ import logging
 import os
 import re
 from datetime import datetime
+from math import ceil
 from urllib.parse import urlencode
 
 import pandas as pd
@@ -18,7 +19,17 @@ from services.estado_sistema import obtener_estado_sistema
 logger = logging.getLogger(__name__)
 
 
-def construir_url_historico(mes, of="", destinatario="", remitente="", fecha="", fecha_desde="", fecha_hasta=""):
+def construir_url_historico(
+    mes,
+    of="",
+    destinatario="",
+    remitente="",
+    fecha="",
+    fecha_desde="",
+    fecha_hasta="",
+    page=None,
+    per_page=None,
+):
     params = {
         "mes": mes,
         "of": of,
@@ -28,6 +39,13 @@ def construir_url_historico(mes, of="", destinatario="", remitente="", fecha="",
         "fecha_desde": fecha_desde,
         "fecha_hasta": fecha_hasta,
     }
+
+    if page is not None:
+        params["page"] = page
+
+    if per_page is not None:
+        params["per_page"] = per_page
+
     return "/historico?" + urlencode(params)
 
 
@@ -154,6 +172,40 @@ def _leer_filtros(args):
     }
 
 
+def _leer_paginacion(args):
+    try:
+        page = int(args.get("page", "1"))
+    except ValueError:
+        page = 1
+
+    try:
+        per_page = int(args.get("per_page", "25"))
+    except ValueError:
+        per_page = 25
+
+    if page < 1:
+        page = 1
+
+    if per_page not in {25, 50, 100}:
+        per_page = 25
+
+    return page, per_page
+
+
+def _url_historico_desde_filtros(filtros, page, per_page):
+    return construir_url_historico(
+        filtros["mes"],
+        filtros["of"],
+        filtros["destinatario"],
+        filtros["remitente"],
+        filtros["fecha"],
+        filtros["fecha_desde"],
+        filtros["fecha_hasta"],
+        page,
+        per_page,
+    )
+
+
 def _query_desde_filtros(db, filtros):
     mes = filtros["mes"] or "todos"
     return construir_query_historico(
@@ -255,8 +307,22 @@ def registrar_rutas_paginas(app):
         if not filtros["mes"]:
             filtros["mes"] = "todos"
 
+        page, per_page = _leer_paginacion(request.args)
         query = _query_desde_filtros(db, filtros)
-        envios = query.order_by(Envio.e_fecha_creacion.desc()).all()
+        total_registros = query.count()
+
+        total_paginas = max(ceil(total_registros / per_page), 1)
+        if page > total_paginas:
+            page = total_paginas
+
+        offset = (page - 1) * per_page
+        envios = (
+            query
+            .order_by(Envio.e_fecha_creacion.desc())
+            .offset(offset)
+            .limit(per_page)
+            .all()
+        )
 
         registros_historicos = (
             db.query(Envio)
@@ -278,10 +344,28 @@ def registrar_rutas_paginas(app):
                     meses_disponibles.append({"valor": clave, "nombre": nombre})
                     meses_vistos.add(clave)
 
-        total_registros = len(envios)
-        total_bultos = sum(envio.e_bultos or 0 for envio in envios)
-        total_domicilio = sum(1 for envio in envios if envio.e_tipo_envio == "Domicilio")
-        total_agencia = sum(1 for envio in envios if envio.e_tipo_envio == "Agencia")
+        total_bultos = query.with_entities(func.coalesce(func.sum(Envio.e_bultos), 0)).scalar()
+        total_domicilio = query.filter(Envio.e_tipo_envio == "Domicilio").count()
+        total_agencia = query.filter(Envio.e_tipo_envio == "Agencia").count()
+
+        pagina_inicio = offset + 1 if total_registros else 0
+        pagina_fin = min(offset + len(envios), total_registros)
+
+        pagination = {
+            "page": page,
+            "per_page": per_page,
+            "total_paginas": total_paginas,
+            "total_registros": total_registros,
+            "pagina_inicio": pagina_inicio,
+            "pagina_fin": pagina_fin,
+            "tiene_anterior": page > 1,
+            "tiene_siguiente": page < total_paginas,
+            "url_anterior": _url_historico_desde_filtros(filtros, page - 1, per_page),
+            "url_siguiente": _url_historico_desde_filtros(filtros, page + 1, per_page),
+            "url_primera": _url_historico_desde_filtros(filtros, 1, per_page),
+            "url_ultima": _url_historico_desde_filtros(filtros, total_paginas, per_page),
+            "opciones_per_page": [25, 50, 100],
+        }
 
         db.close()
 
@@ -300,6 +384,7 @@ def registrar_rutas_paginas(app):
             filtro_fecha=filtros["fecha"],
             fecha_desde=filtros["fecha_desde"],
             fecha_hasta=filtros["fecha_hasta"],
+            pagination=pagination,
         )
 
     @app.route("/exportar_historico")

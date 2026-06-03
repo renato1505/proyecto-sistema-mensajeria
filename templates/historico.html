@@ -60,6 +60,7 @@
         </div>
 
         <form method="GET" action="/historico">
+            <input type="hidden" name="page" value="1">
             <div class="filter-grid">
                 <div class="filter-field">
                     <label for="mes">Periodo</label>
@@ -105,6 +106,17 @@
                     <input type="date" name="fecha_hasta" id="fecha_hasta" class="form-control" value="{{ fecha_hasta }}">
                 </div>
 
+                <div class="filter-field">
+                    <label for="per_page">Mostrar</label>
+                    <select name="per_page" id="per_page" class="form-select">
+                        {% for opcion in pagination.opciones_per_page %}
+                            <option value="{{ opcion }}" {% if opcion == pagination.per_page %}selected{% endif %}>
+                                {{ opcion }} por pagina
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
                 <div class="filter-field filter-submit">
                     <button type="submit" class="btn btn-success">Aplicar filtros</button>
                 </div>
@@ -117,8 +129,16 @@
 
         <section class="historico-table-panel">
             <div class="table-panel-head">
-                <h2>Resultados</h2>
-                <span>{{ total_registros }} registro(s)</span>
+                <div>
+                    <h2>Resultados</h2>
+                    <span>
+                        Mostrando {{ pagination.pagina_inicio }}-{{ pagination.pagina_fin }}
+                        de {{ pagination.total_registros }} registro(s)
+                    </span>
+                </div>
+                <div class="pagination-summary">
+                    Pagina {{ pagination.page }} de {{ pagination.total_paginas }}
+                </div>
             </div>
 
             <div class="table-responsive">
@@ -234,6 +254,26 @@
                         {% endif %}
                     </tbody>
                 </table>
+            </div>
+
+            <div class="historico-pagination">
+                <a class="page-btn {% if not pagination.tiene_anterior %}disabled{% endif %}"
+                   href="{% if pagination.tiene_anterior %}{{ pagination.url_primera }}{% else %}#{% endif %}">
+                    Primera
+                </a>
+                <a class="page-btn {% if not pagination.tiene_anterior %}disabled{% endif %}"
+                   href="{% if pagination.tiene_anterior %}{{ pagination.url_anterior }}{% else %}#{% endif %}">
+                    Anterior
+                </a>
+                <span class="page-current">{{ pagination.page }}</span>
+                <a class="page-btn {% if not pagination.tiene_siguiente %}disabled{% endif %}"
+                   href="{% if pagination.tiene_siguiente %}{{ pagination.url_siguiente }}{% else %}#{% endif %}">
+                    Siguiente
+                </a>
+                <a class="page-btn {% if not pagination.tiene_siguiente %}disabled{% endif %}"
+                   href="{% if pagination.tiene_siguiente %}{{ pagination.url_ultima }}{% else %}#{% endif %}">
+                    Ultima
+                </a>
             </div>
         </section>
     </form>
