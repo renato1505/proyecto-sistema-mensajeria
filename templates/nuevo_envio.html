@@ -1,321 +1,343 @@
 {% extends "base.html" %}
 
-{% block title %}Nuevo envío{% endblock %}
+{% block title %}Nuevo envio{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/nuevo_envio.css') }}">
+{% endblock %}
 
 {% block content %}
-<div class="page-nuevo-envio">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/nuevo_envio.css') }}">
+<div class="nuevo-page">
+    <section class="nuevo-hero">
+        <div>
+            <span class="nuevo-kicker">Registro operativo</span>
+            <h1>Nuevo envio</h1>
+            <p>Ingresa los datos para dejar el pedido en pendientes y preparar su posterior lote Starken.</p>
+        </div>
+        <div class="hero-account">
+            <span>Cuenta Starken</span>
+            <strong>42315-7</strong>
+        </div>
+    </section>
 
-    <div class="container-fluid mt-3">
-        <div class="card shadow-sm">
-            <div class="card-header bg-light py-2">
-                <h5 class="mb-0">Registrar nuevo envío</h5>
+    <form method="POST" class="nuevo-layout">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="tipo_entrega" value="normal">
+
+        <section class="form-workspace">
+            <div class="section-panel envio-panel">
+                <div class="section-head">
+                    <div>
+                        <span>Configuracion</span>
+                        <h2>Datos del envio</h2>
+                    </div>
+                </div>
+
+                <div class="envio-grid">
+                    <div>
+                        <label class="form-label">Numero de cuenta</label>
+                        <input type="text" class="form-control form-control-sm" name="numero_cuenta" value="42315-7" readonly>
+                    </div>
+
+                    <div>
+                        <label class="form-label">Tipo de envio</label>
+                        <select class="form-select form-select-sm" name="tipo_envio" id="tipo_envio" required>
+                            <option value="Domicilio" selected>Domicilio</option>
+                            <option value="Agencia">Agencia</option>
+                        </select>
+                    </div>
+
+                    <div id="bloque_agencia" style="display: none;">
+                        <label class="form-label">Codigo de agencia</label>
+                        <input
+                            type="text"
+                            class="form-control form-control-sm"
+                            name="codigo_agencia"
+                            id="codigo_agencia"
+                            pattern="[0-9]*"
+                            maxlength="5"
+                            inputmode="numeric"
+                        >
+                    </div>
+
+                    <div class="split-fields">
+                        <div>
+                            <label class="form-label">Bultos</label>
+                            <input
+                                type="number"
+                                class="form-control form-control-sm"
+                                name="bultos"
+                                id="bultos"
+                                min="1"
+                                max="9999"
+                                required
+                            >
+                        </div>
+                        <div>
+                            <label class="form-label">Kilos</label>
+                            <input
+                                type="number"
+                                class="form-control form-control-sm"
+                                name="kilos"
+                                id="kilos"
+                                min="1"
+                                max="9999"
+                                required
+                            >
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div class="card-body">
-                <form method="POST">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <input type="hidden" name="tipo_entrega" value="normal">
+            <div class="people-grid">
+                <section class="section-panel">
+                    <div class="section-head compact">
+                        <div>
+                            <span>Origen</span>
+                            <h2>Remitente</h2>
+                        </div>
+                        <div class="head-actions">
+                            <label class="keep-switch" for="mantener_remitente">
+                                <input class="form-check-input" type="checkbox" id="mantener_remitente">
+                                <span>Mantener</span>
+                            </label>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="guardarRemitente()">
+                                Guardar
+                            </button>
+                        </div>
+                    </div>
 
-                    <div class="row g-3 top-row-compact mb-3">
-                        <div class="col-lg-3 col-md-4">
-                            <label class="form-label">Número de cuenta</label>
-                            <input type="text" class="form-control form-control-sm" name="numero_cuenta" value="42315-7" readonly>
+                    <div class="fields-stack">
+                        <div class="autocomplete-wrap">
+                            <label class="form-label">Nombre completo</label>
+                            <input
+                                type="text"
+                                class="form-control form-control-sm"
+                                name="remitente"
+                                id="remitente"
+                                autocomplete="off"
+                                maxlength="80"
+                                required
+                            >
+                            <div id="lista_remitentes" class="list-group autocomplete-list"></div>
                         </div>
 
-                        <div class="col-lg-3 col-md-4">
-                            <label class="form-label">Tipo de envío</label>
-                            <select class="form-select form-select-sm" name="tipo_envio" id="tipo_envio" required>
-                                <option value="Domicilio" selected>Domicilio</option>
-                                <option value="Agencia">Agencia</option>
-                            </select>
+                        <div>
+                            <label class="form-label">Correo</label>
+                            <input
+                                type="email"
+                                class="form-control form-control-sm"
+                                name="correo_remitente"
+                                id="correo_remitente"
+                                maxlength="100"
+                                required
+                            >
                         </div>
 
-                        <div class="col-lg-4 col-md-4" id="bloque_agencia" style="display: none;">
-                            <label class="form-label">Código de agencia</label>
-                            <div class="d-flex gap-2 align-items-center">
+                        <div class="split-fields">
+                            <div>
+                                <label class="form-label">Centro de costo</label>
                                 <input
                                     type="text"
                                     class="form-control form-control-sm"
-                                    name="codigo_agencia"
-                                    id="codigo_agencia"
-                                    pattern="[0-9]*"
-                                    maxlength="5"
-                                    inputmode="numeric"
+                                    name="centro_costo"
+                                    id="centro_costo"
+                                    maxlength="20"
+                                    required
+                                >
+                            </div>
+
+                            <div>
+                                <label class="form-label">Division</label>
+                                <select class="form-select form-select-sm" name="division" id="division" required>
+                                    <option value="">Seleccionar</option>
+                                    <option value="DPGP">DPGP</option>
+                                    <option value="DOP">DOP</option>
+                                    <option value="LDB">LDB</option>
+                                    <option value="DL">DL</option>
+                                    <option value="DPP">DPP</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="section-panel">
+                    <div class="section-head compact">
+                        <div>
+                            <span>Destino</span>
+                            <h2>Destinatario</h2>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="guardarDestinatario()">
+                            Guardar
+                        </button>
+                    </div>
+
+                    <div class="fields-stack">
+                        <div class="autocomplete-wrap">
+                            <label class="form-label">Nombre completo</label>
+                            <input
+                                type="text"
+                                class="form-control form-control-sm"
+                                name="destinatario"
+                                id="destinatario"
+                                autocomplete="off"
+                                maxlength="80"
+                                required
+                            >
+                            <div id="lista_destinatarios" class="list-group autocomplete-list"></div>
+                        </div>
+
+                        <div class="split-fields">
+                            <div>
+                                <label class="form-label">RUT destinatario</label>
+                                <input
+                                    type="text"
+                                    class="form-control form-control-sm"
+                                    name="rut_destinatario"
+                                    id="rut_destinatario"
+                                    maxlength="10"
+                                    inputmode="text"
+                                    placeholder="0 si no fue informado"
+                                    required
+                                >
+                            </div>
+
+                            <div>
+                                <label class="form-label">Telefono</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">+56</span>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        name="telefono_destinatario"
+                                        id="telefono_destinatario"
+                                        maxlength="9"
+                                        inputmode="numeric"
+                                        placeholder="999999999"
+                                        required
+                                    >
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="form-label">Direccion</label>
+                            <input
+                                type="text"
+                                class="form-control form-control-sm"
+                                name="direccion"
+                                id="direccion"
+                                maxlength="120"
+                                required
+                            >
+                        </div>
+
+                        <div class="split-fields">
+                            <div class="autocomplete-wrap">
+                                <label class="form-label">Comuna</label>
+                                <input
+                                    type="text"
+                                    class="form-control form-control-sm"
+                                    name="comuna"
+                                    id="comuna"
+                                    autocomplete="off"
+                                    maxlength="40"
+                                    required
+                                >
+                                <div id="lista_comunas" class="list-group autocomplete-list"></div>
+                            </div>
+
+                            <div>
+                                <label class="form-label">Region</label>
+                                <input
+                                    type="text"
+                                    class="form-control form-control-sm"
+                                    name="region"
+                                    id="region"
+                                    maxlength="40"
+                                    readonly
+                                    required
                                 >
                             </div>
                         </div>
                     </div>
-
-                    <div class="row g-3">
-                        <div class="col-xl-8">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <div class="bloque-form">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <h6 class="mb-0">Datos del remitente</h6>
-                                            <div class="d-flex align-items-center gap-2">
-                                                <div class="form-check form-switch m-0">
-                                                    <input class="form-check-input" type="checkbox" id="mantener_remitente">
-                                                    <label class="form-check-label small" for="mantener_remitente"></label>
-                                                </div>
-
-                                                <button type="button" class="btn btn-outline-primary btn-mini" onclick="guardarRemitente()">
-                                                    Guardar remitente
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <div class="mb-2 autocomplete-wrap">
-                                            <label class="form-label">Nombre completo</label>
-                                            <input
-                                                type="text"
-                                                class="form-control form-control-sm"
-                                                name="remitente"
-                                                id="remitente"
-                                                autocomplete="off"
-                                                maxlength="80"
-                                                required
-                                            >
-                                            <div id="lista_remitentes" class="list-group autocomplete-list"></div>
-                                        </div>
-
-                                        <div class="mb-2">
-                                            <label class="form-label">Correo</label>
-                                            <input
-                                                type="email"
-                                                class="form-control form-control-sm"
-                                                name="correo_remitente"
-                                                id="correo_remitente"
-                                                maxlength="100"
-                                                required
-                                            >
-                                        </div>
-
-                                        <div class="mb-2">
-                                            <label class="form-label">Centro de costo</label>
-                                            <input
-                                                type="text"
-                                                class="form-control form-control-sm"
-                                                name="centro_costo"
-                                                id="centro_costo"
-                                                maxlength="20"
-                                                required
-                                            >
-                                        </div>
-
-                                        <div class="mb-2">
-                                            <label class="form-label">División</label>
-                                            <select class="form-select form-select-sm" name="division" id="division" required>
-                                                <option value="">Seleccionar división</option>
-                                                <option value="DPGP">DPGP</option>
-                                                <option value="DOP">DOP</option>
-                                                <option value="LDB">LDB</option>
-                                                <option value="DL">DL</option>
-                                                <option value="DPP">DPP</option>
-                                            </select>
-                                        </div>
-
-                                        <div class="row g-2">
-                                            <div class="col-6">
-                                                <label class="form-label">Bultos</label>
-                                                <input
-                                                    type="number"
-                                                    class="form-control form-control-sm"
-                                                    name="bultos"
-                                                    id="bultos"
-                                                    min="1"
-                                                    max="9999"
-                                                    required
-                                                >
-                                            </div>
-                                            <div class="col-6">
-                                                <label class="form-label">Kilos</label>
-                                                <input
-                                                    type="number"
-                                                    class="form-control form-control-sm"
-                                                    name="kilos"
-                                                    id="kilos"
-                                                    min="1"
-                                                    max="9999"
-                                                    required
-                                                >
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <div class="bloque-form">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <h6 class="mb-0">Datos del destinatario</h6>
-                                            <button type="button" class="btn btn-outline-primary btn-mini" onclick="guardarDestinatario()">
-                                                Guardar destinatario
-                                            </button>
-                                        </div>
-
-                                        <div class="mb-2 autocomplete-wrap">
-                                            <label class="form-label">Nombre completo</label>
-                                            <input
-                                                type="text"
-                                                class="form-control form-control-sm"
-                                                name="destinatario"
-                                                id="destinatario"
-                                                autocomplete="off"
-                                                maxlength="80"
-                                                required
-                                            >
-                                            <div id="lista_destinatarios" class="list-group autocomplete-list"></div>
-                                        </div>
-
-                                        <div class="mb-2">
-                                            <label class="form-label">RUT destinatario</label>
-                                            <input
-                                                type="text"
-                                                class="form-control form-control-sm"
-                                                name="rut_destinatario"
-                                                id="rut_destinatario"
-                                                maxlength="10"
-                                                inputmode="text"
-                                                placeholder="0 si no fue informado"
-                                                required
-                                            >
-                                        </div>
-
-                                        <div class="mb-2">
-                                            <label class="form-label">Dirección</label>
-                                            <input
-                                                type="text"
-                                                class="form-control form-control-sm"
-                                                name="direccion"
-                                                id="direccion"
-                                                maxlength="120"
-                                                required
-                                            >
-                                        </div>
-
-                                        <div class="row g-2 mb-2">
-                                            <div class="col-6 autocomplete-wrap">
-                                                <label class="form-label">Comuna</label>
-                                                <input
-                                                    type="text"
-                                                    class="form-control form-control-sm"
-                                                    name="comuna"
-                                                    id="comuna"
-                                                    autocomplete="off"
-                                                    maxlength="40"
-                                                    required
-                                                >
-                                                <div id="lista_comunas" class="list-group autocomplete-list"></div>
-                                            </div>
-
-                                            <div class="col-6">
-                                                <label class="form-label">Región</label>
-                                                <input
-                                                    type="text"
-                                                    class="form-control form-control-sm"
-                                                    name="region"
-                                                    id="region"
-                                                    maxlength="40"
-                                                    readonly
-                                                    required
-                                                >
-                                            </div>
-                                        </div>
-
-                                        <div class="mb-2">
-                                            <label class="form-label">Teléfono</label>
-                                            <div class="input-group input-group-sm">
-                                                <span class="input-group-text">+56</span>
-                                                <input
-                                                    type="text"
-                                                    class="form-control"
-                                                    name="telefono_destinatario"
-                                                    id="telefono_destinatario"
-                                                    maxlength="9"
-                                                    inputmode="numeric"
-                                                    placeholder="999999999"
-                                                    required
-                                                >
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="acciones-finales d-flex gap-2 mt-3">
-                                <button class="btn btn-success btn-sm px-4">Guardar envío</button>
-                                <a href="/nuevo_envio" class="btn btn-secondary btn-sm px-4">Cancelar</a>
-                            </div>
-                        </div>
-
-                        <div class="col-xl-4">
-                            <div class="preview-card">
-                                <div class="preview-title">Previsualización</div>
-
-                                <div class="starken-label">
-                                    <div class="label-top">
-                                        <div class="label-logo">starken</div>
-                                        <div class="label-barcode-wrap">
-                                            <div class="fake-barcode"></div>
-                                            <div class="barcode-number">7001234567890</div>
-                                        </div>
-                                    </div>
-
-                                    <div class="label-inline-top">
-                                        <div class="inline-block">
-                                            <div class="label-caption">Tipo de envío</div>
-                                            <div class="label-value" id="preview_tipo_envio">DOMICILIO</div>
-                                        </div>
-
-                                        <div class="inline-block" id="preview_agencia_box" style="display: none;">
-                                            <div class="label-caption">Código de agencia</div>
-                                            <div class="label-value" id="preview_codigo_agencia"></div>
-                                        </div>
-                                    </div>
-
-                                    <div class="label-section compact-section">
-                                        <div class="label-caption">Remitente</div>
-                                        <div class="label-value" id="preview_remitente">Nombre remitente</div>
-                                        <div class="label-text">Centro de costo: <span id="preview_centro_costo">-</span></div>
-                                        <div class="label-text">Correo: <span id="preview_correo">-</span></div>
-                                        <div class="label-text">División: <span id="preview_division">-</span></div>
-                                    </div>
-
-                                    <div class="label-section compact-section">
-                                        <div class="label-caption">Destinatario</div>
-                                        <div class="label-value" id="preview_destinatario">Nombre destinatario</div>
-                                        <div class="label-text">RUT: <span id="preview_rut">-</span></div>
-                                        <div class="label-text">Dirección: <span id="preview_direccion">-</span></div>
-                                        <div class="label-text">Comuna: <span id="preview_comuna">-</span></div>
-                                        <div class="label-text">Región: <span id="preview_region">-</span></div>
-                                        <div class="label-text">Teléfono: <span id="preview_telefono">-</span></div>
-                                    </div>
-
-                                    <div class="label-bottom compact-bottom">
-                                        <div>
-                                            <div class="label-caption">N° de cuenta</div>
-                                            <div class="label-value">42315-7</div>
-                                        </div>
-                                        <div>
-                                            <div class="label-caption">Bultos</div>
-                                            <div class="label-value" id="preview_bultos">0</div>
-                                        </div>
-                                        <div>
-                                            <div class="label-caption">Kilos</div>
-                                            <div class="label-value" id="preview_kilos">0</div>
-                                        </div>
-                                    </div>
-
-                                    <div class="label-warning">PREVISUALIZACIÓN DE LA ETIQUETA</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </form>
+                </section>
             </div>
-        </div>
-    </div>
+
+            <div class="acciones-finales">
+                <a href="/nuevo_envio" class="btn btn-outline-secondary btn-sm px-4">Limpiar</a>
+                <button class="btn btn-success btn-sm px-4">Guardar envio</button>
+            </div>
+        </section>
+
+        <aside class="preview-panel">
+            <div class="preview-head">
+                <div>
+                    <span>Previsualizacion</span>
+                    <h2>Etiqueta referencial</h2>
+                </div>
+                <strong>Starken</strong>
+            </div>
+
+            <div class="starken-label">
+                <div class="label-top">
+                    <div class="label-logo">starken</div>
+                    <div class="label-barcode-wrap">
+                        <div class="fake-barcode"></div>
+                        <div class="barcode-number">7001234567890</div>
+                    </div>
+                </div>
+
+                <div class="label-inline-top">
+                    <div class="inline-block">
+                        <div class="label-caption">Tipo de envio</div>
+                        <div class="label-value" id="preview_tipo_envio">DOMICILIO</div>
+                    </div>
+
+                    <div class="inline-block" id="preview_agencia_box" style="display: none;">
+                        <div class="label-caption">Codigo de agencia</div>
+                        <div class="label-value" id="preview_codigo_agencia"></div>
+                    </div>
+                </div>
+
+                <div class="label-section compact-section">
+                    <div class="label-caption">Remitente</div>
+                    <div class="label-value" id="preview_remitente">Nombre remitente</div>
+                    <div class="label-text">Centro de costo: <span id="preview_centro_costo">-</span></div>
+                    <div class="label-text">Correo: <span id="preview_correo">-</span></div>
+                    <div class="label-text">Division: <span id="preview_division">-</span></div>
+                </div>
+
+                <div class="label-section compact-section">
+                    <div class="label-caption">Destinatario</div>
+                    <div class="label-value" id="preview_destinatario">Nombre destinatario</div>
+                    <div class="label-text">RUT: <span id="preview_rut">-</span></div>
+                    <div class="label-text">Direccion: <span id="preview_direccion">-</span></div>
+                    <div class="label-text">Comuna: <span id="preview_comuna">-</span></div>
+                    <div class="label-text">Region: <span id="preview_region">-</span></div>
+                    <div class="label-text">Telefono: <span id="preview_telefono">-</span></div>
+                </div>
+
+                <div class="label-bottom compact-bottom">
+                    <div>
+                        <div class="label-caption">Nro. de cuenta</div>
+                        <div class="label-value">42315-7</div>
+                    </div>
+                    <div>
+                        <div class="label-caption">Bultos</div>
+                        <div class="label-value" id="preview_bultos">0</div>
+                    </div>
+                    <div>
+                        <div class="label-caption">Kilos</div>
+                        <div class="label-value" id="preview_kilos">0</div>
+                    </div>
+                </div>
+
+                <div class="label-warning">PREVISUALIZACION DE LA ETIQUETA</div>
+            </div>
+        </aside>
+    </form>
 
     <script src="{{ url_for('static', filename='js/nuevo_envio.js') }}"></script>
 </div>
