@@ -12,6 +12,7 @@ from sqlalchemy import func
 from config.settings import CLAVE_ELIMINACION_HISTORICO
 from database.conexion import SessionLocal
 from database.modelos import Envio
+from services.estado_sistema import obtener_estado_sistema
 
 
 logger = logging.getLogger(__name__)
@@ -171,6 +172,11 @@ def registrar_rutas_paginas(app):
     @app.route("/")
     def inicio():
         return render_template("index.html")
+
+    @app.route("/estado_sistema")
+    def estado_sistema():
+        estado = obtener_estado_sistema()
+        return render_template("estado_sistema.html", estado=estado)
 
     @app.route("/envios")
     def ver_envio():

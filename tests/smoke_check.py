@@ -19,7 +19,7 @@ def extraer_csrf(html):
 def main():
     client = app.test_client()
 
-    for ruta in ["/", "/nuevo_envio", "/envios", "/en_proceso", "/historico"]:
+    for ruta in ["/", "/nuevo_envio", "/envios", "/en_proceso", "/historico", "/estado_sistema"]:
         response = client.get(ruta)
         print(f"{ruta}: {response.status_code}")
         if response.status_code != 200:

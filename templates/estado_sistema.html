@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Estado del sistema{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/estado_sistema.css') }}">
+
+<div class="estado-page">
+    <div class="estado-header">
+        <div>
+            <h1>Estado del sistema</h1>
+            <p>Revision operativa al {{ estado.fecha_revision.strftime("%d/%m/%Y %H:%M") }}</p>
+        </div>
+        <span class="estado-badge {% if estado.general_ok %}ok{% else %}alerta{% endif %}">
+            {% if estado.general_ok %}Operativo{% else %}Revisar{% endif %}
+        </span>
+    </div>
+
+    <section class="estado-grid">
+        <article class="estado-card">
+            <div class="estado-card-top">
+                <span>Base de datos</span>
+                <strong class="{% if estado.db.ok %}txt-ok{% else %}txt-error{% endif %}">
+                    {% if estado.db.ok %}OK{% else %}Error{% endif %}
+                </strong>
+            </div>
+            <p>{{ estado.db.detalle }}</p>
+        </article>
+
+        <article class="estado-card">
+            <div class="estado-card-top">
+                <span>Correo Starken</span>
+                <strong class="{% if estado.correo.ok %}txt-ok{% else %}txt-error{% endif %}">
+                    {% if estado.correo.ok %}OK{% else %}Falta configurar{% endif %}
+                </strong>
+            </div>
+            <p>{{ estado.correo.detalle }}</p>
+            <small>Destino: {{ estado.correo.destino }}</small>
+        </article>
+
+        <article class="estado-card">
+            <div class="estado-card-top">
+                <span>Respaldos lotes</span>
+                <strong class="{% if estado.respaldos_lotes.ok %}txt-ok{% else %}txt-error{% endif %}">
+                    {% if estado.respaldos_lotes.ok %}OK{% else %}Error{% endif %}
+                </strong>
+            </div>
+            <p>{{ estado.respaldos_lotes.detalle }}</p>
+            <small>{{ estado.respaldos_lotes.ruta }}</small>
+        </article>
+
+        <article class="estado-card">
+            <div class="estado-card-top">
+                <span>Logs</span>
+                <strong class="{% if estado.logs.ok %}txt-ok{% else %}txt-error{% endif %}">
+                    {% if estado.logs.ok %}OK{% else %}Error{% endif %}
+                </strong>
+            </div>
+            <p>{{ estado.logs.detalle }}</p>
+            <small>{{ estado.logs.ruta }}</small>
+        </article>
+    </section>
+
+    <section class="metricas-grid">
+        <article>
+            <span>Pendientes</span>
+            <strong>{{ estado.conteos.get("pendientes", 0) }}</strong>
+        </article>
+        <article>
+            <span>En proceso</span>
+            <strong>{{ estado.conteos.get("en_proceso", 0) }}</strong>
+        </article>
+        <article>
+            <span>Historico</span>
+            <strong>{{ estado.conteos.get("historico", 0) }}</strong>
+        </article>
+        <article>
+            <span>Total envios</span>
+            <strong>{{ estado.conteos.get("envios_total", 0) }}</strong>
+        </article>
+    </section>
+
+    <section class="detalle-grid">
+        <div class="detalle-panel">
+            <h2>Catalogos</h2>
+            <dl>
+                <div>
+                    <dt>Remitentes</dt>
+                    <dd>{{ estado.conteos.get("remitentes", 0) }}</dd>
+                </div>
+                <div>
+                    <dt>Destinatarios</dt>
+                    <dd>{{ estado.conteos.get("destinatarios", 0) }}</dd>
+                </div>
+                <div>
+                    <dt>Comunas</dt>
+                    <dd>{{ estado.conteos.get("comunas", 0) }}</dd>
+                </div>
+            </dl>
+        </div>
+
+        <div class="detalle-panel">
+            <h2>Ultima actividad</h2>
+            <dl>
+                <div>
+                    <dt>Ultimo lote</dt>
+                    <dd>{{ estado.conteos.get("ultimo_lote", "Sin lotes registrados") }}</dd>
+                </div>
+                <div>
+                    <dt>Fecha lote</dt>
+                    <dd>
+                        {% if estado.conteos.get("ultimo_lote_fecha") %}
+                            {{ estado.conteos.get("ultimo_lote_fecha").strftime("%d/%m/%Y %H:%M") }}
+                        {% else %}
+                            Sin fecha
+                        {% endif %}
+                    </dd>
+                </div>
+                <div>
+                    <dt>Ultimo envio</dt>
+                    <dd>
+                        {% if estado.conteos.get("ultimo_envio_fecha") %}
+                            {{ estado.conteos.get("ultimo_envio_fecha").strftime("%d/%m/%Y %H:%M") }}
+                        {% else %}
+                            Sin envios
+                        {% endif %}
+                    </dd>
+                </div>
+            </dl>
+        </div>
+    </section>
+
+    <section class="log-panel">
+        <div class="log-panel-head">
+            <h2>Ultimo registro tecnico</h2>
+            {% if estado.ultimo_log.fecha_modificacion %}
+                <span>{{ estado.ultimo_log.fecha_modificacion.strftime("%d/%m/%Y %H:%M") }}</span>
+            {% endif %}
+        </div>
+        <p>{{ estado.ultimo_log.ultima_linea }}</p>
+        <small>{{ estado.ultimo_log.ruta }}</small>
+    </section>
+</div>
+{% endblock %}
