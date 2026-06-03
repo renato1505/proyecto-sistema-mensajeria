@@ -1,11 +1,19 @@
+import io
 import logging
 from datetime import datetime
 
 import pandas as pd
-from flask import flash, redirect, render_template, request
+from flask import flash, redirect, render_template, request, send_file
 
 from database.conexion import SessionLocal
 from database.modelos import Envio
+from services.carga_masiva import (
+    construir_envio_desde_carga,
+    eliminar_carga_temporal,
+    generar_plantilla_carga_masiva,
+    leer_carga_temporal,
+    validar_archivo_carga_masiva,
+)
 from services.correo import (
     correo_starken_configurado,
     enviar_archivo_starken,
@@ -140,6 +148,75 @@ def registrar_rutas_envios(app):
 
         return render_template("nuevo_envio.html")
 
+    @app.route("/plantilla_carga_masiva")
+    def descargar_plantilla_carga_masiva():
+        db = SessionLocal()
+        try:
+            wb = generar_plantilla_carga_masiva(db)
+            output = io.BytesIO()
+            wb.save(output)
+            output.seek(0)
+            return send_file(
+                output,
+                as_attachment=True,
+                download_name="plantilla_carga_masiva_mensajeria.xlsx",
+                mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        finally:
+            db.close()
+
+    @app.route("/carga_masiva", methods=["GET", "POST"])
+    def carga_masiva():
+        resultado = None
+
+        if request.method == "POST":
+            archivo = request.files.get("archivo")
+
+            if not archivo or not archivo.filename:
+                flash("Debes seleccionar un archivo Excel", "danger")
+                return redirect("/carga_masiva")
+
+            if not archivo.filename.lower().endswith((".xlsx", ".xls")):
+                flash("El archivo debe ser Excel (.xlsx o .xls)", "danger")
+                return redirect("/carga_masiva")
+
+            db = SessionLocal()
+            try:
+                resultado = validar_archivo_carga_masiva(archivo, db)
+            except Exception:
+                logger.exception("No se pudo validar archivo de carga masiva")
+                flash("No se pudo leer el archivo. Revisa que uses la plantilla oficial.", "danger")
+                return redirect("/carga_masiva")
+            finally:
+                db.close()
+
+        return render_template("carga_masiva.html", resultado=resultado)
+
+    @app.route("/confirmar_carga_masiva", methods=["POST"])
+    def confirmar_carga_masiva():
+        token = request.form.get("token", "").strip()
+        registros = leer_carga_temporal(token)
+
+        if not registros:
+            flash("La carga ya no esta disponible. Vuelve a subir el archivo.", "warning")
+            return redirect("/carga_masiva")
+
+        db = SessionLocal()
+        try:
+            for data in registros:
+                db.add(construir_envio_desde_carga(data))
+            db.commit()
+            eliminar_carga_temporal(token)
+            flash(f"Se cargaron {len(registros)} envios a pendientes", "success")
+            return redirect("/envios")
+        except Exception:
+            db.rollback()
+            logger.exception("No se pudo confirmar carga masiva")
+            flash("No se pudo guardar la carga masiva", "danger")
+            return redirect("/carga_masiva")
+        finally:
+            db.close()
+
     @app.route("/generar_excel", methods=["POST"])
     def generar_excel():
         db = SessionLocal()
@@ -154,6 +231,19 @@ def registrar_rutas_envios(app):
         if not envios_pendientes:
             db.close()
             flash("No hay envios pendientes para generar y enviar", "warning")
+            return redirect("/envios")
+
+        agencias_sin_codigo = [
+            envio for envio in envios_pendientes
+            if envio.e_tipo_envio == "Agencia" and not envio.e_codigo_agencia
+        ]
+
+        if agencias_sin_codigo:
+            db.close()
+            flash(
+                "Hay envios de agencia sin codigo. Editalos antes de generar el lote Starken.",
+                "danger",
+            )
             return redirect("/envios")
 
         if not correo_starken_configurado():

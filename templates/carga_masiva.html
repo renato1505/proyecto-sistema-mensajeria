@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Carga masiva{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/carga_masiva.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="carga-page">
+    <section class="carga-hero">
+        <div>
+            <span class="carga-kicker">Carga por planilla</span>
+            <h1>Carga masiva de envios</h1>
+            <p>Sube pedidos desde una plantilla estandarizada, revisa errores y confirma la carga a pendientes.</p>
+        </div>
+        <a href="/plantilla_carga_masiva" class="btn btn-success btn-sm">Descargar plantilla</a>
+    </section>
+
+    <section class="upload-panel">
+        <div class="upload-copy">
+            <span>Archivo Excel</span>
+            <h2>Validar antes de guardar</h2>
+            <p>La carga no modifica la base de datos hasta que confirmes los registros revisados.</p>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" class="upload-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="file" name="archivo" class="form-control form-control-sm" accept=".xlsx,.xls" required>
+            <button class="btn btn-primary btn-sm">Revisar archivo</button>
+        </form>
+    </section>
+
+    {% if resultado %}
+        {% if resultado.errores_archivo %}
+            <section class="carga-alert error">
+                {% for error in resultado.errores_archivo %}
+                    <div>{{ error }}</div>
+                {% endfor %}
+            </section>
+        {% else %}
+            <section class="carga-metrics">
+                <article>
+                    <span>Filas detectadas</span>
+                    <strong>{{ resultado.resumen.total }}</strong>
+                </article>
+                <article>
+                    <span>Listas</span>
+                    <strong>{{ resultado.resumen.listos }}</strong>
+                </article>
+                <article>
+                    <span>Advertencias</span>
+                    <strong>{{ resultado.resumen.advertencias }}</strong>
+                </article>
+                <article>
+                    <span>Errores</span>
+                    <strong>{{ resultado.resumen.errores }}</strong>
+                </article>
+            </section>
+
+            {% if resultado.resumen.errores %}
+                <section class="carga-alert error">
+                    Corrige las filas con error en el Excel y vuelve a subirlo. No se permite confirmar una carga con datos incompletos.
+                </section>
+            {% elif resultado.resumen.advertencias %}
+                <section class="carga-alert warning">
+                    Hay envios de agencia que quedaran en pendientes sin codigo. Antes de generar el lote Starken, deberas editarlos y completar el codigo.
+                </section>
+            {% else %}
+                <section class="carga-alert ok">
+                    La carga esta lista para guardarse en pendientes.
+                </section>
+            {% endif %}
+
+            <section class="revision-panel">
+                <div class="revision-head">
+                    <div>
+                        <span>Revision</span>
+                        <h2>Detalle por fila</h2>
+                    </div>
+
+                    {% if resultado.token and not resultado.resumen.errores %}
+                        <form method="POST" action="/confirmar_carga_masiva">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="token" value="{{ resultado.token }}">
+                            <button class="btn btn-success btn-sm">Confirmar carga</button>
+                        </form>
+                    {% endif %}
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0 revision-table">
+                        <thead>
+                            <tr>
+                                <th>Fila</th>
+                                <th>Destinatario</th>
+                                <th>Destino</th>
+                                <th>Tipo</th>
+                                <th>Bultos/Kilos</th>
+                                <th>Estado</th>
+                                <th>Detalle</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for fila in resultado.filas %}
+                                <tr>
+                                    <td class="fila-numero">{{ fila.numero }}</td>
+                                    <td>
+                                        <strong>{{ fila.data.destinatario or '-' }}</strong>
+                                        <small>{{ fila.data.rut_destinatario or '-' }}</small>
+                                    </td>
+                                    <td>
+                                        <strong>{{ fila.data.comuna or '-' }}</strong>
+                                        <small>{{ fila.data.region or '-' }}</small>
+                                    </td>
+                                    <td>{{ fila.data.tipo_envio or '-' }}</td>
+                                    <td>{{ fila.data.bultos or '-' }} / {{ fila.data.kilos or '-' }}</td>
+                                    <td>
+                                        <span class="estado-badge {{ fila.estado }}">
+                                            {% if fila.estado == "listo" %}
+                                                Listo
+                                            {% elif fila.estado == "advertencia" %}
+                                                Advertencia
+                                            {% else %}
+                                                Error
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if fila.errores %}
+                                            {% for error in fila.errores %}
+                                                <div class="detalle-error">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                        {% if fila.advertencias %}
+                                            {% for advertencia in fila.advertencias %}
+                                                <div class="detalle-warning">{{ advertencia }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                        {% if not fila.errores and not fila.advertencias %}
+                                            <span class="detalle-ok">Sin observaciones</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}
