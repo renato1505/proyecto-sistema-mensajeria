@@ -280,6 +280,21 @@ def registrar_rutas_paginas(app):
         for lote in lotes:
             lote["cantidad_envios"] = len(lote["envios"])
             resultados = [e.e_resultado_of for e in lote["envios"] if e.e_resultado_of]
+            lote["total_bultos"] = sum(e.e_bultos or 0 for e in lote["envios"])
+            lote["total_kilos"] = sum(e.e_kilos or 0 for e in lote["envios"])
+            lote["total_ok"] = sum(1 for e in lote["envios"] if e.e_resultado_of == "OK")
+            lote["total_error"] = sum(1 for e in lote["envios"] if e.e_resultado_of == "ERROR")
+            lote["total_esperando"] = lote["cantidad_envios"] - len(resultados)
+
+            estados_correo = {e.e_estado_correo for e in lote["envios"] if e.e_estado_correo}
+            if "error" in estados_correo:
+                lote["estado_correo"] = "Error correo"
+            elif "enviado" in estados_correo:
+                lote["estado_correo"] = "Correo enviado"
+            elif "pendiente" in estados_correo:
+                lote["estado_correo"] = "Correo pendiente"
+            else:
+                lote["estado_correo"] = "Sin registro"
 
             if not resultados:
                 lote["estado_general"] = "Esperando OF"
@@ -293,8 +308,16 @@ def registrar_rutas_paginas(app):
             else:
                 lote["estado_general"] = "Procesado parcialmente"
 
+        resumen = {
+            "lotes": len(lotes),
+            "envios": sum(lote["cantidad_envios"] for lote in lotes),
+            "bultos": sum(lote["total_bultos"] for lote in lotes),
+            "esperando_of": sum(1 for lote in lotes if lote["estado_general"] == "Esperando OF"),
+            "correo_error": sum(1 for lote in lotes if lote["estado_correo"] == "Error correo"),
+        }
+
         db.close()
-        return render_template("en_proceso.html", lotes=lotes)
+        return render_template("en_proceso.html", lotes=lotes, resumen=resumen)
 
     @app.route("/historico")
     def ver_historico():

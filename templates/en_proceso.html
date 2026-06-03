@@ -2,153 +2,179 @@
 
 {% block title %}En proceso{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/en_proceso.css') }}">
+{% endblock %}
+
 {% block content %}
-<div class="page-en-proceso">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/en_proceso.css') }}">
-
-    <div class="container mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <div>
-                <h2 class="titulo-en-proceso">En proceso</h2>
-                <p class="subtitulo-en-proceso">Exportaciones enviadas a Starken y esperando respuesta OF</p>
-            </div>
+<div class="proceso-page">
+    <section class="proceso-hero">
+        <div>
+            <span class="proceso-kicker">Seguimiento Starken</span>
+            <h1>Lotes en proceso</h1>
+            <p>Controla los lotes enviados, carga las respuestas OF y devuelve a pendientes cuando corresponda.</p>
         </div>
+    </section>
 
-        <div class="tabla-wrap">
-            <table class="table table-bordered align-middle mb-0">
-                <thead>
-                    <tr>
-                        <th style="width: 50px;"></th>
-                        <th>Fecha exportación</th>
-                        <th>Lote</th>
-                        <th>Cantidad envíos</th>
-                        <th>Estado general</th>
-                        <th style="width: 100px;">Acción</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for lote in lotes %}
-                    <tr class="fila-principal">
-                        <td class="text-center">
-                            <button type="button"
-                                    class="btn-toggle-detalle"
-                                    onclick="toggleDetalle('detalle-{{ loop.index }}')">
-                                ▼
-                            </button>
-                        </td>
+    <section class="proceso-metrics">
+        <article>
+            <span>Lotes activos</span>
+            <strong>{{ resumen.lotes }}</strong>
+        </article>
+        <article>
+            <span>Envios en proceso</span>
+            <strong>{{ resumen.envios }}</strong>
+        </article>
+        <article>
+            <span>Bultos</span>
+            <strong>{{ resumen.bultos }}</strong>
+        </article>
+        <article>
+            <span>Esperando OF</span>
+            <strong>{{ resumen.esperando_of }}</strong>
+        </article>
+    </section>
 
-                        <td>
-                            {% if lote.fecha_exportacion %}
-                                {{ lote.fecha_exportacion.strftime('%d/%m/%Y %H:%M') }}
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
+    {% if resumen.correo_error %}
+        <section class="proceso-alert">
+            Hay {{ resumen.correo_error }} lote(s) con error de correo. Revisa el estado del sistema y el log tecnico.
+        </section>
+    {% endif %}
 
-                        <td>{{ lote.lote }}</td>
-                        <td>{{ lote.cantidad_envios }}</td>
-                        <td>
-                            <span class="badge-estado
-                                {% if lote.estado_general == 'Esperando OF' %}estado-esperando
-                                {% elif lote.estado_general == 'Completado' %}estado-ok
-                                {% else %}estado-parcial{% endif %}">
+    {% if not lotes %}
+        <section class="proceso-empty">
+            <h2>Sin lotes en proceso</h2>
+            <p>No hay archivos Starken esperando respuesta OF. Cuando generes un CSV desde Pendientes, el lote aparecera aqui.</p>
+            <a href="/envios" class="btn btn-success">Ir a pendientes</a>
+        </section>
+    {% else %}
+        <section class="lotes-stack">
+            {% for lote in lotes %}
+                <article class="lote-card">
+                    <div class="lote-head">
+                        <div>
+                            <span class="lote-label">Lote</span>
+                            <h2>{{ lote.lote }}</h2>
+                            <p>
+                                {% if lote.fecha_exportacion %}
+                                    Generado el {{ lote.fecha_exportacion.strftime('%d/%m/%Y %H:%M') }}
+                                {% else %}
+                                    Sin fecha de exportacion
+                                {% endif %}
+                            </p>
+                        </div>
+
+                        <div class="lote-badges">
+                            <span class="estado-lote
+                                {% if lote.estado_general == 'Esperando OF' %}esperando
+                                {% elif lote.estado_general == 'Completado' %}ok
+                                {% elif lote.estado_general == 'Con errores' %}error
+                                {% else %}parcial{% endif %}">
                                 {{ lote.estado_general }}
                             </span>
-                        </td>
+                            <span class="correo-badge
+                                {% if lote.estado_correo == 'Correo enviado' %}correo-ok
+                                {% elif lote.estado_correo == 'Error correo' %}correo-error
+                                {% else %}correo-pendiente{% endif %}">
+                                {{ lote.estado_correo }}
+                            </span>
+                        </div>
+                    </div>
 
-                        <td class="text-center">
-                            <button type="button"
-                                    class="btn btn-outline-primary btn-sm"
-                                    onclick="toggleDetalle('detalle-{{ loop.index }}')">
-                                Ver
+                    <div class="lote-summary">
+                        <div>
+                            <span>Envios</span>
+                            <strong>{{ lote.cantidad_envios }}</strong>
+                        </div>
+                        <div>
+                            <span>Bultos</span>
+                            <strong>{{ lote.total_bultos }}</strong>
+                        </div>
+                        <div>
+                            <span>Kilos</span>
+                            <strong>{{ lote.total_kilos }}</strong>
+                        </div>
+                        <div>
+                            <span>OK / Error / Esperando</span>
+                            <strong>{{ lote.total_ok }} / {{ lote.total_error }} / {{ lote.total_esperando }}</strong>
+                        </div>
+                    </div>
+
+                    <div class="lote-actions">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="toggleDetalle('detalle-{{ loop.index }}')">
+                            Ver detalle
+                        </button>
+
+                        <form action="/cargar_of/{{ lote.lote }}" method="POST" enctype="multipart/form-data" class="form-cargar-of">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="file" name="archivo_of" class="form-control form-control-sm" accept=".xlsx,.xls" required>
+                            <button type="submit" class="btn btn-success btn-sm">
+                                Cargar OF
                             </button>
-                        </td>
-                    </tr>
+                        </form>
 
-                    <tr id="detalle-{{ loop.index }}" class="fila-detalle d-none">
-                        <td colspan="6">
-                            <div class="detalle-box">
-                                <div class="detalle-top">
-                                    <div>
-                                        <h6 class="detalle-titulo mb-1">Detalle del lote</h6>
-                                        <p class="detalle-subtitulo mb-0">
-                                            {{ lote.lote }} · {{ lote.cantidad_envios }} envío(s)
-                                        </p>
-                                    </div>
+                        <form action="/cancelar_lote/{{ lote.lote }}" method="POST"
+                              onsubmit="return confirm('Seguro que deseas cancelar este lote? Los envios volveran a pendientes.');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                Cancelar lote
+                            </button>
+                        </form>
+                    </div>
 
-                                    <div class="acciones-lote">
-                                        <form action="/cargar_of/{{ lote.lote }}" method="POST" enctype="multipart/form-data" class="form-cargar-of">
-                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                            <input type="file" name="archivo_of" class="form-control form-control-sm" accept=".xlsx,.xls" required>
-                                            <button type="submit" class="btn btn-success btn-sm">
-                                                Cargar archivo OF
-                                            </button>
-                                        </form>
-
-                                        <form action="/cancelar_lote/{{ lote.lote }}" method="POST"
-                                              onsubmit="return confirm('¿Seguro que deseas cancelar este lote? Los envíos volverán a pendientes.');">
-                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                            <button type="submit" class="btn btn-outline-danger btn-sm">
-                                                Cancelar lote
-                                            </button>
-                                        </form>
-                                    </div>
-                                </div>
-
-                                <div class="tabla-interna-wrap">
-                                    <table class="table table-sm table-bordered align-middle mb-0 tabla-interna">
-                                        <thead>
-                                            <tr>
-                                                <th>Fila Excel</th>
-                                                <th>Destinatario</th>
-                                                <th>Tipo envío</th>
-                                                <th>Código agencia</th>
-                                                <th>Orden de flete</th>
-                                                <th>Resultado</th>
-                                                <th>Detalle</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for envio in lote.envios %}
-                                            <tr>
-                                                <td>{{ envio.e_fila_excel or '-' }}</td>
-                                                <td>{{ envio.e_destinatario }}</td>
-                                                <td>{{ envio.e_tipo_envio }}</td>
-                                                <td>
-                                                    {% if envio.e_tipo_envio == "Agencia" %}
-                                                        {{ envio.e_codigo_agencia }}
-                                                    {% else %}
-                                                        No aplica
-                                                    {% endif %}
-                                                </td>
-                                                <td>{{ envio.e_orden_flete if envio.e_orden_flete else 'Pendiente' }}</td>
-                                                <td>
-                                                    {% if envio.e_resultado_of %}
-                                                        {{ envio.e_resultado_of }}
-                                                    {% else %}
-                                                        Esperando
-                                                    {% endif %}
-                                                </td>
-                                                <td>{{ envio.e_detalle_of if envio.e_detalle_of else '-' }}</td>
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-
-                    {% if not lotes %}
-                    <tr>
-                        <td colspan="6" class="text-center py-4">No hay lotes en proceso.</td>
-                    </tr>
-                    {% endif %}
-                </tbody>
-            </table>
-        </div>
-    </div>
+                    <div id="detalle-{{ loop.index }}" class="lote-detail d-none">
+                        <div class="table-responsive">
+                            <table class="table align-middle mb-0 lote-table">
+                                <thead>
+                                    <tr>
+                                        <th>Fila</th>
+                                        <th>Destinatario</th>
+                                        <th>Entrega</th>
+                                        <th>Orden de flete</th>
+                                        <th>Resultado</th>
+                                        <th>Detalle</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for envio in lote.envios %}
+                                    <tr>
+                                        <td class="number-cell">{{ envio.e_fila_excel or '-' }}</td>
+                                        <td>
+                                            <strong>{{ envio.e_destinatario }}</strong>
+                                            <small>{{ envio.e_comuna }} · {{ envio.e_direccion }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="delivery-badge {% if envio.e_tipo_envio == 'Agencia' %}agencia{% else %}domicilio{% endif %}">
+                                                {{ envio.e_tipo_envio }}
+                                            </span>
+                                            {% if envio.e_tipo_envio == "Agencia" %}
+                                                <small>Codigo {{ envio.e_codigo_agencia }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="of-badge">
+                                                {{ envio.e_orden_flete if envio.e_orden_flete else 'Pendiente' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="resultado-badge
+                                                {% if envio.e_resultado_of == 'OK' %}ok
+                                                {% elif envio.e_resultado_of == 'ERROR' %}error
+                                                {% else %}esperando{% endif %}">
+                                                {{ envio.e_resultado_of if envio.e_resultado_of else 'Esperando' }}
+                                            </span>
+                                        </td>
+                                        <td>{{ envio.e_detalle_of if envio.e_detalle_of else '-' }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </article>
+            {% endfor %}
+        </section>
+    {% endif %}
 </div>
 
 <script>
