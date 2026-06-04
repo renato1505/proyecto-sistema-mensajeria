@@ -1,4 +1,4 @@
-import json
+﻿import json
 import re
 import unicodedata
 import uuid
@@ -77,18 +77,6 @@ MAPA_COLUMNAS = {
 }
 
 
-def _normalizar_columna(valor):
-    texto = str(valor or "").strip().lower()
-    texto = (
-        texto.replace("á", "a")
-        .replace("é", "e")
-        .replace("í", "i")
-        .replace("ó", "o")
-        .replace("ú", "u")
-        .replace("ñ", "n")
-    )
-    texto = re.sub(r"\s+", " ", texto)
-    return texto
 
 
 def _normalizar_columna(valor):
