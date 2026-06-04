@@ -142,9 +142,90 @@ a {
     padding-bottom: 36px;
 }
 
-.alert {
+.app-alerts {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.app-alert {
+    position: relative;
+    display: grid;
+    grid-template-columns: 34px 1fr auto;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left-width: 4px;
     border-radius: 8px;
-    border-width: 1px;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+
+.app-alert-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 0.9rem;
+    font-weight: 900;
+}
+
+.app-alert-body strong {
+    display: block;
+    color: var(--text);
+    font-size: 0.9rem;
+    line-height: 1.2;
+}
+
+.app-alert-body p {
+    margin: 3px 0 0;
+    color: var(--muted-strong);
+    font-size: 0.9rem;
+    line-height: 1.35;
+}
+
+.app-alert .btn-close {
+    margin-top: 2px;
+}
+
+.app-alert-success {
+    border-left-color: var(--brand-green);
+}
+
+.app-alert-success .app-alert-icon {
+    color: var(--brand-green-dark);
+    background: rgba(22, 155, 77, 0.1);
+}
+
+.app-alert-danger {
+    border-left-color: var(--brand-red);
+}
+
+.app-alert-danger .app-alert-icon {
+    color: #842029;
+    background: #f8d7da;
+}
+
+.app-alert-warning {
+    border-left-color: var(--brand-gold);
+}
+
+.app-alert-warning .app-alert-icon {
+    color: #92400e;
+    background: #fef3c7;
+}
+
+.app-alert-info {
+    border-left-color: #64748b;
+}
+
+.app-alert-info .app-alert-icon {
+    color: #334155;
+    background: #eef2f7;
 }
 
 .alert-auto-hide {

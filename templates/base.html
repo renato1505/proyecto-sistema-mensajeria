@@ -49,12 +49,38 @@
     <main class="app-main container">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
+                <div class="app-alerts" aria-live="polite">
+                    {% for category, message in messages %}
+                    <div class="alert app-alert app-alert-{{ category }} alert-dismissible fade show" role="alert" data-alert-category="{{ category }}">
+                        <span class="app-alert-icon" aria-hidden="true">
+                            {% if category == "success" %}
+                                ✓
+                            {% elif category == "danger" %}
+                                !
+                            {% elif category == "warning" %}
+                                !
+                            {% else %}
+                                i
+                            {% endif %}
+                        </span>
+                        <div class="app-alert-body">
+                            <strong>
+                                {% if category == "success" %}
+                                    Operacion completada
+                                {% elif category == "danger" %}
+                                    Requiere atencion
+                                {% elif category == "warning" %}
+                                    Revision necesaria
+                                {% else %}
+                                    Informacion
+                                {% endif %}
+                            </strong>
+                            <p>{{ message }}</p>
+                        </div>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
-                {% endfor %}
+                    {% endfor %}
+                </div>
             {% endif %}
         {% endwith %}
 
@@ -65,9 +91,12 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            const alerts = document.querySelectorAll(".alert");
+            const alerts = document.querySelectorAll(".app-alert");
 
             alerts.forEach(function (alertElement) {
+                const category = alertElement.dataset.alertCategory;
+                const delay = (category === "danger" || category === "warning") ? 5000 : 3000;
+
                 alertElement.classList.add("alert-auto-hide");
 
                 setTimeout(function () {
