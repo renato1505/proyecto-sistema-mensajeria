@@ -186,29 +186,49 @@
                                                         {% endfor %}
                                                     </select>
                                                 </div>
-                                                <div>
+                                                <div class="autocomplete-wrap">
                                                     <label class="form-label">Destinatario</label>
-                                                    <input class="form-control form-control-sm" name="filas-{{ idx }}-destinatario" value="{{ fila.data.destinatario }}">
+                                                    <input
+                                                        class="form-control form-control-sm"
+                                                        id="carga_destinatario_{{ idx }}"
+                                                        name="filas-{{ idx }}-destinatario"
+                                                        value="{{ fila.data.destinatario }}"
+                                                        autocomplete="off"
+                                                        data-autocomplete="destinatarios"
+                                                        data-rut-target="#carga_rut_{{ idx }}"
+                                                        data-direccion-target="#carga_direccion_{{ idx }}"
+                                                        data-comuna-target="#carga_comuna_{{ idx }}"
+                                                        data-region-target="#carga_region_{{ idx }}"
+                                                        data-telefono-target="#carga_telefono_{{ idx }}">
+                                                    <div class="list-group autocomplete-list"></div>
                                                 </div>
                                                 <div>
                                                     <label class="form-label">RUT</label>
-                                                    <input class="form-control form-control-sm" name="filas-{{ idx }}-rut_destinatario" value="{{ fila.data.rut_destinatario }}">
+                                                    <input class="form-control form-control-sm" id="carga_rut_{{ idx }}" name="filas-{{ idx }}-rut_destinatario" value="{{ fila.data.rut_destinatario }}">
                                                 </div>
                                                 <div class="span-2">
                                                     <label class="form-label">Direccion</label>
-                                                    <input class="form-control form-control-sm" name="filas-{{ idx }}-direccion" value="{{ fila.data.direccion }}">
+                                                    <input class="form-control form-control-sm" id="carga_direccion_{{ idx }}" name="filas-{{ idx }}-direccion" value="{{ fila.data.direccion }}">
                                                 </div>
                                                 <div>
-                                                    <label class="form-label">Region</label>
-                                                    <input class="form-control form-control-sm" name="filas-{{ idx }}-region" value="{{ fila.data.region }}">
+                                                    <label class="form-label">Region automatica</label>
+                                                    <input class="form-control form-control-sm" id="carga_region_{{ idx }}" name="filas-{{ idx }}-region" value="{{ fila.data.region }}" readonly>
                                                 </div>
-                                                <div>
+                                                <div class="autocomplete-wrap">
                                                     <label class="form-label">Comuna</label>
-                                                    <input class="form-control form-control-sm" name="filas-{{ idx }}-comuna" value="{{ fila.data.comuna }}">
+                                                    <input
+                                                        class="form-control form-control-sm"
+                                                        id="carga_comuna_{{ idx }}"
+                                                        name="filas-{{ idx }}-comuna"
+                                                        value="{{ fila.data.comuna }}"
+                                                        autocomplete="off"
+                                                        data-autocomplete="comunas"
+                                                        data-region-target="#carga_region_{{ idx }}">
+                                                    <div class="list-group autocomplete-list"></div>
                                                 </div>
                                                 <div>
                                                     <label class="form-label">Telefono</label>
-                                                    <input class="form-control form-control-sm" name="filas-{{ idx }}-telefono_destinatario" value="{{ fila.data.telefono_destinatario }}">
+                                                    <input class="form-control form-control-sm" id="carga_telefono_{{ idx }}" name="filas-{{ idx }}-telefono_destinatario" value="{{ fila.data.telefono_destinatario }}">
                                                 </div>
                                                 <div>
                                                     <label class="form-label">Tipo envio</label>
@@ -250,6 +270,7 @@
     {% endif %}
 </div>
 
+<script src="{{ url_for('static', filename='js/autocomplete_operativo.js') }}"></script>
 <script>
 function toggleDetalleCarga(id) {
     const fila = document.getElementById(id);

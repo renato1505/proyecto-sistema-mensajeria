@@ -1,88 +1,190 @@
-.page-editar-envio .container-fluid {
-    max-width: 1480px;
+.editar-page {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
 }
 
-.page-editar-envio .card {
-    margin-bottom: 0;
+.editar-hero,
+.section-panel,
+.acciones-finales {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
 }
 
-.page-editar-envio .card-header {
-    padding: 0.45rem 0.75rem !important;
+.editar-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 18px;
+    padding: 20px;
 }
 
-.page-editar-envio .card-header h5 {
-    font-size: 1rem;
-    margin: 0;
-}
-
-.page-editar-envio .card-body {
-    padding: 0.6rem 0.7rem;
-}
-
-.page-editar-envio form {
-    margin-bottom: 0;
-}
-
-.page-editar-envio .top-row-compact {
-    margin-bottom: 0.55rem !important;
-}
-
-.page-editar-envio .form-label {
+.editar-kicker,
+.section-head span {
+    display: inline-flex;
+    margin-bottom: 7px;
+    color: var(--brand-gold);
     font-size: 0.78rem;
-    margin-bottom: 0.1rem;
-    line-height: 1.1;
+    font-weight: 800;
+    text-transform: uppercase;
 }
 
-.page-editar-envio .form-control,
-.page-editar-envio .form-select {
-    font-size: 0.84rem;
-    padding-top: 0.28rem;
-    padding-bottom: 0.28rem;
-    min-height: calc(1.5em + 0.55rem + 2px);
+.editar-hero h1,
+.section-head h2 {
+    margin: 0;
+    color: var(--text);
+    font-weight: 800;
 }
 
-.page-editar-envio .bloque-form {
-    border: 1px solid #d9dee5;
-    border-radius: 0.5rem;
-    padding: 0.6rem;
-    height: 100%;
-    background: #fff;
+.editar-hero h1 {
+    font-size: 1.65rem;
 }
 
-.page-editar-envio .bloque-form h6 {
-    font-size: 0.92rem;
-    margin-bottom: 0.35rem;
+.editar-hero p {
+    margin: 6px 0 0;
+    color: var(--muted);
+}
+
+.hero-id {
+    min-width: 120px;
+    padding: 12px 14px;
+    text-align: right;
+    background: #fbfcfd;
+    border: 1px solid var(--line-soft);
+    border-radius: 8px;
+}
+
+.hero-id span {
+    display: block;
+    color: var(--muted);
+    font-size: 0.78rem;
     font-weight: 700;
 }
 
-.page-editar-envio .mb-2 {
-    margin-bottom: 0.45rem !important;
+.hero-id strong {
+    display: block;
+    margin-top: 3px;
+    color: var(--text);
+    font-size: 1.25rem;
 }
 
-.page-editar-envio .row.g-2 {
-    --bs-gutter-x: 0.45rem;
-    --bs-gutter-y: 0.45rem;
+.editar-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
 }
 
-.page-editar-envio .row.g-3 {
-    --bs-gutter-x: 0.75rem;
-    --bs-gutter-y: 0.75rem;
+.section-panel {
+    padding: 17px;
 }
 
-.page-editar-envio .acciones-finales {
-    border-top: 1px solid #e3e7ec;
-    padding-top: 0.5rem;
-    margin-top: 0.5rem;
+.section-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 14px;
 }
 
-.page-editar-envio .acciones-finales .btn {
-    padding-top: 0.3rem;
-    padding-bottom: 0.3rem;
+.section-head.compact {
+    align-items: center;
+}
+
+.section-head h2 {
+    font-size: 1.05rem;
+}
+
+.section-head small {
+    color: var(--muted);
     font-size: 0.82rem;
+    font-weight: 700;
 }
 
-@media (max-width: 1400px) {
-    .page-editar-envio .container-fluid {
-        max-width: 100%;
+.envio-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    align-items: end;
+}
+
+.people-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.fields-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.split-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.editar-page .form-label {
+    color: #344054;
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.editar-page .form-control,
+.editar-page .form-select,
+.editar-page .input-group-text {
+    font-size: 0.86rem;
+    min-height: 34px;
+}
+
+.editar-page .form-control[readonly] {
+    background: #f5f7f9;
+    color: var(--muted-strong);
+}
+
+.acciones-finales {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 14px 17px;
+}
+
+@media (max-width: 900px) {
+    .editar-hero,
+    .section-head {
+        flex-direction: column;
+    }
+
+    .hero-id {
+        width: 100%;
+        text-align: left;
+    }
+
+    .envio-grid,
+    .people-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 576px) {
+    .editar-hero,
+    .section-panel {
+        padding: 14px;
+    }
+
+    .split-fields {
+        grid-template-columns: 1fr;
+    }
+
+    .acciones-finales {
+        flex-direction: column-reverse;
+    }
+
+    .acciones-finales .btn {
+        width: 100%;
     }
 }

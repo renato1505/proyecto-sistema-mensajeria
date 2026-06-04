@@ -287,6 +287,24 @@ a {
     box-shadow: 0 0 0 0.2rem rgba(17, 24, 39, 0.08);
 }
 
+.autocomplete-wrap {
+    position: relative;
+}
+
+.autocomplete-list {
+    position: absolute;
+    z-index: 1000;
+    width: 100%;
+    max-height: 230px;
+    overflow-y: auto;
+    border-radius: 8px;
+    box-shadow: var(--shadow-soft);
+}
+
+.autocomplete-list .list-group-item {
+    font-size: 0.86rem;
+}
+
 @media (max-width: 1100px) {
     .app-header-inner {
         grid-template-columns: 1fr;
