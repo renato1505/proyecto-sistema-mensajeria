@@ -1,5 +1,6 @@
 import json
 import re
+import unicodedata
 import uuid
 from collections import defaultdict
 from numbers import Number
@@ -19,7 +20,7 @@ from utils.validaciones import (
 )
 
 
-COLUMNAS_PLANTILLA = [
+COLUMNAS_PLANTILLA_ANTERIOR = [
     "Remitente",
     "Correo remitente",
     "Centro costo",
@@ -29,6 +30,19 @@ COLUMNAS_PLANTILLA = [
     "Direccion",
     "Region",
     "Comuna",
+    "Telefono",
+    "Tipo envio",
+    "Bultos",
+    "Kilos",
+    "Observacion",
+]
+
+COLUMNAS_ENVIOS_PLANTILLA = [
+    "Destinatario",
+    "RUT destinatario",
+    "Direccion",
+    "Comuna",
+    "Region",
     "Telefono",
     "Tipo envio",
     "Bultos",
@@ -77,6 +91,14 @@ def _normalizar_columna(valor):
     return texto
 
 
+def _normalizar_columna(valor):
+    texto = str(valor or "").strip().lower()
+    texto = unicodedata.normalize("NFKD", texto)
+    texto = texto.encode("ascii", "ignore").decode("utf-8")
+    texto = re.sub(r"\s+", " ", texto)
+    return texto
+
+
 def _texto(valor):
     if pd.isna(valor):
         return ""
@@ -113,36 +135,69 @@ def _obtener_catalogo_comunas(db):
 
 
 def generar_plantilla_carga_masiva(db):
-    por_region, _ = _obtener_catalogo_comunas(db)
+    por_region, region_por_comuna = _obtener_catalogo_comunas(db)
     regiones = sorted(por_region)
+    comunas_nombres = sorted(
+        [nombre for nombres in por_region.values() for nombre in nombres],
+        key=_normalizar_columna,
+    )
 
     wb = Workbook()
     ws = wb.active
     ws.title = "Envios"
 
+    title_fill = PatternFill("solid", fgColor="F3F5F7")
     header_fill = PatternFill("solid", fgColor="111827")
     header_font = Font(color="FFFFFF", bold=True)
+    title_font = Font(color="111827", bold=True)
+    column_fills = [
+        "F8FAFC",
+        "F4F7FB",
+        "F8FAFC",
+        "F4F9F6",
+        "F7F9FC",
+        "F8FAFC",
+        "F4F9F6",
+        "F8FAFC",
+        "F4F7FB",
+        "F8FAFC",
+    ]
 
-    for col, titulo in enumerate(COLUMNAS_PLANTILLA, start=1):
-        cell = ws.cell(row=1, column=col, value=titulo)
+    ws.cell(row=1, column=1, value="Datos del remitente").fill = title_fill
+    ws.cell(row=1, column=1).font = title_font
+    campos_remitente = [
+        ("Nombre remitente", "Nombre Apellido"),
+        ("Correo remitente", "correo@loreal.com"),
+        ("Centro costo", "123456"),
+        ("Division", "DPGP"),
+    ]
+    for row, (etiqueta, ejemplo) in enumerate(campos_remitente, start=2):
+        ws.cell(row=row, column=1, value=etiqueta).font = title_font
+        ws.cell(row=row, column=2, value=ejemplo)
+
+    ws.cell(row=7, column=1, value="Datos de los envios").fill = title_fill
+    ws.cell(row=7, column=1).font = title_font
+
+    for col, titulo in enumerate(COLUMNAS_ENVIOS_PLANTILLA, start=1):
+        cell = ws.cell(row=8, column=col, value=titulo)
         cell.fill = header_fill
         cell.font = header_font
         ws.column_dimensions[cell.column_letter].width = max(16, len(titulo) + 4)
 
-    for row in range(2, 302):
+    for row in range(9, 309):
+        ws.cell(row=row, column=2).number_format = "@"
         ws.cell(row=row, column=6).number_format = "@"
-        ws.cell(row=row, column=10).number_format = "@"
+        ws.cell(row=row, column=5, value=f'=IFERROR(VLOOKUP(D{row},Comunas!$A:$B,2,FALSE),"")')
+        for col, color in enumerate(column_fills, start=1):
+            ws.cell(row=row, column=col).fill = PatternFill("solid", fgColor=color)
 
+    comuna_ejemplo = comunas_nombres[0] if comunas_nombres else ""
     ejemplo = [
-        "Nombre Apellido",
-        "correo@loreal.com",
-        "123456",
-        "DPGP",
         "Destinatario Ejemplo",
         "0",
         "Av. Ejemplo 123",
-        regiones[0] if regiones else "",
-        por_region[regiones[0]][0] if regiones and por_region[regiones[0]] else "",
+        comuna_ejemplo,
+        f'=IFERROR(VLOOKUP(D9,Comunas!$A:$B,2,FALSE),"")',
         "912345678",
         "Domicilio",
         1,
@@ -150,7 +205,7 @@ def generar_plantilla_carga_masiva(db):
         "",
     ]
     for col, valor in enumerate(ejemplo, start=1):
-        ws.cell(row=2, column=col, value=valor)
+        ws.cell(row=9, column=col, value=valor)
 
     listas = wb.create_sheet("Listas")
     for row, region in enumerate(regiones, start=1):
@@ -159,37 +214,29 @@ def generar_plantilla_carga_masiva(db):
         listas.cell(row=row, column=2, value=division)
     for row, tipo in enumerate(TIPOS_ENVIO, start=1):
         listas.cell(row=row, column=3, value=tipo)
+    for row, comuna in enumerate(comunas_nombres, start=1):
+        listas.cell(row=row, column=4, value=comuna)
 
-    comunas_ws = wb.create_sheet("Comunas por region")
-    for col, region in enumerate(regiones, start=1):
-        comunas_ws.cell(row=1, column=col, value=region)
-        for row, comuna in enumerate(por_region[region], start=2):
-            comunas_ws.cell(row=row, column=col, value=comuna)
+    comunas_ws = wb.create_sheet("Comunas")
+    for row, comuna in enumerate(comunas_nombres, start=1):
+        comunas_ws.cell(row=row, column=1, value=comuna)
+        comunas_ws.cell(row=row, column=2, value=region_por_comuna[_normalizar_columna(comuna)])
 
-    rango_region = f"Listas!$A$1:$A${max(1, len(regiones))}"
     rango_division = f"Listas!$B$1:$B${len(DIVISIONES)}"
     rango_tipo = f"Listas!$C$1:$C${len(TIPOS_ENVIO)}"
-    dv_region = DataValidation(type="list", formula1=f"={rango_region}", allow_blank=False)
+    rango_comunas = f"Listas!$D$1:$D${max(1, len(comunas_nombres))}"
     dv_division = DataValidation(type="list", formula1=f"={rango_division}", allow_blank=False)
     dv_tipo = DataValidation(type="list", formula1=f"={rango_tipo}", allow_blank=False)
-    formula_comunas = (
-        '=OFFSET(\'Comunas por region\'!$A$2,0,'
-        'MATCH($H2,\'Comunas por region\'!$A$1:$Z$1,0)-1,'
-        'COUNTA(OFFSET(\'Comunas por region\'!$A:$A,0,'
-        'MATCH($H2,\'Comunas por region\'!$A$1:$Z$1,0)-1))-1,1)'
-    )
-    dv_comuna = DataValidation(type="list", formula1=formula_comunas, allow_blank=False)
+    dv_comuna = DataValidation(type="list", formula1=f"={rango_comunas}", allow_blank=False)
 
-    ws.add_data_validation(dv_region)
     ws.add_data_validation(dv_division)
     ws.add_data_validation(dv_tipo)
     ws.add_data_validation(dv_comuna)
-    dv_division.add("D2:D301")
-    dv_region.add("H2:H301")
-    dv_comuna.add("I2:I301")
-    dv_tipo.add("K2:K301")
+    dv_division.add("B5")
+    dv_comuna.add("D9:D308")
+    dv_tipo.add("G9:G308")
 
-    ws.freeze_panes = "A2"
+    ws.freeze_panes = "A9"
     listas.sheet_state = "hidden"
     comunas_ws.sheet_state = "hidden"
     return wb
@@ -209,6 +256,29 @@ def validar_archivo_carga_masiva(archivo, db):
     df = pd.read_excel(archivo, sheet_name="Envios")
     df = _mapear_dataframe(df)
     df = df.dropna(how="all")
+
+    usa_formato_nuevo = "remitente" not in df.columns and "destinatario" not in df.columns
+    datos_remitente = None
+    if usa_formato_nuevo:
+        archivo.seek(0)
+        remitente_df = pd.read_excel(
+            archivo,
+            sheet_name="Envios",
+            header=None,
+            usecols="A:B",
+            nrows=5,
+        )
+        datos_remitente = {
+            "remitente": _texto(remitente_df.iloc[1, 1] if len(remitente_df) > 1 else ""),
+            "correo_remitente": _texto(remitente_df.iloc[2, 1] if len(remitente_df) > 2 else ""),
+            "centro_costo": _texto(remitente_df.iloc[3, 1] if len(remitente_df) > 3 else ""),
+            "division": _texto(remitente_df.iloc[4, 1] if len(remitente_df) > 4 else "").upper(),
+        }
+
+        archivo.seek(0)
+        df = pd.read_excel(archivo, sheet_name="Envios", header=7)
+        df = _mapear_dataframe(df)
+        df = df.dropna(how="all")
 
     if len(df) > MAX_FILAS_CARGA:
         return {
@@ -236,6 +306,11 @@ def validar_archivo_carga_masiva(archivo, db):
     ]
 
     faltantes = [col for col in requeridas if col not in df.columns]
+    if datos_remitente:
+        faltantes = [
+            col for col in faltantes
+            if col not in {"remitente", "correo_remitente", "centro_costo", "division"}
+        ]
     if faltantes:
         return {
             "ok": False,
@@ -247,12 +322,13 @@ def validar_archivo_carga_masiva(archivo, db):
 
     registros = []
     for index, row in df.iterrows():
+        remitente = datos_remitente or {}
         registros.append({
-            "numero": int(index) + 2,
-            "remitente": _texto(row.get("remitente")),
-            "correo_remitente": _texto(row.get("correo_remitente")),
-            "centro_costo": _texto(row.get("centro_costo")),
-            "division": _texto(row.get("division")).upper(),
+            "numero": int(index) + (9 if datos_remitente else 2),
+            "remitente": remitente.get("remitente", _texto(row.get("remitente"))),
+            "correo_remitente": remitente.get("correo_remitente", _texto(row.get("correo_remitente"))),
+            "centro_costo": remitente.get("centro_costo", _texto(row.get("centro_costo"))),
+            "division": remitente.get("division", _texto(row.get("division")).upper()),
             "destinatario": _texto(row.get("destinatario")),
             "rut_destinatario": _texto(row.get("rut_destinatario")),
             "direccion": _texto(row.get("direccion")),
@@ -310,6 +386,11 @@ def validar_registros_carga_masiva(registros, db):
         errores = []
         advertencias = []
 
+        comuna_normalizada = _normalizar_columna(data["comuna"])
+        region_de_comuna = region_por_comuna.get(comuna_normalizada)
+        if region_de_comuna:
+            data["region"] = region_de_comuna
+
         for campo in requeridas:
             if data[campo] in {"", None}:
                 errores.append(f"{campo}: obligatorio")
@@ -336,9 +417,7 @@ def validar_registros_carga_masiva(registros, db):
             errores.append("kilos: debe estar entre 1 y 9999")
 
         region_normalizada = _normalizar_columna(data["region"])
-        comuna_normalizada = _normalizar_columna(data["comuna"])
         region_catalogo = regiones_validas.get(region_normalizada)
-        region_de_comuna = region_por_comuna.get(comuna_normalizada)
 
         if data["region"] and not region_catalogo:
             errores.append("region: no existe en el catalogo")
