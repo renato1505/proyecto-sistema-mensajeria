@@ -13,6 +13,7 @@ from services.carga_masiva import (
     generar_plantilla_carga_masiva,
     leer_carga_temporal,
     validar_archivo_carga_masiva,
+    validar_registros_carga_masiva,
 )
 from services.correo import (
     correo_starken_configurado,
@@ -29,6 +30,25 @@ from utils.validaciones import (
 
 
 logger = logging.getLogger(__name__)
+
+
+CAMPOS_CARGA_MASIVA = [
+    "numero",
+    "remitente",
+    "correo_remitente",
+    "centro_costo",
+    "division",
+    "destinatario",
+    "rut_destinatario",
+    "direccion",
+    "region",
+    "comuna",
+    "telefono_destinatario",
+    "tipo_envio",
+    "bultos",
+    "kilos",
+    "observacion",
+]
 
 
 def _leer_form_envio():
@@ -121,6 +141,19 @@ def _aplicar_data_envio(envio, data, bultos_int, kilos_int):
     envio.e_codigo_agencia = data["codigo_agencia"]
     envio.e_bultos = bultos_int
     envio.e_kilos = kilos_int
+
+
+def _leer_registros_carga_masiva_desde_form():
+    total = int(request.form.get("total_filas", "0") or 0)
+    registros = []
+
+    for index in range(total):
+        registro = {}
+        for campo in CAMPOS_CARGA_MASIVA:
+            registro[campo] = request.form.get(f"filas-{index}-{campo}", "").strip()
+        registros.append(registro)
+
+    return registros
 
 
 def registrar_rutas_envios(app):
@@ -216,6 +249,22 @@ def registrar_rutas_envios(app):
             return redirect("/carga_masiva")
         finally:
             db.close()
+
+    @app.route("/revalidar_carga_masiva", methods=["POST"])
+    def revalidar_carga_masiva():
+        registros = _leer_registros_carga_masiva_desde_form()
+
+        if not registros:
+            flash("No hay filas para revalidar", "warning")
+            return redirect("/carga_masiva")
+
+        db = SessionLocal()
+        try:
+            resultado = validar_registros_carga_masiva(registros, db)
+        finally:
+            db.close()
+
+        return render_template("carga_masiva.html", resultado=resultado)
 
     @app.route("/generar_excel", methods=["POST"])
     def generar_excel():

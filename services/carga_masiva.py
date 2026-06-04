@@ -2,6 +2,7 @@ import json
 import re
 import uuid
 from collections import defaultdict
+from numbers import Number
 from pathlib import Path
 
 import pandas as pd
@@ -79,7 +80,7 @@ def _normalizar_columna(valor):
 def _texto(valor):
     if pd.isna(valor):
         return ""
-    if isinstance(valor, float) and valor.is_integer():
+    if isinstance(valor, Number) and float(valor).is_integer():
         return str(int(valor)).strip()
     return str(valor).strip()
 
@@ -127,6 +128,10 @@ def generar_plantilla_carga_masiva(db):
         cell.fill = header_fill
         cell.font = header_font
         ws.column_dimensions[cell.column_letter].width = max(16, len(titulo) + 4)
+
+    for row in range(2, 302):
+        ws.cell(row=row, column=6).number_format = "@"
+        ws.cell(row=row, column=10).number_format = "@"
 
     ejemplo = [
         "Nombre Apellido",
@@ -214,11 +219,6 @@ def validar_archivo_carga_masiva(archivo, db):
             "token": None,
         }
 
-    por_region, region_por_comuna = _obtener_catalogo_comunas(db)
-    regiones_validas = {_normalizar_columna(region): region for region in por_region}
-    filas = []
-    registros_validos = []
-
     requeridas = [
         "remitente",
         "correo_remitente",
@@ -245,8 +245,10 @@ def validar_archivo_carga_masiva(archivo, db):
             "token": None,
         }
 
+    registros = []
     for index, row in df.iterrows():
-        data = {
+        registros.append({
+            "numero": int(index) + 2,
             "remitente": _texto(row.get("remitente")),
             "correo_remitente": _texto(row.get("correo_remitente")),
             "centro_costo": _texto(row.get("centro_costo")),
@@ -261,6 +263,49 @@ def validar_archivo_carga_masiva(archivo, db):
             "bultos": _numero_entero(row.get("bultos")),
             "kilos": _numero_entero(row.get("kilos")),
             "observacion": _texto(row.get("observacion")),
+        })
+
+    return validar_registros_carga_masiva(registros, db)
+
+
+def validar_registros_carga_masiva(registros, db):
+    por_region, region_por_comuna = _obtener_catalogo_comunas(db)
+    regiones_validas = {_normalizar_columna(region): region for region in por_region}
+    filas = []
+    registros_validos = []
+
+    requeridas = [
+        "remitente",
+        "correo_remitente",
+        "centro_costo",
+        "division",
+        "destinatario",
+        "rut_destinatario",
+        "direccion",
+        "region",
+        "comuna",
+        "telefono_destinatario",
+        "tipo_envio",
+        "bultos",
+        "kilos",
+    ]
+
+    for index, registro in enumerate(registros):
+        data = {
+            "remitente": _texto(registro.get("remitente")),
+            "correo_remitente": _texto(registro.get("correo_remitente")),
+            "centro_costo": _texto(registro.get("centro_costo")),
+            "division": _texto(registro.get("division")).upper(),
+            "destinatario": _texto(registro.get("destinatario")),
+            "rut_destinatario": _texto(registro.get("rut_destinatario")),
+            "direccion": _texto(registro.get("direccion")),
+            "region": _texto(registro.get("region")),
+            "comuna": _texto(registro.get("comuna")),
+            "telefono_destinatario": _telefono(registro.get("telefono_destinatario")),
+            "tipo_envio": _texto(registro.get("tipo_envio")).capitalize(),
+            "bultos": _numero_entero(registro.get("bultos")),
+            "kilos": _numero_entero(registro.get("kilos")),
+            "observacion": _texto(registro.get("observacion")),
         }
         errores = []
         advertencias = []
@@ -309,7 +354,7 @@ def validar_archivo_carga_masiva(archivo, db):
 
         estado = "error" if errores else ("advertencia" if advertencias else "listo")
         fila = {
-            "numero": int(index) + 2,
+            "numero": int(registro.get("numero") or index + 2),
             "data": data,
             "errores": errores,
             "advertencias": advertencias,
@@ -321,7 +366,7 @@ def validar_archivo_carga_masiva(archivo, db):
             registros_validos.append(data)
 
     token = None
-    if registros_validos:
+    if registros_validos and not any(fila["errores"] for fila in filas):
         token = guardar_carga_temporal(registros_validos)
 
     return {

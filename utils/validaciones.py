@@ -1,4 +1,5 @@
 import re
+from numbers import Number
 
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -11,7 +12,25 @@ def email_valido(email):
 
 
 def normalizar_telefono_chile(telefono):
-    return re.sub(r"\D", "", str(telefono or ""))
+    if telefono is None:
+        return ""
+
+    if isinstance(telefono, Number):
+        try:
+            telefono = str(int(telefono)) if float(telefono).is_integer() else str(telefono)
+        except (TypeError, ValueError, OverflowError):
+            telefono = str(telefono)
+
+    telefono = str(telefono or "").strip()
+    if re.fullmatch(r"\d+\.0", telefono):
+        telefono = telefono[:-2]
+
+    telefono = re.sub(r"\D", "", telefono)
+
+    if telefono.startswith("56") and len(telefono) in {10, 11}:
+        telefono = telefono[2:]
+
+    return telefono
 
 
 def telefono_chile_valido(telefono):

@@ -171,7 +171,11 @@ codigoAgencia.addEventListener("input", function () {
 });
 
 inputTelefonoDestinatario.addEventListener("input", function () {
-    this.value = this.value.replace(/\D/g, "").slice(0, 9);
+    let telefono = this.value.replace(/\D/g, "");
+    if ((telefono.length === 10 || telefono.length === 11) && telefono.startsWith("56")) {
+        telefono = telefono.slice(2);
+    }
+    this.value = telefono.slice(0, 9);
     actualizarPreview();
 });
 

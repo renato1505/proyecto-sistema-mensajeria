@@ -73,81 +73,189 @@
             {% endif %}
 
             <section class="revision-panel">
-                <div class="revision-head">
-                    <div>
-                        <span>Revision</span>
-                        <h2>Detalle por fila</h2>
+                <form method="POST" action="/revalidar_carga_masiva">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="total_filas" value="{{ resultado.filas|length }}">
+
+                    <div class="revision-head">
+                        <div>
+                            <span>Revision</span>
+                            <h2>Detalle por fila</h2>
+                        </div>
+
+                        <div class="revision-actions">
+                            <button class="btn btn-outline-primary btn-sm">Revalidar cambios</button>
+                            {% if resultado.token and not resultado.resumen.errores %}
+                                <button
+                                    type="submit"
+                                    class="btn btn-success btn-sm"
+                                    form="confirmar-carga-form">
+                                    Confirmar carga
+                                </button>
+                            {% endif %}
+                        </div>
                     </div>
 
-                    {% if resultado.token and not resultado.resumen.errores %}
-                        <form method="POST" action="/confirmar_carga_masiva">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="token" value="{{ resultado.token }}">
-                            <button class="btn btn-success btn-sm">Confirmar carga</button>
-                        </form>
-                    {% endif %}
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table align-middle mb-0 revision-table">
-                        <thead>
-                            <tr>
-                                <th>Fila</th>
-                                <th>Destinatario</th>
-                                <th>Destino</th>
-                                <th>Tipo</th>
-                                <th>Bultos/Kilos</th>
-                                <th>Estado</th>
-                                <th>Detalle</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for fila in resultado.filas %}
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0 revision-table">
+                            <thead>
                                 <tr>
-                                    <td class="fila-numero">{{ fila.numero }}</td>
-                                    <td>
-                                        <strong>{{ fila.data.destinatario or '-' }}</strong>
-                                        <small>{{ fila.data.rut_destinatario or '-' }}</small>
-                                    </td>
-                                    <td>
-                                        <strong>{{ fila.data.comuna or '-' }}</strong>
-                                        <small>{{ fila.data.region or '-' }}</small>
-                                    </td>
-                                    <td>{{ fila.data.tipo_envio or '-' }}</td>
-                                    <td>{{ fila.data.bultos or '-' }} / {{ fila.data.kilos or '-' }}</td>
-                                    <td>
-                                        <span class="estado-badge {{ fila.estado }}">
-                                            {% if fila.estado == "listo" %}
-                                                Listo
-                                            {% elif fila.estado == "advertencia" %}
-                                                Advertencia
-                                            {% else %}
-                                                Error
-                                            {% endif %}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        {% if fila.errores %}
-                                            {% for error in fila.errores %}
-                                                <div class="detalle-error">{{ error }}</div>
-                                            {% endfor %}
-                                        {% endif %}
-                                        {% if fila.advertencias %}
-                                            {% for advertencia in fila.advertencias %}
-                                                <div class="detalle-warning">{{ advertencia }}</div>
-                                            {% endfor %}
-                                        {% endif %}
-                                        {% if not fila.errores and not fila.advertencias %}
-                                            <span class="detalle-ok">Sin observaciones</span>
-                                        {% endif %}
-                                    </td>
+                                    <th>Fila</th>
+                                    <th>Destinatario</th>
+                                    <th>Destino</th>
+                                    <th>Tipo</th>
+                                    <th>Bultos/Kilos</th>
+                                    <th>Estado</th>
+                                    <th>Observacion</th>
+                                    <th>Accion</th>
                                 </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody>
+                                {% for fila in resultado.filas %}
+                                    {% set idx = loop.index0 %}
+                                    <tr class="{% if fila.estado == 'error' %}fila-con-error{% endif %}">
+                                        <td class="fila-numero">
+                                            {{ fila.numero }}
+                                            <input type="hidden" name="filas-{{ idx }}-numero" value="{{ fila.numero }}">
+                                        </td>
+                                        <td>
+                                            <strong>{{ fila.data.destinatario or '-' }}</strong>
+                                            <small>{{ fila.data.rut_destinatario or '-' }}</small>
+                                        </td>
+                                        <td>
+                                            <strong>{{ fila.data.comuna or '-' }}</strong>
+                                            <small>{{ fila.data.region or '-' }}</small>
+                                        </td>
+                                        <td>{{ fila.data.tipo_envio or '-' }}</td>
+                                        <td>{{ fila.data.bultos or '-' }} / {{ fila.data.kilos or '-' }}</td>
+                                        <td>
+                                            <span class="estado-badge {{ fila.estado }}">
+                                                {% if fila.estado == "listo" %}
+                                                    Listo
+                                                {% elif fila.estado == "advertencia" %}
+                                                    Advertencia
+                                                {% else %}
+                                                    Error
+                                                {% endif %}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if fila.errores %}
+                                                {% for error in fila.errores %}
+                                                    <div class="detalle-error">{{ error }}</div>
+                                                {% endfor %}
+                                            {% endif %}
+                                            {% if fila.advertencias %}
+                                                {% for advertencia in fila.advertencias %}
+                                                    <div class="detalle-warning">{{ advertencia }}</div>
+                                                {% endfor %}
+                                            {% endif %}
+                                            {% if not fila.errores and not fila.advertencias %}
+                                                <span class="detalle-ok">Sin observaciones</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <button
+                                                type="button"
+                                                class="btn btn-outline-secondary btn-sm"
+                                                onclick="toggleDetalleCarga('detalle-carga-{{ idx }}')">
+                                                Detalle / Editar
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr id="detalle-carga-{{ idx }}" class="detalle-carga-row {% if fila.estado != 'error' %}d-none{% endif %}">
+                                        <td colspan="8">
+                                            <div class="detalle-carga-grid">
+                                                <div>
+                                                    <label class="form-label">Remitente</label>
+                                                    <input class="form-control form-control-sm" name="filas-{{ idx }}-remitente" value="{{ fila.data.remitente }}">
+                                                </div>
+                                                <div>
+                                                    <label class="form-label">Correo remitente</label>
+                                                    <input class="form-control form-control-sm" name="filas-{{ idx }}-correo_remitente" value="{{ fila.data.correo_remitente }}">
+                                                </div>
+                                                <div>
+                                                    <label class="form-label">Centro costo</label>
+                                                    <input class="form-control form-control-sm" name="filas-{{ idx }}-centro_costo" value="{{ fila.data.centro_costo }}">
+                                                </div>
+                                                <div>
+                                                    <label class="form-label">Division</label>
+                                                    <select class="form-select form-select-sm" name="filas-{{ idx }}-division">
+                                                        {% for division in ["DPGP", "DOP", "LDB", "DL", "DPP"] %}
+                                                            <option value="{{ division }}" {% if fila.data.division == division %}selected{% endif %}>{{ division }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label class="form-label">Destinatario</label>
+                                                    <input class="form-control form-control-sm" name="filas-{{ idx }}-destinatario" value="{{ fila.data.destinatario }}">
+                                                </div>
+                                                <div>
+                                                    <label class="form-label">RUT</label>
+                                                    <input class="form-control form-control-sm" name="filas-{{ idx }}-rut_destinatario" value="{{ fila.data.rut_destinatario }}">
+                                                </div>
+                                                <div class="span-2">
+                                                    <label class="form-label">Direccion</label>
+                                                    <input class="form-control form-control-sm" name="filas-{{ idx }}-direccion" value="{{ fila.data.direccion }}">
+                                                </div>
+                                                <div>
+                                                    <label class="form-label">Region</label>
+                                                    <input class="form-control form-control-sm" name="filas-{{ idx }}-region" value="{{ fila.data.region }}">
+                                                </div>
+                                                <div>
+                                                    <label class="form-label">Comuna</label>
+                                                    <input class="form-control form-control-sm" name="filas-{{ idx }}-comuna" value="{{ fila.data.comuna }}">
+                                                </div>
+                                                <div>
+                                                    <label class="form-label">Telefono</label>
+                                                    <input class="form-control form-control-sm" name="filas-{{ idx }}-telefono_destinatario" value="{{ fila.data.telefono_destinatario }}">
+                                                </div>
+                                                <div>
+                                                    <label class="form-label">Tipo envio</label>
+                                                    <select class="form-select form-select-sm" name="filas-{{ idx }}-tipo_envio">
+                                                        {% for tipo in ["Domicilio", "Agencia"] %}
+                                                            <option value="{{ tipo }}" {% if fila.data.tipo_envio == tipo %}selected{% endif %}>{{ tipo }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label class="form-label">Bultos</label>
+                                                    <input class="form-control form-control-sm" name="filas-{{ idx }}-bultos" value="{{ fila.data.bultos or '' }}">
+                                                </div>
+                                                <div>
+                                                    <label class="form-label">Kilos</label>
+                                                    <input class="form-control form-control-sm" name="filas-{{ idx }}-kilos" value="{{ fila.data.kilos or '' }}">
+                                                </div>
+                                                <div class="span-2">
+                                                    <label class="form-label">Observacion</label>
+                                                    <input class="form-control form-control-sm" name="filas-{{ idx }}-observacion" value="{{ fila.data.observacion }}">
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </form>
+
+                {% if resultado.token and not resultado.resumen.errores %}
+                    <form id="confirmar-carga-form" method="POST" action="/confirmar_carga_masiva">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="token" value="{{ resultado.token }}">
+                    </form>
+                {% endif %}
             </section>
         {% endif %}
     {% endif %}
 </div>
+
+<script>
+function toggleDetalleCarga(id) {
+    const fila = document.getElementById(id);
+    if (fila) {
+        fila.classList.toggle("d-none");
+    }
+}
+</script>
 {% endblock %}

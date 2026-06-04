@@ -131,6 +131,13 @@
     border-bottom: 1px solid var(--line);
 }
 
+.revision-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
 .revision-table {
     min-width: 980px;
 }
@@ -163,6 +170,34 @@
 .fila-numero {
     color: var(--muted-strong);
     font-weight: 800;
+}
+
+.fila-con-error td {
+    background: #fff7f7;
+}
+
+.detalle-carga-row td {
+    padding: 0 !important;
+    background: #f7f9fb;
+}
+
+.detalle-carga-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    padding: 16px;
+    border-top: 1px solid var(--line-soft);
+}
+
+.detalle-carga-grid .form-label {
+    color: #344054;
+    font-size: 0.76rem;
+    font-weight: 800;
+    margin-bottom: 4px;
+}
+
+.detalle-carga-grid .span-2 {
+    grid-column: span 2;
 }
 
 .estado-badge {
@@ -229,5 +264,17 @@
     .upload-form {
         flex-direction: column;
         align-items: stretch;
+    }
+
+    .revision-actions {
+        justify-content: flex-start;
+    }
+
+    .detalle-carga-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .detalle-carga-grid .span-2 {
+        grid-column: span 1;
     }
 }
