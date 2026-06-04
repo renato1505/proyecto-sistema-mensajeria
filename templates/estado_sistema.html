@@ -2,66 +2,61 @@
 
 {% block title %}Estado del sistema{% endblock %}
 
-{% block content %}
+{% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/estado_sistema.css') }}">
+{% endblock %}
 
+{% block content %}
 <div class="estado-page">
-    <div class="estado-header">
+    <section class="estado-hero">
         <div>
+            <span class="estado-kicker">Monitor operativo</span>
             <h1>Estado del sistema</h1>
-            <p>Revision operativa al {{ estado.fecha_revision.strftime("%d/%m/%Y %H:%M") }}</p>
+            <p>Revision tecnica y operativa al {{ estado.fecha_revision.strftime("%d/%m/%Y %H:%M") }}.</p>
         </div>
-        <span class="estado-badge {% if estado.general_ok %}ok{% else %}alerta{% endif %}">
-            {% if estado.general_ok %}Operativo{% else %}Revisar{% endif %}
+        <span class="estado-status {% if estado.general_ok %}ok{% else %}alerta{% endif %}">
+            {% if estado.general_ok %}Operativo{% else %}Requiere revision{% endif %}
         </span>
-    </div>
+    </section>
 
-    <section class="estado-grid">
-        <article class="estado-card">
-            <div class="estado-card-top">
+    <section class="salud-grid">
+        <article class="salud-card {% if estado.db.ok %}ok{% else %}error{% endif %}">
+            <div class="salud-top">
                 <span>Base de datos</span>
-                <strong class="{% if estado.db.ok %}txt-ok{% else %}txt-error{% endif %}">
-                    {% if estado.db.ok %}OK{% else %}Error{% endif %}
-                </strong>
+                <strong>{% if estado.db.ok %}OK{% else %}Error{% endif %}</strong>
             </div>
             <p>{{ estado.db.detalle }}</p>
         </article>
 
-        <article class="estado-card">
-            <div class="estado-card-top">
+        <article class="salud-card {% if estado.correo.ok %}ok{% else %}error{% endif %}">
+            <div class="salud-top">
                 <span>Correo Starken</span>
-                <strong class="{% if estado.correo.ok %}txt-ok{% else %}txt-error{% endif %}">
-                    {% if estado.correo.ok %}OK{% else %}Falta configurar{% endif %}
-                </strong>
+                <strong>{% if estado.correo.ok %}OK{% else %}Falta configurar{% endif %}</strong>
             </div>
             <p>{{ estado.correo.detalle }}</p>
             <small>Destino: {{ estado.correo.destino }}</small>
         </article>
 
-        <article class="estado-card">
-            <div class="estado-card-top">
+        <article class="salud-card {% if estado.respaldos_lotes.ok %}ok{% else %}error{% endif %}">
+            <div class="salud-top">
                 <span>Respaldos lotes</span>
-                <strong class="{% if estado.respaldos_lotes.ok %}txt-ok{% else %}txt-error{% endif %}">
-                    {% if estado.respaldos_lotes.ok %}OK{% else %}Error{% endif %}
-                </strong>
+                <strong>{% if estado.respaldos_lotes.ok %}OK{% else %}Error{% endif %}</strong>
             </div>
             <p>{{ estado.respaldos_lotes.detalle }}</p>
             <small>{{ estado.respaldos_lotes.ruta }}</small>
         </article>
 
-        <article class="estado-card">
-            <div class="estado-card-top">
+        <article class="salud-card {% if estado.logs.ok %}ok{% else %}error{% endif %}">
+            <div class="salud-top">
                 <span>Logs</span>
-                <strong class="{% if estado.logs.ok %}txt-ok{% else %}txt-error{% endif %}">
-                    {% if estado.logs.ok %}OK{% else %}Error{% endif %}
-                </strong>
+                <strong>{% if estado.logs.ok %}OK{% else %}Error{% endif %}</strong>
             </div>
             <p>{{ estado.logs.detalle }}</p>
             <small>{{ estado.logs.ruta }}</small>
         </article>
     </section>
 
-    <section class="metricas-grid">
+    <section class="estado-metrics">
         <article>
             <span>Pendientes</span>
             <strong>{{ estado.conteos.get("pendientes", 0) }}</strong>
@@ -80,10 +75,13 @@
         </article>
     </section>
 
-    <section class="detalle-grid">
-        <div class="detalle-panel">
-            <h2>Catalogos</h2>
-            <dl>
+    <section class="estado-detail-grid">
+        <article class="estado-panel">
+            <div class="panel-head">
+                <span>Catalogos</span>
+                <h2>Datos maestros</h2>
+            </div>
+            <dl class="estado-list">
                 <div>
                     <dt>Remitentes</dt>
                     <dd>{{ estado.conteos.get("remitentes", 0) }}</dd>
@@ -97,11 +95,14 @@
                     <dd>{{ estado.conteos.get("comunas", 0) }}</dd>
                 </div>
             </dl>
-        </div>
+        </article>
 
-        <div class="detalle-panel">
-            <h2>Ultima actividad</h2>
-            <dl>
+        <article class="estado-panel">
+            <div class="panel-head">
+                <span>Actividad</span>
+                <h2>Ultimos movimientos</h2>
+            </div>
+            <dl class="estado-list">
                 <div>
                     <dt>Ultimo lote</dt>
                     <dd>{{ estado.conteos.get("ultimo_lote", "Sin lotes registrados") }}</dd>
@@ -127,14 +128,17 @@
                     </dd>
                 </div>
             </dl>
-        </div>
+        </article>
     </section>
 
     <section class="log-panel">
-        <div class="log-panel-head">
-            <h2>Ultimo registro tecnico</h2>
+        <div class="panel-head horizontal">
+            <div>
+                <span>Registro tecnico</span>
+                <h2>Ultima linea del log</h2>
+            </div>
             {% if estado.ultimo_log.fecha_modificacion %}
-                <span>{{ estado.ultimo_log.fecha_modificacion.strftime("%d/%m/%Y %H:%M") }}</span>
+                <time>{{ estado.ultimo_log.fecha_modificacion.strftime("%d/%m/%Y %H:%M") }}</time>
             {% endif %}
         </div>
         <p>{{ estado.ultimo_log.ultima_linea }}</p>
