@@ -16,6 +16,10 @@
 }
 
 .proceso-hero {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
     padding: 20px;
 }
 
@@ -277,6 +281,10 @@
     }
 
     .lote-head {
+        flex-direction: column;
+    }
+
+    .proceso-hero {
         flex-direction: column;
     }
 

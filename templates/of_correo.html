@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}OF desde correo{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/of_correo.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="of-page">
+    <section class="of-hero">
+        <div>
+            <span class="of-kicker">Modo asistido</span>
+            <h1>OF desde correo</h1>
+            <p>Revisa los correos recibidos, selecciona el adjunto OF y procesa el lote correspondiente.</p>
+        </div>
+        <a href="/en_proceso" class="btn btn-outline-secondary">Volver a lotes</a>
+    </section>
+
+    <section class="of-panel">
+        <div class="of-panel-head">
+            <div>
+                <h2>Bandeja de respuesta Starken</h2>
+                <p>
+                    La busqueda es manual para evitar procesar archivos equivocados.
+                    El sistema solo muestra adjuntos Excel compatibles.
+                </p>
+            </div>
+            <a href="/of_correo?buscar=1" class="btn btn-success" {% if not correo_configurado %}aria-disabled="true"{% endif %}>
+                Revisar correo
+            </a>
+        </div>
+
+        {% if not correo_configurado %}
+            <div class="of-note danger">
+                Faltan datos IMAP en el archivo .env. Revisa CORREO_EMISOR, CORREO_CLAVE_APP, OF_IMAP_HOST y OF_IMAP_PORT.
+            </div>
+        {% elif not lotes %}
+            <div class="of-note warning">
+                No hay lotes en proceso. Primero genera un lote Starken desde Pendientes.
+            </div>
+        {% elif not busqueda_realizada %}
+            <div class="of-empty">
+                <h2>Listo para revisar</h2>
+                <p>Presiona Revisar correo cuando Starken haya respondido con las ordenes de flete.</p>
+            </div>
+        {% elif correos %}
+            <div class="correo-stack">
+                {% for correo in correos %}
+                    <article class="correo-card">
+                        <div class="correo-head">
+                            <div>
+                                <span>Correo</span>
+                                <h2>{{ correo.asunto }}</h2>
+                                <p>{{ correo.remitente }}</p>
+                                {% if correo.archivo_procesado %}
+                                    <p class="archivo-procesado">
+                                        Archivo procesado: <strong>{{ correo.archivo_procesado }}</strong>
+                                    </p>
+                                    {% if correo.lote_sugerido %}
+                                        <p class="match-ok">
+                                            Coincide con {{ correo.lote_sugerido.lote }}
+                                        </p>
+                                    {% else %}
+                                        <p class="match-warning">
+                                            No coincide con ningun lote activo. Revisar antes de procesar.
+                                        </p>
+                                    {% endif %}
+                                {% else %}
+                                    <p class="match-warning">
+                                        No se detecto el archivo CSV procesado en el correo.
+                                    </p>
+                                {% endif %}
+                            </div>
+                            <small>
+                                {% if correo.fecha %}
+                                    {{ correo.fecha.strftime('%d/%m/%Y %H:%M') }}
+                                {% else %}
+                                    Sin fecha
+                                {% endif %}
+                            </small>
+                        </div>
+
+                        <div class="adjuntos-list">
+                            {% for adjunto in correo.adjuntos %}
+                                <form action="/procesar_of_correo" method="POST" class="adjunto-row"
+                                      onsubmit="return confirm('Procesar este adjunto OF para el lote seleccionado?');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="uid" value="{{ correo.uid }}">
+                                    <input type="hidden" name="indice_adjunto" value="{{ adjunto.indice }}">
+
+                                    <div class="adjunto-main">
+                                        <strong>{{ adjunto.nombre }}</strong>
+                                        <span>{{ (adjunto.tamano / 1024)|round(1) }} KB</span>
+                                    </div>
+
+                                    <select name="lote" class="form-select form-select-sm" required>
+                                        <option value="">Seleccionar lote</option>
+                                        {% for lote in lotes %}
+                                            <option value="{{ lote.lote }}"
+                                                    {% if correo.lote_sugerido and correo.lote_sugerido.lote == lote.lote %}selected{% endif %}>
+                                                {{ lote.lote }}
+                                                {% if lote.nombre_archivo %} - {{ lote.nombre_archivo }}{% endif %}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+
+                                    <button type="submit" class="btn btn-success btn-sm">Procesar OF</button>
+                                </form>
+                            {% endfor %}
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="of-empty">
+                <h2>Sin adjuntos OF</h2>
+                <p>No se encontraron archivos Excel OF en los ultimos correos revisados.</p>
+            </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

@@ -2,7 +2,6 @@ import io
 import logging
 from datetime import datetime
 
-import pandas as pd
 from flask import flash, redirect, render_template, request, send_file
 
 from database.conexion import SessionLocal
@@ -20,6 +19,12 @@ from services.correo import (
     enviar_archivo_starken,
     obtener_correo_destino_starken,
 )
+from services.correo_of import (
+    buscar_correos_of,
+    correo_of_configurado,
+    descargar_adjunto_of,
+)
+from services.of_processor import OFProcessingError, procesar_archivo_of
 from services.starken import generar_csv_starken, guardar_respaldo_lote
 from utils.validaciones import (
     email_valido,
@@ -154,6 +159,53 @@ def _leer_registros_carga_masiva_desde_form():
         registros.append(registro)
 
     return registros
+
+
+def _obtener_lotes_en_proceso(db):
+    filas = (
+        db.query(Envio.e_lote, Envio.e_nombre_archivo)
+        .filter(Envio.e_estado == "en_proceso", Envio.e_lote.isnot(None))
+        .distinct()
+        .order_by(Envio.e_lote.desc())
+        .all()
+    )
+
+    return [
+        {"lote": fila[0], "nombre_archivo": fila[1] or ""}
+        for fila in filas
+        if fila[0]
+    ]
+
+
+def _buscar_lote_por_nombre_archivo(lotes, nombre_archivo):
+    nombre = (nombre_archivo or "").strip().lower()
+
+    if not nombre:
+        return None
+
+    for lote in lotes:
+        if (lote["nombre_archivo"] or "").strip().lower() == nombre:
+            return lote
+
+    return None
+
+
+def _lote_coincide_con_archivo(db, lote, nombre_archivo):
+    nombre = (nombre_archivo or "").strip().lower()
+
+    if not nombre:
+        return True
+
+    envio = (
+        db.query(Envio)
+        .filter(Envio.e_lote == lote, Envio.e_estado == "en_proceso")
+        .first()
+    )
+
+    if not envio:
+        return False
+
+    return (envio.e_nombre_archivo or "").strip().lower() == nombre
 
 
 def registrar_rutas_envios(app):
@@ -372,153 +424,96 @@ def registrar_rutas_envios(app):
             return redirect("/en_proceso")
 
         try:
-            nombre_archivo = archivo.filename.lower()
-
-            if nombre_archivo.endswith(".xls"):
-                df = pd.read_excel(archivo, engine="xlrd")
-            else:
-                df = pd.read_excel(archivo, engine="openpyxl")
-
-            df.columns = [str(col).strip().lower() for col in df.columns]
-
-            columnas_requeridas = ["estado", "fila", "orden flete", "detalle"]
-            for columna in columnas_requeridas:
-                if columna not in df.columns:
-                    db.close()
-                    flash(f"Falta la columna requerida: {columna}", "danger")
-                    return redirect("/en_proceso")
-
-            envios_lote = (
-                db.query(Envio)
-                .filter(Envio.e_lote == lote, Envio.e_estado == "en_proceso")
-                .all()
-            )
-
-            if not envios_lote:
-                db.close()
-                flash("No se encontraron envios en proceso para este lote", "warning")
-                return redirect("/en_proceso")
-
-            cantidad_envios_lote = len(envios_lote)
-            df_validas = df[df["fila"].notna()].copy()
-            cantidad_filas_archivo = len(df_validas)
-
-            if cantidad_filas_archivo != cantidad_envios_lote:
-                db.close()
-                flash(
-                    f"La cantidad de filas del archivo OF ({cantidad_filas_archivo}) "
-                    f"no coincide con la cantidad de envios del lote "
-                    f"({cantidad_envios_lote}). No se proceso nada.",
-                    "danger",
-                )
-                return redirect("/en_proceso")
-
-            filas_archivo = []
-            for valor in df_validas["fila"].tolist():
-                try:
-                    filas_archivo.append(int(valor))
-                except (ValueError, TypeError):
-                    db.close()
-                    flash("El archivo OF contiene una fila invalida en la columna 'fila'", "danger")
-                    return redirect("/en_proceso")
-
-            if len(filas_archivo) != len(set(filas_archivo)):
-                db.close()
-                flash("El archivo OF tiene filas repetidas. No se proceso nada.", "danger")
-                return redirect("/en_proceso")
-
-            ofs_archivo = []
-            for _, fila in df_validas.iterrows():
-                estado = str(fila.get("estado", "")).strip().upper()
-                orden_flete = fila.get("orden flete")
-
-                if estado == "OK" and not pd.isna(orden_flete):
-                    orden_texto = str(orden_flete).strip()
-                    if orden_texto:
-                        ofs_archivo.append(orden_texto)
-
-            if len(ofs_archivo) != len(set(ofs_archivo)):
-                db.close()
-                flash("El archivo OF contiene ordenes de flete duplicadas. No se proceso nada.", "danger")
-                return redirect("/en_proceso")
-
-            if ofs_archivo:
-                ofs_existentes = (
-                    db.query(Envio)
-                    .filter(Envio.e_orden_flete.in_(ofs_archivo), Envio.e_lote != lote)
-                    .all()
-                )
-
-                if ofs_existentes:
-                    repetidas = sorted({e.e_orden_flete for e in ofs_existentes if e.e_orden_flete})
-                    db.close()
-                    flash(
-                        f"Ya existen ordenes de flete registradas en el sistema: "
-                        f"{', '.join(repetidas)}. No se proceso nada.",
-                        "danger",
-                    )
-                    return redirect("/en_proceso")
-
-            total_ok = 0
-            total_error = 0
-            total_sin_match = 0
-
-            for _, fila in df_validas.iterrows():
-                estado = str(fila.get("estado", "")).strip().upper()
-                fila_excel = fila.get("fila")
-                orden_flete = fila.get("orden flete")
-                detalle = fila.get("detalle")
-
-                try:
-                    fila_excel = int(fila_excel)
-                except (ValueError, TypeError):
-                    continue
-
-                envio = (
-                    db.query(Envio)
-                    .filter(
-                        Envio.e_lote == lote,
-                        Envio.e_fila_excel == fila_excel,
-                        Envio.e_estado == "en_proceso",
-                    )
-                    .first()
-                )
-
-                if not envio:
-                    total_sin_match += 1
-                    continue
-
-                detalle_texto = "" if pd.isna(detalle) else str(detalle).strip()
-                orden_texto = "" if pd.isna(orden_flete) else str(orden_flete).strip()
-
-                envio.e_resultado_of = estado
-                envio.e_detalle_of = detalle_texto
-
-                if estado == "OK":
-                    envio.e_orden_flete = orden_texto
-                    envio.e_estado = "historico"
-                    total_ok += 1
-                else:
-                    envio.e_orden_flete = None
-                    envio.e_estado = "en_proceso"
-                    total_error += 1
-
-            db.commit()
-            db.close()
-
-            flash(
-                f"Archivo OF procesado correctamente. OK: {total_ok} | "
-                f"ERROR: {total_error} | Sin coincidencia: {total_sin_match}",
-                "success",
-            )
+            resultado = procesar_archivo_of(db, lote, archivo, archivo.filename)
+            flash(resultado["mensaje"], "success")
+            return redirect("/en_proceso")
+        except OFProcessingError as e:
+            db.rollback()
+            flash(str(e), "danger")
             return redirect("/en_proceso")
 
         except Exception as e:
             db.rollback()
-            db.close()
             logger.exception("Error al procesar archivo OF para lote %s", lote)
             flash(f"Error al procesar el archivo OF: {str(e)}", "danger")
             return redirect("/en_proceso")
+        finally:
+            db.close()
+
+    @app.route("/of_correo")
+    def of_correo():
+        db = SessionLocal()
+        try:
+            lotes = _obtener_lotes_en_proceso(db)
+        finally:
+            db.close()
+
+        correos = []
+        busqueda_realizada = request.args.get("buscar") == "1"
+
+        if busqueda_realizada:
+            if not correo_of_configurado():
+                flash("Faltan credenciales IMAP para revisar el correo OF.", "danger")
+            else:
+                try:
+                    correos = buscar_correos_of(limite=10)
+                    for correo in correos:
+                        correo.lote_sugerido = _buscar_lote_por_nombre_archivo(
+                            lotes,
+                            correo.archivo_procesado,
+                        )
+                    if not correos:
+                        flash("No se encontraron correos con adjuntos OF Excel.", "warning")
+                except Exception as e:
+                    logger.exception("No se pudo revisar el correo OF")
+                    flash(f"No se pudo revisar el correo: {str(e)}", "danger")
+
+        return render_template(
+            "of_correo.html",
+            lotes=lotes,
+            correos=correos,
+            busqueda_realizada=busqueda_realizada,
+            correo_configurado=correo_of_configurado(),
+        )
+
+    @app.route("/procesar_of_correo", methods=["POST"])
+    def procesar_of_correo():
+        lote = request.form.get("lote", "").strip()
+        uid = request.form.get("uid", "").strip()
+        indice_adjunto = request.form.get("indice_adjunto", "").strip()
+
+        if not lote or not uid or indice_adjunto == "":
+            flash("Debes seleccionar lote y archivo OF del correo.", "danger")
+            return redirect("/of_correo?buscar=1")
+
+        db = SessionLocal()
+
+        try:
+            nombre_archivo, contenido, archivo_procesado = descargar_adjunto_of(uid, indice_adjunto)
+
+            if not _lote_coincide_con_archivo(db, lote, archivo_procesado):
+                flash(
+                    "El correo OF indica un archivo procesado distinto al lote seleccionado. "
+                    "No se proceso nada.",
+                    "danger",
+                )
+                return redirect("/of_correo?buscar=1")
+
+            archivo = io.BytesIO(contenido)
+            resultado = procesar_archivo_of(db, lote, archivo, nombre_archivo)
+            flash(f"{resultado['mensaje']} Archivo tomado desde correo: {nombre_archivo}", "success")
+            return redirect("/en_proceso")
+        except OFProcessingError as e:
+            db.rollback()
+            flash(str(e), "danger")
+            return redirect("/of_correo?buscar=1")
+        except Exception as e:
+            db.rollback()
+            logger.exception("No se pudo procesar OF desde correo para lote %s", lote)
+            flash(f"No se pudo procesar el OF desde correo: {str(e)}", "danger")
+            return redirect("/of_correo?buscar=1")
+        finally:
+            db.close()
 
     @app.route("/cancelar_lote/<lote>", methods=["POST"])
     def cancelar_lote(lote):
