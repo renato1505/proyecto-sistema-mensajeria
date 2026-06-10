@@ -20,22 +20,42 @@ El envio queda en estado `pendiente` para revision.
 
 ## 3. Generar archivo Starken
 
-1. En `Pendientes`, presionar `Generar y enviar CSV`.
-2. El sistema genera un lote, guarda respaldo local y envia el CSV por correo.
-3. Los envios pasan a `En proceso`.
+1. En `Pendientes`, presionar `Generar CSV Starken`.
+2. El sistema muestra una ventana con dos opciones:
+   - `Descargar CSV`: usar cuando se subira el archivo directamente al sistema Starken.
+   - `Enviar por correo`: usar cuando el CSV debe enviarse por correo.
+3. El sistema genera un lote, guarda respaldo local y mueve los envios a `En proceso`.
 
-No repetir esta accion si no hay claridad sobre el estado del correo o del lote.
+No repetir esta accion si no hay claridad sobre el estado del lote.
 
 ## 4. Cargar respuesta OF
 
-1. Subir en Starken el archivo CSV recibido por correo.
-2. Descargar desde Starken el archivo Excel con resultado OF.
+1. Subir en Starken el archivo CSV descargado o enviado por correo.
+2. Esperar la respuesta OF.
 3. Entrar a `En proceso`.
-4. Subir el Excel en el lote correspondiente.
+4. Usar carga OF manual o `Buscar OF en correo`.
+5. Procesar el archivo OF correspondiente al lote.
 
 Si las filas, estados u ordenes de flete no coinciden, el sistema bloquea el procesamiento.
 
-## 5. Historico
+## 5. Avisos y respaldo
+
+Al procesar OF:
+
+- El sistema intenta enviar respaldo completo del lote a Mensajeria.
+- Los envios OK pasan al historico.
+- Los avisos a funcionarios quedan pendientes.
+
+Cuando Starken ya haya retirado los pedidos:
+
+1. Entrar a `Avisos`.
+2. Abrir el lote pendiente.
+3. Seleccionar funcionarios.
+4. Enviar correos.
+
+Los avisos enviados dejan de aparecer como pendientes.
+
+## 6. Historico
 
 Los envios con resultado `OK` pasan al historico.
 
@@ -48,11 +68,10 @@ Desde `Historico` se puede:
 
 Cuando se elimina historico, primero se genera un respaldo Excel en `respaldos_historico`.
 
-## 6. Pruebas manuales
+## 7. Pruebas manuales
 
 La prueba de correo envia un email real. Ejecutarla solo cuando se quiera validar Gmail:
 
 ```powershell
 python tests\test_correo.py --confirmar
 ```
-

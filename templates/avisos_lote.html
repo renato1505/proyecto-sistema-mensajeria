@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Avisos del lote{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/avisos_lote.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="avisos-page">
+    <section class="avisos-hero">
+        <div>
+            <span class="avisos-kicker">Notificacion post OF</span>
+            <h1>Avisos del lote</h1>
+            <p>{{ lote }}</p>
+        </div>
+        <a href="/historico" class="btn btn-outline-secondary">Omitir por ahora</a>
+    </section>
+
+    <section class="avisos-metrics">
+        <article>
+            <span>Envios del lote</span>
+            <strong>{{ resumen.total_lote }}</strong>
+        </article>
+        <article>
+            <span>Por avisar</span>
+            <strong>{{ resumen.total_ok }}</strong>
+        </article>
+        <article>
+            <span>Con error OF</span>
+            <strong>{{ resumen.total_error }}</strong>
+        </article>
+        <article>
+            <span>Funcionarios</span>
+            <strong>{{ resumen.funcionarios|length }}</strong>
+        </article>
+    </section>
+
+    <section class="avisos-panel">
+        <div class="avisos-panel-head">
+            <div>
+                <h2>Correos por enviar</h2>
+                <p>
+                    El respaldo completo ya se envia automaticamente a Mensajeria al procesar la OF.
+                    Desde aqui puedes avisar a los funcionarios cuando corresponda.
+                </p>
+            </div>
+            <span class="backup-badge">Respaldo automatico: {{ resumen.respaldo_destino }}</span>
+        </div>
+
+        {% if not correo_configurado %}
+            <div class="avisos-note danger">
+                Faltan credenciales de correo para enviar avisos. Revisa CORREO_EMISOR, CORREO_CLAVE_APP y CORREO_RESPALDO_MENSAJERIA.
+            </div>
+        {% elif not resumen.funcionarios %}
+            <div class="avisos-empty">
+                <h2>Sin funcionarios para avisar</h2>
+                <p>No hay envios OK con correo de remitente en este lote.</p>
+            </div>
+        {% else %}
+            <form action="/enviar_avisos_lote/{{ lote }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="funcionarios-list">
+                    {% for funcionario in resumen.funcionarios %}
+                        <label class="funcionario-row">
+                            <input type="checkbox" name="correos" value="{{ funcionario.correo }}" checked>
+                            <span>
+                                <strong>{{ funcionario.remitente }}</strong>
+                                <small>{{ funcionario.correo }}</small>
+                            </span>
+                            <em>{{ funcionario.cantidad }} envio(s)</em>
+                        </label>
+                    {% endfor %}
+                </div>
+
+                <div class="avisos-actions">
+                    <a href="/historico" class="btn btn-outline-secondary">Omitir</a>
+                    <button type="submit" class="btn btn-success"
+                            onclick="return confirm('Enviar avisos a funcionarios seleccionados?');">
+                        Enviar avisos a funcionarios
+                    </button>
+                </div>
+            </form>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

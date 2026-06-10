@@ -188,3 +188,4 @@ def guardar_respaldo_lote(nombre_archivo, contenido_bytes):
     ruta_archivo = carpeta / nombre_archivo
     ruta_archivo.write_bytes(contenido_bytes)
     return ruta_archivo
+

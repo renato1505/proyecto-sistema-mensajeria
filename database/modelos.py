@@ -75,5 +75,8 @@ class Envio(Base):
     e_fecha_envio_correo = Column(DateTime, nullable=True)
     e_estado_correo = Column(String(50), nullable=True)
 
+    e_aviso_funcionario_estado = Column(String(50), nullable=True, index=True)
+    e_fecha_aviso_funcionario = Column(DateTime, nullable=True)
+
     # Fechas internas
     e_fecha_creacion = Column(DateTime, default=datetime.utcnow, index=True)

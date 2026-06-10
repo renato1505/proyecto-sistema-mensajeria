@@ -23,9 +23,12 @@ def main():
         "/",
         "/nuevo_envio",
         "/carga_masiva",
+        "/catalogos",
+        "/catalogos?tab=destinatarios",
         "/envios",
         "/en_proceso",
         "/historico",
+        "/of_correo",
         "/estado_sistema",
     ]:
         response = client.get(ruta)
@@ -70,14 +73,31 @@ def main():
         "/guardar_destinatario",
         data={"csrf_token": token_catalogo, "rut_destinatario": "0"},
     )
+    catalogos_html = client.get("/catalogos").data.decode("utf-8", errors="ignore")
+    token_catalogos = extraer_csrf(catalogos_html)
+    remitente_invalido = client.post(
+        "/catalogos/remitentes/guardar",
+        data={
+            "csrf_token": token_catalogos,
+            "remitente": "Juan 123",
+            "correo_remitente": "correo_malo",
+            "division": "DL",
+            "centro_costo": "ABC",
+        },
+        follow_redirects=False,
+    )
 
     print(f"AJAX sin CSRF: {ajax_sin_token.status_code}")
     print(f"Destinatario invalido: {ajax_invalido.status_code}")
+    print(f"Remitente catalogo invalido: {remitente_invalido.status_code}")
 
     if ajax_sin_token.status_code != 400:
         raise SystemExit(1)
 
     if ajax_invalido.status_code != 400:
+        raise SystemExit(1)
+
+    if remitente_invalido.status_code != 302:
         raise SystemExit(1)
 
 

@@ -76,6 +76,7 @@
                             <span class="correo-badge
                                 {% if lote.estado_correo == 'Correo enviado' %}correo-ok
                                 {% elif lote.estado_correo == 'Error correo' %}correo-error
+                                {% elif lote.estado_correo == 'CSV descargado' %}correo-ok
                                 {% else %}correo-pendiente{% endif %}">
                                 {{ lote.estado_correo }}
                             </span>

@@ -14,10 +14,6 @@
     <header class="app-header">
         <div class="app-header-inner">
             <a class="brand-main" href="/">
-                <img src="{{ url_for('static', filename='img/logo_loreal_mensajeria.png') }}"
-                     alt="L'Oreal Mensajeria"
-                     onload="this.nextElementSibling.style.display='none'"
-                     onerror="this.style.display='none'">
                 <span class="brand-fallback">
                     <strong>L'OREAL</strong>
                     <small>Centro de Mensajeria</small>
@@ -28,19 +24,22 @@
                 <a href="/">Inicio</a>
                 <a href="/nuevo_envio">Nuevo envio</a>
                 <a href="/carga_masiva">Carga masiva</a>
+                <a href="/catalogos">Catalogos</a>
                 <a href="/envios">Pendientes</a>
                 <a href="/en_proceso">En proceso</a>
                 <a href="/historico">Historico</a>
+                <a href="/avisos" class="nav-with-badge">
+                    Avisos
+                    {% if avisos_pendientes_count %}
+                        <span class="nav-badge">{{ avisos_pendientes_count }}</span>
+                    {% endif %}
+                </a>
                 <a href="/estado_sistema">Estado</a>
             </nav>
 
             <div class="brand-partner">
                 <span class="status-dot"></span>
                 <span class="partner-text">Integracion</span>
-                <img src="{{ url_for('static', filename='img/logo_starken.png') }}"
-                     alt="Starken"
-                     onload="this.nextElementSibling.style.display='none'"
-                     onerror="this.style.display='none'">
                 <strong>Starken</strong>
             </div>
         </div>
@@ -87,11 +86,33 @@
         {% block content %}{% endblock %}
     </main>
 
+    <div class="app-loading-overlay" id="appLoadingOverlay" aria-live="polite" aria-hidden="true">
+        <div class="app-loading-box">
+            <div class="app-loading-spinner" aria-hidden="true"></div>
+            <div>
+                <strong>Procesando solicitud</strong>
+                <p>Espera unos segundos mientras el sistema termina la operacion.</p>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const alerts = document.querySelectorAll(".app-alert");
+            const loadingOverlay = document.getElementById("appLoadingOverlay");
+
+            function mostrarCarga(form) {
+                if (!loadingOverlay || form?.dataset.skipLoading === "true") return;
+
+                loadingOverlay.classList.add("visible");
+                loadingOverlay.setAttribute("aria-hidden", "false");
+
+                form.querySelectorAll("button[type='submit'], input[type='submit']").forEach(function (submitter) {
+                    submitter.disabled = true;
+                });
+            }
 
             alerts.forEach(function (alertElement) {
                 const category = alertElement.dataset.alertCategory;
@@ -108,8 +129,17 @@
                     }, 500);
                 }, delay);
             });
+
+            document.querySelectorAll("form").forEach(function (form) {
+                form.addEventListener("submit", function (event) {
+                    if (event.defaultPrevented) return;
+                    if (!form.checkValidity()) return;
+                    mostrarCarga(form);
+                });
+            });
         });
     </script>
+    {% block extra_js %}{% endblock %}
 
 </body>
 </html>

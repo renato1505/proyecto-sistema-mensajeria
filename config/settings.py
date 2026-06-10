@@ -33,6 +33,10 @@ FLASK_DEBUG = os.getenv("FLASK_DEBUG", "0").strip() == "1"
 CORREO_EMISOR = os.getenv("CORREO_EMISOR", "")
 CORREO_CLAVE_APP = os.getenv("CORREO_CLAVE_APP", "")
 CORREO_DESTINO_STARKEN = os.getenv("CORREO_DESTINO_STARKEN", "")
+CORREO_RESPALDO_MENSAJERIA = os.getenv(
+    "CORREO_RESPALDO_MENSAJERIA",
+    "mensajeria.alcantara@loreal.com",
+)
 
 OF_IMAP_HOST = os.getenv("OF_IMAP_HOST", "imap.gmail.com")
 OF_IMAP_PORT = int(os.getenv("OF_IMAP_PORT", "993"))

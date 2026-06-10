@@ -77,8 +77,6 @@ MAPA_COLUMNAS = {
 }
 
 
-
-
 def _normalizar_columna(valor):
     texto = str(valor or "").strip().lower()
     texto = unicodedata.normalize("NFKD", texto)
@@ -123,6 +121,7 @@ def _obtener_catalogo_comunas(db):
 
 
 def generar_plantilla_carga_masiva(db):
+    """Crea la plantilla oficial que los funcionarios completan para carga masiva."""
     por_region, region_por_comuna = _obtener_catalogo_comunas(db)
     regiones = sorted(por_region)
     comunas_nombres = sorted(
@@ -241,6 +240,7 @@ def _mapear_dataframe(df):
 
 
 def validar_archivo_carga_masiva(archivo, db):
+    """Lee la plantilla, normaliza datos y devuelve filas listas/error para revision web."""
     df = pd.read_excel(archivo, sheet_name="Envios")
     df = _mapear_dataframe(df)
     df = df.dropna(how="all")

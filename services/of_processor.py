@@ -30,6 +30,7 @@ def _validar_columnas(df):
 
 
 def procesar_archivo_of(db, lote, archivo, nombre_archivo):
+    """Valida y aplica un archivo OF, ya sea subido manualmente o tomado del correo."""
     df = _normalizar_columnas(_leer_excel_of(archivo, nombre_archivo))
     _validar_columnas(df)
 
@@ -53,6 +54,8 @@ def procesar_archivo_of(db, lote, archivo, nombre_archivo):
             "No se proceso nada."
         )
 
+    # La columna "fila" es el enlace con el CSV enviado a Starken.
+    # Si hay filas duplicadas o invalidas, es mas seguro abortar todo el lote.
     filas_archivo = []
     for valor in df_validas["fila"].tolist():
         try:
@@ -78,6 +81,7 @@ def procesar_archivo_of(db, lote, archivo, nombre_archivo):
             "El archivo OF contiene ordenes de flete duplicadas. No se proceso nada."
         )
 
+    # Una orden de flete no puede quedar asociada a dos lotes distintos.
     if ofs_archivo:
         ofs_existentes = (
             db.query(Envio)

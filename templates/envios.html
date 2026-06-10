@@ -17,13 +17,9 @@
 
         <div class="pendientes-actions">
             <a href="/nuevo_envio" class="btn btn-primary btn-sm">Nuevo envio</a>
-            <form action="/generar_excel" method="POST"
-                  onsubmit="return confirm('Seguro que deseas generar y enviar el CSV Starken?');">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-success btn-sm" {% if not envios %}disabled{% endif %}>
-                    Generar CSV Starken
-                </button>
-            </form>
+            <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalGenerarCsv" {% if not envios %}disabled{% endif %}>
+                Generar CSV Starken
+            </button>
         </div>
     </section>
 
@@ -134,4 +130,99 @@
         </section>
     {% endif %}
 </div>
+
+<div class="modal fade" id="modalGenerarCsv" tabindex="-1" aria-labelledby="modalGenerarCsvLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form action="/generar_excel" method="POST" id="formGenerarCsv">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="modalGenerarCsvLabel">Generar CSV Starken</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2">El lote se creara con {{ resumen.total }} envio(s) pendiente(s).</p>
+                    <p class="text-muted mb-0">Elige si quieres descargar el archivo para subirlo manualmente a Starken o enviarlo por correo.</p>
+                    <div id="estadoDescargaCsv" class="alert alert-success mt-3 mb-0 d-none" role="alert">
+                        Descarga completada. Redirigiendo a En proceso...
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" name="accion" value="descargar" class="btn btn-primary" id="btnDescargarCsv">
+                        Descargar CSV
+                    </button>
+                    <button type="submit" name="accion" value="enviar" class="btn btn-success" id="btnEnviarCsv">
+                        Enviar por correo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("formGenerarCsv");
+    const estado = document.getElementById("estadoDescargaCsv");
+    const btnDescargar = document.getElementById("btnDescargarCsv");
+    const btnEnviar = document.getElementById("btnEnviarCsv");
+
+    if (!form) {
+        return;
+    }
+
+    form.addEventListener("submit", async function (event) {
+        const accion = event.submitter ? event.submitter.value : "";
+
+        if (accion !== "descargar") {
+            return;
+        }
+
+        event.preventDefault();
+        btnDescargar.disabled = true;
+        btnEnviar.disabled = true;
+        btnDescargar.textContent = "Descargando...";
+
+        const formData = new FormData(form);
+        formData.set("accion", "descargar");
+
+        try {
+            const response = await fetch(form.action, {
+                method: "POST",
+                body: formData,
+                credentials: "same-origin"
+            });
+
+            const contentType = response.headers.get("content-type") || "";
+            if (!response.ok || contentType.includes("text/html")) {
+                window.location.href = "/envios";
+                return;
+            }
+
+            const blob = await response.blob();
+            const disposition = response.headers.get("content-disposition") || "";
+            const match = disposition.match(/filename="?([^"]+)"?/i);
+            const filename = match ? match[1] : "starken.csv";
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+
+            estado.classList.remove("d-none");
+
+            setTimeout(function () {
+                window.location.href = "/en_proceso";
+            }, 1200);
+        } catch (error) {
+            window.location.href = "/envios";
+        }
+    });
+});
+</script>
 {% endblock %}

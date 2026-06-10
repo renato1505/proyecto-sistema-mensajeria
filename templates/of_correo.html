@@ -22,14 +22,31 @@
             <div>
                 <h2>Bandeja de respuesta Starken</h2>
                 <p>
-                    La busqueda es manual para evitar procesar archivos equivocados.
-                    El sistema solo muestra adjuntos Excel compatibles.
+                    La busqueda normal muestra solo OF que coinciden con lotes activos.
+                    Los correos antiguos quedan ocultos para evitar reprocesos.
                 </p>
             </div>
-            <a href="/of_correo?buscar=1" class="btn btn-success" {% if not correo_configurado %}aria-disabled="true"{% endif %}>
-                Revisar correo
-            </a>
+            <div class="of-actions">
+                {% if busqueda_realizada and not mostrar_todos %}
+                    <a href="/of_correo?buscar=1&mostrar_todos=1" class="btn btn-outline-secondary">
+                        Ver todos
+                    </a>
+                {% elif busqueda_realizada and mostrar_todos %}
+                    <a href="/of_correo?buscar=1" class="btn btn-outline-secondary">
+                        Solo activos
+                    </a>
+                {% endif %}
+                <a href="/of_correo?buscar=1" class="btn btn-success" {% if not correo_configurado %}aria-disabled="true"{% endif %}>
+                    Revisar correo
+                </a>
+            </div>
         </div>
+
+        {% if busqueda_realizada and correos_ocultos %}
+            <div class="of-note info">
+                Se ocultaron {{ correos_ocultos }} correo(s) OF porque no coinciden con ningun lote activo.
+            </div>
+        {% endif %}
 
         {% if not correo_configurado %}
             <div class="of-note danger">
@@ -114,8 +131,8 @@
             </div>
         {% else %}
             <div class="of-empty">
-                <h2>Sin adjuntos OF</h2>
-                <p>No se encontraron archivos Excel OF en los ultimos correos revisados.</p>
+                <h2>Sin OF activos</h2>
+                <p>No se encontraron respuestas OF asociadas a lotes actualmente en proceso.</p>
             </div>
         {% endif %}
     </section>

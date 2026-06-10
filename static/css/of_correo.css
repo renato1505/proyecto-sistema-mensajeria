@@ -98,6 +98,13 @@
     border-bottom: 1px solid var(--line);
 }
 
+.of-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
 .of-note,
 .of-empty {
     margin: 18px;
@@ -119,6 +126,12 @@
     color: #842029;
     background: #f8d7da;
     border: 1px solid #f1aeb5;
+}
+
+.of-note.info {
+    color: #1d4ed8;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
 }
 
 .of-empty {

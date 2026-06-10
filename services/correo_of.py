@@ -129,6 +129,7 @@ def _extraer_texto_mensaje(mensaje):
 
 
 def extraer_archivo_procesado(texto):
+    """Obtiene el CSV que Starken declara como procesado en el cuerpo del correo."""
     if not texto:
         return ""
 
@@ -147,6 +148,7 @@ def extraer_archivo_procesado(texto):
 
 
 def buscar_correos_of(limite=10):
+    """Busca respuestas OF recientes sin marcar correos ni modificar la bandeja."""
     cliente = _abrir_buzon()
     correos = []
 
@@ -202,6 +204,7 @@ def buscar_correos_of(limite=10):
 
 
 def descargar_adjunto_of(uid, indice_adjunto):
+    """Descarga un adjunto OF y devuelve tambien el CSV procesado informado por Starken."""
     cliente = _abrir_buzon()
 
     try:

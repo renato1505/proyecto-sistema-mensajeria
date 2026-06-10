@@ -3,12 +3,30 @@ from numbers import Number
 
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+NOMBRE_PERSONA_RE = re.compile(r"^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ'´` .-]+$")
 
 
 def email_valido(email):
     if not email:
         return False
     return bool(EMAIL_RE.match(str(email).strip()))
+
+
+def nombre_persona_valido(nombre):
+    nombre = str(nombre or "").strip()
+
+    if len(nombre) < 3:
+        return False
+
+    if any(char.isdigit() for char in nombre):
+        return False
+
+    return bool(NOMBRE_PERSONA_RE.fullmatch(nombre))
+
+
+def centro_costo_valido(centro_costo):
+    centro_costo = str(centro_costo or "").strip()
+    return bool(centro_costo) and centro_costo.isdigit() and len(centro_costo) <= 20
 
 
 def normalizar_telefono_chile(telefono):

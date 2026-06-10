@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Avisos{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/avisos_lote.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="avisos-page">
+    <section class="avisos-hero">
+        <div>
+            <span class="avisos-kicker">Comunicaciones</span>
+            <h1>Avisos a funcionarios</h1>
+            <p>Reabre lotes pendientes de aviso para enviar el detalle cuando Starken ya haya retirado los pedidos.</p>
+        </div>
+        <a href="/historico" class="btn btn-outline-secondary">Ir a historico</a>
+    </section>
+
+    <section class="avisos-panel">
+        <div class="avisos-panel-head">
+            <div>
+                <h2>Lotes pendientes</h2>
+                <p>Solo aparecen lotes procesados desde ahora que aun no han sido avisados a funcionarios.</p>
+            </div>
+        </div>
+
+        {% if not lotes %}
+            <div class="avisos-empty">
+                <h2>Sin lotes para avisar</h2>
+                <p>Cuando existan envios historicos con OF y correo de remitente apareceran aqui.</p>
+            </div>
+        {% else %}
+            <div class="avisos-table-wrap">
+                <table class="table align-middle mb-0 avisos-table">
+                    <thead>
+                        <tr>
+                            <th>Lote</th>
+                            <th>Fecha</th>
+                            <th>Envios</th>
+                            <th>Funcionarios</th>
+                            <th>Archivo</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in lotes %}
+                            <tr>
+                                <td><strong>{{ item.lote }}</strong></td>
+                                <td>
+                                    {% if item.fecha %}
+                                        {{ item.fecha.strftime('%d/%m/%Y %H:%M') }}
+                                    {% else %}
+                                        Sin fecha
+                                    {% endif %}
+                                </td>
+                                <td>{{ item.envios }}</td>
+                                <td>{{ item.funcionarios }}</td>
+                                <td>{{ item.archivo if item.archivo else '-' }}</td>
+                                <td class="text-end">
+                                    <a href="/avisos_lote/{{ item.lote }}" class="btn btn-success btn-sm">
+                                        Preparar avisos
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

@@ -6,10 +6,11 @@ Aplicacion Flask para registrar envios, generar archivos CSV para Starken, carga
 
 1. Registrar envios en estado pendiente.
 2. Revisar y editar pendientes antes de enviarlos a Starken.
-3. Generar CSV Starken y enviarlo por correo configurado.
-4. Cargar archivo OF devuelto por Starken.
-5. Mover envios OK al historico.
-6. Exportar o respaldar historico cuando corresponda.
+3. Generar CSV Starken y elegir si se descarga o se envia por correo.
+4. Cargar archivo OF manualmente o desde correo.
+5. Mover envios OK al historico y enviar respaldo a Mensajeria.
+6. Enviar avisos a funcionarios cuando corresponda.
+7. Exportar o respaldar historico cuando corresponda.
 
 ## Preparacion
 
@@ -71,5 +72,6 @@ No subir ni compartir `.env`, respaldos ni archivos Excel con datos reales. Esos
 ## Documentacion
 
 - `docs/OPERACION.md`: procedimiento de uso diario.
+- `docs/ARQUITECTURA.md`: mapa tecnico del flujo, modulos y estados.
 - `docs/CALIDAD.md`: controles, checks y recomendaciones para GitHub.
 - `docs/GITHUB.md`: guia para subir el repositorio sin exponer datos sensibles.

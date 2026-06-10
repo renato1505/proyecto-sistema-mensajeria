@@ -1,0 +1,32 @@
+<div class="catalogos-pagination">
+    <div>
+        Pagina {{ pagination.page }} de {{ pagination.total_paginas }}
+    </div>
+
+    <div class="catalogos-pagination-actions">
+        <a
+            class="btn btn-outline-secondary btn-sm {% if not pagination.tiene_anterior %}disabled{% endif %}"
+            href="{{ pagination.url_primera }}"
+        >
+            Primera
+        </a>
+        <a
+            class="btn btn-outline-secondary btn-sm {% if not pagination.tiene_anterior %}disabled{% endif %}"
+            href="{{ pagination.url_anterior }}"
+        >
+            Anterior
+        </a>
+        <a
+            class="btn btn-outline-secondary btn-sm {% if not pagination.tiene_siguiente %}disabled{% endif %}"
+            href="{{ pagination.url_siguiente }}"
+        >
+            Siguiente
+        </a>
+        <a
+            class="btn btn-outline-secondary btn-sm {% if not pagination.tiene_siguiente %}disabled{% endif %}"
+            href="{{ pagination.url_ultima }}"
+        >
+            Ultima
+        </a>
+    </div>
+</div>
