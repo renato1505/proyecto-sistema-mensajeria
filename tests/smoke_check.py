@@ -1,10 +1,12 @@
 import re
 import sys
+import os
 from pathlib import Path
 
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_DIR))
+os.environ["LOGIN_REQUIRED"] = "0"
 
 from main import app
 

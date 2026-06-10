@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Acceso{% endblock %}
+
+{% block header %}{% endblock %}
+
+{% block content %}
+<div class="login-page">
+    <section class="login-panel">
+        <div>
+            <span class="login-kicker">Acceso privado</span>
+            <h1>Portal Operativo</h1>
+            <p>Selecciona tu usuario e ingresa la clave de acceso.</p>
+        </div>
+
+        <form method="POST" class="login-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label for="usuario">Usuario</label>
+            <select class="form-select" id="usuario" name="usuario" required autofocus>
+                {% for usuario in usuarios %}
+                    <option value="{{ usuario }}">{{ usuario|capitalize }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="clave">Clave de acceso</label>
+            <input
+                type="password"
+                class="form-control"
+                id="clave"
+                name="clave"
+                autocomplete="current-password"
+                required
+            >
+            <button class="btn btn-success w-100" type="submit">Ingresar</button>
+        </form>
+    </section>
+</div>
+{% endblock %}

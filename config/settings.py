@@ -17,7 +17,7 @@ def _load_env_file():
             continue
 
         key, value = line.split("=", 1)
-        key = key.strip()
+        key = key.strip().lstrip("\ufeff")
         value = value.strip().strip('"').strip("'")
 
         os.environ.setdefault(key, value)
@@ -29,6 +29,9 @@ _load_env_file()
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 SECRET_KEY = os.getenv("SECRET_KEY", "clave_local_solo_desarrollo")
 FLASK_DEBUG = os.getenv("FLASK_DEBUG", "0").strip() == "1"
+LOGIN_REQUIRED = os.getenv("LOGIN_REQUIRED", "0").strip() == "1"
+APP_ACCESS_PASSWORD = os.getenv("APP_ACCESS_PASSWORD", "")
+APP_USERS = os.getenv("APP_USERS", "")
 
 CORREO_EMISOR = os.getenv("CORREO_EMISOR", "")
 CORREO_CLAVE_APP = os.getenv("CORREO_CLAVE_APP", "")
