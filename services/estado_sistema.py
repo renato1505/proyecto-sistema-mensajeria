@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from sqlalchemy import text
@@ -7,6 +7,10 @@ from config.settings import LOGS_DIR, RESPALDOS_LOTES_DIR
 from database.conexion import SessionLocal
 from database.modelos import Comuna, Destinatario, Envio, Remitente
 from services.correo import correo_starken_configurado, obtener_correo_destino_starken
+from services.historico import (
+    correo_respaldo_historico_configurado,
+    destinatarios_respaldo_historico,
+)
 
 
 def _resolver_carpeta(ruta):
@@ -35,6 +39,26 @@ def _estado_carpeta(ruta):
             "ruta": str(carpeta),
             "detalle": f"No disponible: {exc}",
         }
+
+
+def _estado_almacenamiento_temporal():
+    respaldos_lotes = _estado_carpeta(RESPALDOS_LOTES_DIR)
+    logs = _estado_carpeta(LOGS_DIR)
+    disponible = respaldos_lotes["ok"] and logs["ok"]
+
+    return {
+        "ok": disponible,
+        "detalle": (
+            "Disponible solo como almacenamiento temporal de la instancia."
+            if disponible
+            else "Una o mas carpetas temporales no estan disponibles."
+        ),
+        "rutas": [
+            f"Lotes: {respaldos_lotes['ruta']}",
+            f"Logs: {logs['ruta']}",
+        ],
+        "nota": "En cloud, la informacion critica debe quedar en base de datos o correo.",
+    }
 
 
 def _ultimo_log():
@@ -96,6 +120,51 @@ def _conteos_db(db):
     }
 
 
+def _estado_operativo(db):
+    limite_lote_antiguo = datetime.now() - timedelta(days=2)
+    lotes_en_proceso = (
+        db.query(Envio.e_lote)
+        .filter(Envio.e_estado == "en_proceso", Envio.e_lote.isnot(None))
+        .distinct()
+        .count()
+    )
+    lotes_antiguos = (
+        db.query(Envio.e_lote)
+        .filter(
+            Envio.e_estado == "en_proceso",
+            Envio.e_lote.isnot(None),
+            Envio.e_fecha_exportacion.isnot(None),
+            Envio.e_fecha_exportacion < limite_lote_antiguo,
+        )
+        .distinct()
+        .count()
+    )
+    avisos_pendientes = (
+        db.query(Envio.e_lote)
+        .filter(
+            Envio.e_estado == "historico",
+            Envio.e_lote.isnot(None),
+            Envio.e_aviso_funcionario_estado == "pendiente",
+        )
+        .distinct()
+        .count()
+    )
+    correos_error = (
+        db.query(Envio.e_lote)
+        .filter(Envio.e_estado_correo == "error", Envio.e_lote.isnot(None))
+        .distinct()
+        .count()
+    )
+
+    return {
+        "lotes_en_proceso": lotes_en_proceso,
+        "lotes_antiguos": lotes_antiguos,
+        "avisos_pendientes": avisos_pendientes,
+        "correos_error": correos_error,
+        "ok": lotes_antiguos == 0 and correos_error == 0,
+    }
+
+
 def obtener_estado_sistema():
     estado = {
         "fecha_revision": datetime.now(),
@@ -108,10 +177,19 @@ def obtener_estado_sistema():
             "destino": obtener_correo_destino_starken() or "No configurado",
             "detalle": "Configurado" if correo_starken_configurado() else "Faltan datos en .env",
         },
-        "respaldos_lotes": _estado_carpeta(RESPALDOS_LOTES_DIR),
-        "logs": _estado_carpeta(LOGS_DIR),
+        "respaldo_historico": {
+            "ok": correo_respaldo_historico_configurado(),
+            "destinos": destinatarios_respaldo_historico(),
+            "detalle": (
+                "El respaldo de historico eliminado se envia por correo."
+                if correo_respaldo_historico_configurado()
+                else "Faltan credenciales o destinatarios para respaldo historico."
+            ),
+        },
+        "almacenamiento_temporal": _estado_almacenamiento_temporal(),
         "ultimo_log": _ultimo_log(),
         "conteos": {},
+        "operacion": {},
     }
 
     db = SessionLocal()
@@ -122,6 +200,7 @@ def obtener_estado_sistema():
             "detalle": "Conexion activa",
         }
         estado["conteos"] = _conteos_db(db)
+        estado["operacion"] = _estado_operativo(db)
     except Exception as exc:
         estado["db"] = {
             "ok": False,
@@ -133,8 +212,7 @@ def obtener_estado_sistema():
     estado["general_ok"] = all([
         estado["db"]["ok"],
         estado["correo"]["ok"],
-        estado["respaldos_lotes"]["ok"],
-        estado["logs"]["ok"],
+        estado["respaldo_historico"]["ok"],
     ])
 
     return estado

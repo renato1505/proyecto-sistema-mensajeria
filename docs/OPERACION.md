@@ -66,7 +66,7 @@ Desde `Historico` se puede:
 - Descargar registros seleccionados.
 - Eliminar registros filtrados con clave de eliminacion.
 
-Cuando se elimina historico, primero se genera un respaldo Excel en `respaldos_historico`.
+Cuando se elimina historico en cloud, primero se envia un respaldo Excel por correo a Mensajeria. Si el correo de respaldo falla, no se eliminan registros.
 
 ## 7. Pruebas manuales
 

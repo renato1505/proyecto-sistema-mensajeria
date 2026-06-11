@@ -14,7 +14,7 @@ from services.historico import (
     OPCIONES_PER_PAGE_HISTORICO,
     construir_url_historico,
     convertir_envios_a_dataframe,
-    guardar_respaldo_historico,
+    enviar_respaldo_eliminacion_historico,
     leer_filtros_historico,
     leer_paginacion_historico,
     limpiar_nombre_archivo,
@@ -216,10 +216,13 @@ def registrar_rutas_historico(app):
             flash("No hay registros para eliminar con esos filtros.", "warning")
             return redirect(url_desde_filtros(filtros))
 
-        # Siempre se genera respaldo Excel antes de borrar registros historicos.
+        # En cloud, el respaldo critico debe salir por correo antes de borrar.
         try:
-            nombre_respaldo, ruta_respaldo = guardar_respaldo_historico(envios_a_eliminar)
             cantidad = len(envios_a_eliminar)
+            nombre_respaldo, destinatarios_respaldo = enviar_respaldo_eliminacion_historico(
+                envios_a_eliminar,
+                filtros,
+            )
 
             for envio in envios_a_eliminar:
                 db.delete(envio)
@@ -228,14 +231,17 @@ def registrar_rutas_historico(app):
         except Exception:
             db.rollback()
             db.close()
-            logger.exception("No se pudo eliminar historico con respaldo previo")
-            flash("No se pudo eliminar el historico. Revisa el log del sistema.", "danger")
+            logger.exception("No se pudo eliminar historico con respaldo por correo")
+            flash(
+                "No se elimino el historico porque no se pudo enviar el respaldo por correo.",
+                "danger",
+            )
             return redirect(url_desde_filtros(filtros))
 
         db.close()
         flash(
             f"Se eliminaron {cantidad} registro(s) del historico. "
-            f"Respaldo guardado en 'respaldos_historico/{nombre_respaldo}'",
+            f"Respaldo '{nombre_respaldo}' enviado a {', '.join(destinatarios_respaldo)}.",
             "warning",
         )
         return redirect(construir_url_historico(filtros["mes"]))

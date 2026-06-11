@@ -98,12 +98,21 @@ Revisar especialmente:
 - `respaldos_lotes`
 - `respaldos_historico`
 - `logs`
+- `tmp_cargas`
 
 Para uso cloud estable se recomienda:
 
 - Mantener respaldo por correo.
 - Usar base de datos para informacion critica.
 - Evaluar disco persistente o almacenamiento externo si se requiere conservar archivos.
+
+En produccion cloud, la eliminacion de historico no debe depender de `respaldos_historico`.
+Antes de borrar registros, el sistema envia un Excel de respaldo a:
+
+- `CORREO_RESPALDO_MENSAJERIA`
+- `CORREO_EMISOR`
+
+Si ese correo no se puede enviar, la eliminacion se bloquea.
 
 ## Seguridad minima
 

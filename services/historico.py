@@ -1,11 +1,15 @@
 import os
 import re
+import smtplib
+from email.message import EmailMessage
+from io import BytesIO
 from datetime import datetime
 from urllib.parse import urlencode
 
 import pandas as pd
 from sqlalchemy import func
 
+from config.settings import CORREO_CLAVE_APP, CORREO_EMISOR, CORREO_RESPALDO_MENSAJERIA
 from database.modelos import Envio
 
 
@@ -225,6 +229,17 @@ def convertir_envios_a_dataframe(envios):
     return pd.DataFrame(data)
 
 
+def generar_excel_historico_bytes(envios):
+    output = BytesIO()
+    df = convertir_envios_a_dataframe(envios)
+
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="Historico")
+
+    output.seek(0)
+    return output.getvalue()
+
+
 def guardar_respaldo_historico(envios):
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     carpeta_respaldos = os.path.join(project_dir, "respaldos_historico")
@@ -240,3 +255,67 @@ def guardar_respaldo_historico(envios):
         df.to_excel(writer, index=False, sheet_name="Historico")
 
     return nombre_archivo, ruta_archivo
+
+
+def destinatarios_respaldo_historico():
+    destinos = []
+    for correo in (CORREO_RESPALDO_MENSAJERIA, CORREO_EMISOR):
+        correo = (correo or "").strip()
+        if correo and correo.lower() not in {destino.lower() for destino in destinos}:
+            destinos.append(correo)
+    return destinos
+
+
+def correo_respaldo_historico_configurado():
+    return bool(CORREO_EMISOR and CORREO_CLAVE_APP and destinatarios_respaldo_historico())
+
+
+def enviar_respaldo_eliminacion_historico(envios, filtros=None):
+    """Envia respaldo Excel antes de borrar historico en entornos cloud."""
+    if not correo_respaldo_historico_configurado():
+        raise RuntimeError("Faltan credenciales o destinatarios para respaldo historico.")
+
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    nombre_archivo = f"respaldo_historico_eliminado_{timestamp}.xlsx"
+    contenido = generar_excel_historico_bytes(envios)
+    filtros = filtros or {}
+    filtros_activos = {
+        clave: valor
+        for clave, valor in filtros.items()
+        if valor and not (clave == "mes" and valor == "todos")
+    }
+
+    detalle_filtros = (
+        "\n".join(f"- {clave}: {valor}" for clave, valor in filtros_activos.items())
+        if filtros_activos
+        else "- Sin filtros especificos"
+    )
+
+    msg = EmailMessage()
+    msg["Subject"] = f"Respaldo historico eliminado - {len(envios)} registro(s)"
+    msg["From"] = CORREO_EMISOR
+    msg["To"] = ", ".join(destinatarios_respaldo_historico())
+    msg.set_content(
+        "Se eliminaron registros del historico del Portal Operativo.\n\n"
+        f"Total de registros eliminados: {len(envios)}\n"
+        f"Fecha de respaldo: {datetime.now().strftime('%d/%m/%Y %H:%M')}\n\n"
+        "Filtros aplicados:\n"
+        f"{detalle_filtros}\n\n"
+        "Se adjunta respaldo Excel de los registros eliminados.\n\n"
+        "Equipo de Mensajeria\n"
+    )
+    msg.add_attachment(
+        contenido,
+        maintype="application",
+        subtype="vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        filename=nombre_archivo,
+    )
+
+    with smtplib.SMTP("smtp.gmail.com", 587) as servidor:
+        servidor.ehlo()
+        servidor.starttls()
+        servidor.ehlo()
+        servidor.login(CORREO_EMISOR, CORREO_CLAVE_APP)
+        servidor.send_message(msg)
+
+    return nombre_archivo, destinatarios_respaldo_historico()

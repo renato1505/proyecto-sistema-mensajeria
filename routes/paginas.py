@@ -2,6 +2,7 @@ from flask import render_template
 
 from database.conexion import SessionLocal
 from database.modelos import Envio
+from services.dashboard import obtener_dashboard_mensajeria
 from services.estado_sistema import obtener_estado_sistema
 
 
@@ -90,8 +91,14 @@ def _resumen_en_proceso(lotes):
 def registrar_rutas_paginas(app):
     @app.route("/")
     def inicio():
+        db = SessionLocal()
+        try:
+            dashboard = obtener_dashboard_mensajeria(db)
+        finally:
+            db.close()
+
         estado = obtener_estado_sistema()
-        return render_template("index.html", estado=estado)
+        return render_template("index.html", estado=estado, dashboard=dashboard)
 
     @app.route("/estado_sistema")
     def estado_sistema():

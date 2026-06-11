@@ -124,11 +124,12 @@ def registrar_rutas_starken_lotes(app):
         try:
             guardar_respaldo_lote(nombre_archivo, contenido_bytes)
         except Exception as e:
-            db.rollback()
-            db.close()
-            logger.exception("No se pudo guardar respaldo local de lote Starken")
-            flash(f"No se pudo guardar el respaldo local del CSV: {str(e)}", "danger")
-            return redirect("/envios")
+            logger.exception("No se pudo guardar respaldo temporal de lote Starken")
+            flash(
+                "No se pudo guardar una copia temporal del CSV, "
+                "pero el lote continuara porque el respaldo critico esta en la base/correo.",
+                "warning",
+            )
 
         db.commit()
 

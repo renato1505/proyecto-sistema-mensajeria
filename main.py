@@ -16,6 +16,7 @@ from routes.historico import registrar_rutas_historico
 from routes.historico_ajax import registrar_rutas_historico_ajax
 from routes.starken_lotes import registrar_rutas_starken_lotes
 from services.avisos import contar_lotes_avisos_pendientes
+from database.modelos import Envio
 from utils.csrf import obtener_csrf_token, validar_csrf
 
 app = Flask(__name__)
@@ -37,9 +38,17 @@ def inyectar_csrf_token():
 def inyectar_contador_avisos():
     db = SessionLocal()
     try:
-        return {"avisos_pendientes_count": contar_lotes_avisos_pendientes(db)}
+        return {
+            "avisos_pendientes_count": contar_lotes_avisos_pendientes(db),
+            "pendientes_count": db.query(Envio).filter(Envio.e_estado == "pendiente").count(),
+            "en_proceso_count": db.query(Envio).filter(Envio.e_estado == "en_proceso").count(),
+        }
     except Exception:
-        return {"avisos_pendientes_count": 0}
+        return {
+            "avisos_pendientes_count": 0,
+            "pendientes_count": 0,
+            "en_proceso_count": 0,
+        }
     finally:
         db.close()
 

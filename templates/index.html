@@ -40,64 +40,122 @@
         </a>
     </section>
 
-    <section class="home-metrics">
+    <section class="home-kpis" aria-label="Resumen del mes">
         <article>
-            <span>Pendientes</span>
-            <strong>{{ estado.conteos.get("pendientes", 0) }}</strong>
+            <span>Envios del mes</span>
+            <strong>{{ dashboard.resumen_mes.envios }}</strong>
+            <small>{{ dashboard.resumen_mes.bultos }} bulto(s)</small>
         </article>
         <article>
-            <span>En proceso</span>
-            <strong>{{ estado.conteos.get("en_proceso", 0) }}</strong>
+            <span>Funcionarios activos</span>
+            <strong>{{ dashboard.resumen_mes.funcionarios }}</strong>
+            <small>Con envios historicos este mes</small>
         </article>
         <article>
-            <span>Historico</span>
-            <strong>{{ estado.conteos.get("historico", 0) }}</strong>
+            <span>Division principal</span>
+            <strong class="kpi-text">{{ dashboard.resumen_mes.division_principal }}</strong>
+            <small>Mayor volumen historico</small>
         </article>
         <article>
-            <span>Total envios</span>
-            <strong>{{ estado.conteos.get("envios_total", 0) }}</strong>
+            <span>Region principal</span>
+            <strong class="kpi-text">{{ dashboard.resumen_mes.region_principal }}</strong>
+            <small>Destino mas frecuente</small>
         </article>
     </section>
 
-    <section class="home-panels">
-        <div class="home-panel">
-            <h2>Resumen operativo</h2>
-            <dl>
-                <div>
-                    <dt>Ultimo lote</dt>
-                    <dd>{{ estado.conteos.get("ultimo_lote", "Sin lotes registrados") }}</dd>
-                </div>
-                <div>
-                    <dt>Ultimo envio</dt>
-                    <dd>
-                        {% if estado.conteos.get("ultimo_envio_fecha") %}
-                            {{ estado.conteos.get("ultimo_envio_fecha").strftime("%d/%m/%Y %H:%M") }}
-                        {% else %}
-                            Sin envios
-                        {% endif %}
-                    </dd>
-                </div>
-                <div>
-                    <dt>Correo Starken</dt>
-                    <dd>{% if estado.correo.ok %}Configurado{% else %}Falta configurar{% endif %}</dd>
-                </div>
-            </dl>
+    <section class="dashboard-grid">
+        <div class="home-panel wide">
+            <div class="panel-title">
+                <span>Comparativo</span>
+                <h2>Envios historicos por mes</h2>
+            </div>
+            <div class="month-bars">
+                {% for mes in dashboard.tendencia_mensual %}
+                    <div class="month-row">
+                        <span>{{ mes.periodo }}</span>
+                        <div class="month-track">
+                            <i style="width: {{ mes.porcentaje }}%"></i>
+                        </div>
+                        <strong>{{ mes.cantidad }}</strong>
+                    </div>
+                {% endfor %}
+            </div>
         </div>
 
         <div class="home-panel">
-            <h2>Catalogos</h2>
+            <div class="panel-title">
+                <span>Solicitantes</span>
+                <h2>Top funcionarios</h2>
+            </div>
+            <ol class="rank-list">
+                {% for item in dashboard.top_solicitantes %}
+                    <li>
+                        <span>{{ item.nombre }}</span>
+                        <strong>{{ item.cantidad }}</strong>
+                    </li>
+                {% else %}
+                    <li><span>Sin datos historicos</span><strong>0</strong></li>
+                {% endfor %}
+            </ol>
+        </div>
+
+        <div class="home-panel">
+            <div class="panel-title">
+                <span>Divisiones</span>
+                <h2>Participacion operativa</h2>
+            </div>
+            <div class="share-list">
+                {% for item in dashboard.top_divisiones %}
+                    <div class="share-row">
+                        <div>
+                            <span>{{ item.nombre }}</span>
+                            <strong>{{ item.cantidad }} envio(s)</strong>
+                        </div>
+                        <div class="share-track"><i style="width: {{ item.porcentaje }}%"></i></div>
+                    </div>
+                {% else %}
+                    <p class="empty-dashboard">Sin datos historicos.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="home-panel">
+            <div class="panel-title">
+                <span>Destinos</span>
+                <h2>Regiones frecuentes</h2>
+            </div>
+            <div class="share-list">
+                {% for item in dashboard.top_regiones %}
+                    <div class="share-row">
+                        <div>
+                            <span>{{ item.nombre }}</span>
+                            <strong>{{ item.cantidad }} envio(s)</strong>
+                        </div>
+                        <div class="share-track"><i style="width: {{ item.porcentaje }}%"></i></div>
+                    </div>
+                {% else %}
+                    <p class="empty-dashboard">Sin datos historicos.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="home-panel">
+            <div class="panel-title">
+                <span>Operacion</span>
+                <h2>Estado actual</h2>
+            </div>
             <dl>
                 <div>
-                    <dt>Remitentes</dt>
-                    <dd>{{ estado.conteos.get("remitentes", 0) }}</dd>
+                    <dt>Pendientes</dt>
+                    <dd>{{ estado.conteos.get("pendientes", 0) }}</dd>
                 </div>
                 <div>
-                    <dt>Destinatarios</dt>
-                    <dd>{{ estado.conteos.get("destinatarios", 0) }}</dd>
+                    <dt>En proceso</dt>
+                    <dd>{{ estado.conteos.get("en_proceso", 0) }}</dd>
                 </div>
                 <div>
-                    <dt>Comunas</dt>
-                    <dd>{{ estado.conteos.get("comunas", 0) }}</dd>
+                    <dt>Ultimo lote</dt>
+                    <dd>{{ estado.conteos.get("ultimo_lote", "Sin lotes registrados") }}</dd>
                 </div>
             </dl>
         </div>

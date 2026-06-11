@@ -12,7 +12,7 @@
         <div>
             <span class="estado-kicker">Monitor operativo</span>
             <h1>Estado del sistema</h1>
-            <p>Revision tecnica y operativa al {{ estado.fecha_revision.strftime("%d/%m/%Y %H:%M") }}.</p>
+            <p>Revision cloud y operativa al {{ estado.fecha_revision.strftime("%d/%m/%Y %H:%M") }}.</p>
         </div>
         <span class="estado-status {% if estado.general_ok %}ok{% else %}alerta{% endif %}">
             {% if estado.general_ok %}Operativo{% else %}Requiere revision{% endif %}
@@ -37,22 +37,22 @@
             <small>Destino: {{ estado.correo.destino }}</small>
         </article>
 
-        <article class="salud-card {% if estado.respaldos_lotes.ok %}ok{% else %}error{% endif %}">
+        <article class="salud-card {% if estado.respaldo_historico.ok %}ok{% else %}error{% endif %}">
             <div class="salud-top">
-                <span>Respaldos lotes</span>
-                <strong>{% if estado.respaldos_lotes.ok %}OK{% else %}Error{% endif %}</strong>
+                <span>Respaldo historico</span>
+                <strong>{% if estado.respaldo_historico.ok %}OK{% else %}Falta configurar{% endif %}</strong>
             </div>
-            <p>{{ estado.respaldos_lotes.detalle }}</p>
-            <small>{{ estado.respaldos_lotes.ruta }}</small>
+            <p>{{ estado.respaldo_historico.detalle }}</p>
+            <small>Destino: {{ estado.respaldo_historico.destinos|join(", ") if estado.respaldo_historico.destinos else "No configurado" }}</small>
         </article>
 
-        <article class="salud-card {% if estado.logs.ok %}ok{% else %}error{% endif %}">
+        <article class="salud-card {% if estado.almacenamiento_temporal.ok %}ok{% else %}error{% endif %}">
             <div class="salud-top">
-                <span>Logs</span>
-                <strong>{% if estado.logs.ok %}OK{% else %}Error{% endif %}</strong>
+                <span>Archivos temporales</span>
+                <strong>{% if estado.almacenamiento_temporal.ok %}Temporal{% else %}Revision{% endif %}</strong>
             </div>
-            <p>{{ estado.logs.detalle }}</p>
-            <small>{{ estado.logs.ruta }}</small>
+            <p>{{ estado.almacenamiento_temporal.detalle }}</p>
+            <small>{{ estado.almacenamiento_temporal.nota }}</small>
         </article>
     </section>
 
@@ -78,21 +78,25 @@
     <section class="estado-detail-grid">
         <article class="estado-panel">
             <div class="panel-head">
-                <span>Catalogos</span>
-                <h2>Datos maestros</h2>
+                <span>Operacion</span>
+                <h2>Controles activos</h2>
             </div>
             <dl class="estado-list">
                 <div>
-                    <dt>Remitentes</dt>
-                    <dd>{{ estado.conteos.get("remitentes", 0) }}</dd>
+                    <dt>Lotes en proceso</dt>
+                    <dd>{{ estado.operacion.get("lotes_en_proceso", 0) }}</dd>
                 </div>
                 <div>
-                    <dt>Destinatarios</dt>
-                    <dd>{{ estado.conteos.get("destinatarios", 0) }}</dd>
+                    <dt>Lotes con mas de 2 dias</dt>
+                    <dd>{{ estado.operacion.get("lotes_antiguos", 0) }}</dd>
                 </div>
                 <div>
-                    <dt>Comunas</dt>
-                    <dd>{{ estado.conteos.get("comunas", 0) }}</dd>
+                    <dt>Avisos pendientes</dt>
+                    <dd>{{ estado.operacion.get("avisos_pendientes", 0) }}</dd>
+                </div>
+                <div>
+                    <dt>Errores correo Starken</dt>
+                    <dd>{{ estado.operacion.get("correos_error", 0) }}</dd>
                 </div>
             </dl>
         </article>
@@ -135,14 +139,25 @@
         <div class="panel-head horizontal">
             <div>
                 <span>Registro tecnico</span>
-                <h2>Ultima linea del log</h2>
+                <h2>Referencia local</h2>
             </div>
             {% if estado.ultimo_log.fecha_modificacion %}
                 <time>{{ estado.ultimo_log.fecha_modificacion.strftime("%d/%m/%Y %H:%M") }}</time>
             {% endif %}
         </div>
-        <p>{{ estado.ultimo_log.ultima_linea }}</p>
+        <p>En Render, el seguimiento tecnico principal se revisa en los logs del panel cloud. Este registro local solo sirve como apoyo cuando la app corre en este equipo.</p>
         <small>{{ estado.ultimo_log.ruta }}</small>
+    </section>
+
+    <section class="log-panel">
+        <div class="panel-head">
+            <span>Cloud</span>
+            <h2>Almacenamiento temporal</h2>
+        </div>
+        <p>Estas rutas ayudan durante la ejecucion, pero no se consideran respaldo permanente.</p>
+        {% for ruta in estado.almacenamiento_temporal.rutas %}
+            <small>{{ ruta }}</small>
+        {% endfor %}
     </section>
 </div>
 {% endblock %}
