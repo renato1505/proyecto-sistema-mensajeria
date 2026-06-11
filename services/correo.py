@@ -1,6 +1,6 @@
-import smtplib
 from email.message import EmailMessage
 from config.settings import CORREO_CLAVE_APP, CORREO_DESTINO_STARKEN, CORREO_EMISOR
+from services.smtp_client import enviar_mensaje_smtp
 
 
 def obtener_correo_destino_starken():
@@ -31,9 +31,4 @@ def enviar_archivo_starken(nombre_archivo, contenido_bytes, lote):
         filename=nombre_archivo
     )
 
-    with smtplib.SMTP("smtp.gmail.com", 587) as servidor:
-        servidor.ehlo()
-        servidor.starttls()
-        servidor.ehlo()
-        servidor.login(CORREO_EMISOR, CORREO_CLAVE_APP)
-        servidor.send_message(msg)
+    enviar_mensaje_smtp(msg)

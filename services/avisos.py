@@ -1,6 +1,5 @@
 import io
 import re
-import smtplib
 from collections import defaultdict
 from datetime import datetime
 from email.message import EmailMessage
@@ -13,6 +12,7 @@ from config.settings import (
     CORREO_RESPALDO_MENSAJERIA,
 )
 from database.modelos import Envio
+from services.smtp_client import enviar_mensaje_smtp
 
 
 def correo_avisos_configurado():
@@ -214,12 +214,7 @@ def _enviar_correo(destinatario, asunto, cuerpo, nombre_adjunto, contenido_adjun
         filename=nombre_adjunto,
     )
 
-    with smtplib.SMTP("smtp.gmail.com", 587) as servidor:
-        servidor.ehlo()
-        servidor.starttls()
-        servidor.ehlo()
-        servidor.login(CORREO_EMISOR, CORREO_CLAVE_APP)
-        servidor.send_message(msg)
+    enviar_mensaje_smtp(msg)
 
 
 def _html_escape(texto):

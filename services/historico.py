@@ -1,6 +1,5 @@
 import os
 import re
-import smtplib
 from email.message import EmailMessage
 from io import BytesIO
 from datetime import datetime
@@ -11,6 +10,7 @@ from sqlalchemy import func
 
 from config.settings import CORREO_CLAVE_APP, CORREO_EMISOR, CORREO_RESPALDO_MENSAJERIA
 from database.modelos import Envio
+from services.smtp_client import enviar_mensaje_smtp
 
 
 OPCIONES_PER_PAGE_HISTORICO = [25, 50, 100]
@@ -311,11 +311,6 @@ def enviar_respaldo_eliminacion_historico(envios, filtros=None):
         filename=nombre_archivo,
     )
 
-    with smtplib.SMTP("smtp.gmail.com", 587) as servidor:
-        servidor.ehlo()
-        servidor.starttls()
-        servidor.ehlo()
-        servidor.login(CORREO_EMISOR, CORREO_CLAVE_APP)
-        servidor.send_message(msg)
+    enviar_mensaje_smtp(msg)
 
     return nombre_archivo, destinatarios_respaldo_historico()

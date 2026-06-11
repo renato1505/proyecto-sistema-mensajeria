@@ -1,4 +1,3 @@
-import smtplib
 import sys
 from email.message import EmailMessage
 from pathlib import Path
@@ -8,6 +7,7 @@ PROJECT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_DIR))
 
 from config.settings import CORREO_CLAVE_APP, CORREO_DESTINO_STARKEN, CORREO_EMISOR
+from services.smtp_client import enviar_mensaje_smtp
 
 
 def enviar_prueba():
@@ -26,10 +26,7 @@ def enviar_prueba():
         "Saludos."
     )
 
-    with smtplib.SMTP("smtp.gmail.com", 587) as servidor:
-        servidor.starttls()
-        servidor.login(CORREO_EMISOR, CORREO_CLAVE_APP)
-        servidor.send_message(msg)
+    enviar_mensaje_smtp(msg)
 
     print("Correo enviado correctamente.")
 
