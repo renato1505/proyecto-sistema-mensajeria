@@ -15,13 +15,13 @@ def enviar_prueba():
         raise RuntimeError("Faltan credenciales de correo en el archivo .env")
 
     msg = EmailMessage()
-    msg["Subject"] = "Prueba de envio - Sistema de Mensajeria"
+    msg["Subject"] = "Prueba de envio - Portal Operativo"
     msg["From"] = CORREO_EMISOR
     msg["To"] = CORREO_DESTINO_STARKEN
 
     msg.set_content(
         "Hola,\n\n"
-        "Este es un correo de prueba enviado desde el Sistema de Mensajeria.\n\n"
+        "Este es un correo de prueba enviado desde el Portal Operativo.\n\n"
         "Si recibiste este mensaje, la conexion con Gmail funciona correctamente.\n\n"
         "Saludos."
     )

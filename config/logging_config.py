@@ -38,6 +38,6 @@ def configurar_logging(app=None):
 
     if app:
         app.logger.setLevel(logging.INFO)
-        app.logger.info("Sistema de Mensajeria iniciado")
+        app.logger.info("Portal Operativo iniciado")
 
     return log_path

@@ -1,6 +1,6 @@
 # Despliegue Cloud
 
-Esta guia resume los pasos para publicar el Sistema de Gestion de Mensajeria en un servicio cloud y acceder desde navegador mediante una URL.
+Esta guia resume los pasos para publicar el Portal Operativo en un servicio cloud y acceder desde navegador mediante una URL.
 
 ## Objetivo
 

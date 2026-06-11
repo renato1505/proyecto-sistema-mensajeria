@@ -1,6 +1,6 @@
 # Procedimiento operativo
 
-Este documento resume el uso diario del Sistema de Gestion de Mensajeria.
+Este documento resume el uso diario del modulo de Mensajeria dentro del Portal Operativo.
 
 ## 1. Registrar envio
 

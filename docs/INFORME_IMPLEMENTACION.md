@@ -1,8 +1,8 @@
 # Informe de Implementacion
 
-# Sistema de Gestion de Mensajeria
+# Portal Operativo
 
-**Proyecto:** Sistema Automatizado de Gestion de Mensajeria  
+**Proyecto:** Portal Operativo - Modulo de Gestion de Mensajeria  
 **Area:** Recepcion y Mensajeria  
 **Responsable operativo:** Renato Valenzuela  
 **Organizacion:** L'Oreal Chile  
@@ -11,7 +11,7 @@
 
 ## 1. Resumen Ejecutivo
 
-El presente documento describe la implementacion y evolucion del Sistema de Gestion de Mensajeria, una herramienta interna desarrollada para optimizar el proceso de registro, control, procesamiento y seguimiento de envios gestionados por el area de Mensajeria.
+El presente documento describe la implementacion y evolucion del Portal Operativo, actualmente enfocado en el modulo de Gestion de Mensajeria. Esta herramienta interna fue desarrollada para optimizar el proceso de registro, control, procesamiento y seguimiento de envios gestionados por el area de Mensajeria.
 
 El proyecto nace como respuesta a un flujo operativo altamente manual, basado principalmente en correos, planillas Excel y carga posterior en la plataforma de Starken. Dicho flujo, aunque funcional, generaba una alta dependencia de tareas repetitivas, copia manual de datos, revision individual de ordenes de flete y envio manual de notificaciones a funcionarios.
 
@@ -87,7 +87,7 @@ Los objetivos especificos son:
 
 ## 6. Solucion Implementada
 
-El Sistema de Gestion de Mensajeria centraliza el flujo operativo en una aplicacion web interna. La herramienta permite manejar el ciclo completo de un envio desde su registro hasta su cierre en historico.
+El modulo de Gestion de Mensajeria centraliza el flujo operativo en una aplicacion web interna. La herramienta permite manejar el ciclo completo de un envio desde su registro hasta su cierre en historico.
 
 La solucion actual incluye:
 
@@ -227,7 +227,7 @@ Actualmente puede considerarse una version operativa interna en mejora continua.
 
 ## 12. Conclusion
 
-La implementacion del Sistema de Gestion de Mensajeria representa una mejora significativa respecto al flujo anterior basado en correos, planillas y revision manual.
+La implementacion del Portal Operativo, a traves del modulo de Gestion de Mensajeria, representa una mejora significativa respecto al flujo anterior basado en correos, planillas y revision manual.
 
 El sistema permite reducir tareas repetitivas, ordenar la informacion, disminuir errores y entregar mayor trazabilidad al proceso completo de envios. Ademas, crea una base interna de informacion que antes no existia, permitiendo proyectar futuras mejoras de control, analisis y reportabilidad.
 

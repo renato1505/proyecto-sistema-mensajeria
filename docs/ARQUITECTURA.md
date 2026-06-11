@@ -1,6 +1,6 @@
-# Arquitectura del sistema
+# Arquitectura del Portal Operativo
 
-Este documento resume como esta organizado el Sistema de Gestion de Mensajeria para facilitar mantencion y futuras mejoras.
+Este documento resume como esta organizado el Portal Operativo. Actualmente el modulo principal es Mensajeria, con una estructura preparada para crecer hacia otras areas sin mezclar reglas de negocio.
 
 ## Flujo operativo
 

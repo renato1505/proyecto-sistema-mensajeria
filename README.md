@@ -1,6 +1,6 @@
-# Sistema de Gestion de Mensajeria
+# Portal Operativo
 
-Aplicacion Flask para registrar envios, generar archivos CSV para Starken, cargar respuestas OF y mantener historico descargable.
+Aplicacion Flask para centralizar procesos operativos internos. El modulo principal actual es Mensajeria: registra envios, genera archivos CSV para Starken, carga respuestas OF y mantiene historico descargable.
 
 ## Flujo principal
 
