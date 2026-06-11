@@ -3,7 +3,7 @@ from pathlib import Path
 
 from sqlalchemy import text
 
-from config.settings import LOGS_DIR, RESPALDOS_LOTES_DIR
+from config.settings import EMAIL_PROVIDER, LOGS_DIR, RESPALDOS_LOTES_DIR
 from database.conexion import SessionLocal
 from database.modelos import Comuna, Destinatario, Envio, Remitente
 from services.correo import correo_starken_configurado, obtener_correo_destino_starken
@@ -174,6 +174,7 @@ def obtener_estado_sistema():
         },
         "correo": {
             "ok": correo_starken_configurado(),
+            "proveedor": EMAIL_PROVIDER,
             "destino": obtener_correo_destino_starken() or "No configurado",
             "detalle": "Configurado" if correo_starken_configurado() else "Faltan datos en .env",
         },

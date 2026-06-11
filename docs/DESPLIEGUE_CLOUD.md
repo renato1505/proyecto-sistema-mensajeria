@@ -53,11 +53,7 @@ APP_USERS=mensajeria:clave-mensajeria;recepcion:clave-recepcion;seguridad:clave-
 CORREO_EMISOR=correo-del-sistema@gmail.com
 CORREO_DESTINO_STARKEN=correo-destino-starken
 CORREO_RESPALDO_MENSAJERIA=mensajeria.alcantara@loreal.com
-EMAIL_PROVIDER=brevo
-BREVO_API_KEY=api-key-brevo
-BREVO_SENDER_NAME=Portal Operativo
-
-# Solo si se usa EMAIL_PROVIDER=smtp
+EMAIL_PROVIDER=smtp
 CORREO_CLAVE_APP=clave-app-gmail
 
 OF_IMAP_HOST=imap.gmail.com
@@ -66,6 +62,21 @@ OF_CORREO_FILTRO_REMITENTE=infoweb@starken.cl
 OF_CORREO_FILTRO_TEXTO=
 
 CLAVE_ELIMINACION_HISTORICO=clave-para-eliminar-historico
+```
+
+Variables opcionales si se activa Brevo transaccional:
+
+```text
+EMAIL_PROVIDER=brevo
+BREVO_API_KEY=api-key-brevo
+BREVO_SENDER_NAME=Portal Operativo
+
+# Alternativa solo si se decide usar Brevo por SMTP en vez de API.
+EMAIL_PROVIDER=brevo_smtp
+BREVO_SMTP_HOST=smtp-relay.brevo.com
+BREVO_SMTP_PORT=587
+BREVO_SMTP_LOGIN=login-smtp-brevo
+BREVO_SMTP_PASSWORD=clave-smtp-brevo
 ```
 
 ## Configuracion de servicio web
@@ -111,7 +122,14 @@ Para uso cloud estable se recomienda:
 - Usar base de datos para informacion critica.
 - Evaluar disco persistente o almacenamiento externo si se requiere conservar archivos.
 
-En Render se recomienda enviar correos por API HTTPS:
+En Render, el modo actual estable es Gmail SMTP:
+
+```text
+EMAIL_PROVIDER=smtp
+CORREO_CLAVE_APP=...
+```
+
+Brevo queda preparado como alternativa mas robusta para envio transaccional cuando la cuenta tenga activado el modulo SMTP/transaccional:
 
 ```text
 EMAIL_PROVIDER=brevo
@@ -119,7 +137,7 @@ BREVO_API_KEY=...
 BREVO_SENDER_NAME=Portal Operativo
 ```
 
-El modo `smtp` queda disponible para desarrollo local, pero puede fallar en cloud por restricciones de red o bloqueos de proveedores.
+Aunque se use Brevo para enviar, `CORREO_CLAVE_APP` sigue siendo necesario si el sistema lee respuestas OF desde Gmail por IMAP.
 
 En produccion cloud, la eliminacion de historico no debe depender de `respaldos_historico`.
 Antes de borrar registros, el sistema envia un Excel de respaldo a:

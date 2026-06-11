@@ -9,6 +9,10 @@ from config.settings import (
     BREVO_API_KEY,
     BREVO_API_URL,
     BREVO_SENDER_NAME,
+    BREVO_SMTP_HOST,
+    BREVO_SMTP_LOGIN,
+    BREVO_SMTP_PASSWORD,
+    BREVO_SMTP_PORT,
     CORREO_CLAVE_APP,
     CORREO_EMISOR,
     EMAIL_PROVIDER,
@@ -19,17 +23,39 @@ SMTP_HOST = "smtp.gmail.com"
 SMTP_SSL_PORT = 465
 SMTP_STARTTLS_PORT = 587
 EMAIL_TIMEOUT_SECONDS = 8
+EMAIL_PROVIDERS = {"smtp", "brevo", "brevo_smtp"}
+
+
+def proveedor_correo_valido():
+    return EMAIL_PROVIDER in EMAIL_PROVIDERS
 
 
 def proveedor_correo_configurado():
+    if not proveedor_correo_valido():
+        return False
+
     if EMAIL_PROVIDER == "brevo":
         return bool(CORREO_EMISOR and BREVO_API_KEY)
+
+    if EMAIL_PROVIDER == "brevo_smtp":
+        return bool(CORREO_EMISOR and BREVO_SMTP_LOGIN and BREVO_SMTP_PASSWORD)
+
     return bool(CORREO_EMISOR and CORREO_CLAVE_APP)
 
 
 def enviar_mensaje(msg):
+    if not proveedor_correo_valido():
+        raise RuntimeError(
+            "EMAIL_PROVIDER debe ser 'smtp', 'brevo' o 'brevo_smtp'. "
+            f"Valor actual: {EMAIL_PROVIDER or 'vacio'}"
+        )
+
     if EMAIL_PROVIDER == "brevo":
         return _enviar_brevo(msg)
+
+    if EMAIL_PROVIDER == "brevo_smtp":
+        return _enviar_brevo_smtp(msg)
+
     return _enviar_smtp(msg)
 
 
@@ -64,6 +90,22 @@ def _enviar_smtp(msg):
         errores.append(f"STARTTLS {SMTP_STARTTLS_PORT}: {exc}")
 
     raise RuntimeError("No se pudo conectar a Gmail SMTP. " + " | ".join(errores))
+
+
+def _enviar_brevo_smtp(msg):
+    if not BREVO_SMTP_LOGIN or not BREVO_SMTP_PASSWORD:
+        raise RuntimeError("Faltan credenciales SMTP de Brevo.")
+
+    with smtplib.SMTP(
+        BREVO_SMTP_HOST,
+        BREVO_SMTP_PORT,
+        timeout=EMAIL_TIMEOUT_SECONDS,
+    ) as servidor:
+        servidor.ehlo()
+        servidor.starttls()
+        servidor.ehlo()
+        servidor.login(BREVO_SMTP_LOGIN, BREVO_SMTP_PASSWORD)
+        servidor.send_message(msg)
 
 
 def _direcciones(cabecera):

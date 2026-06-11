@@ -1,4 +1,5 @@
 import hmac
+from urllib.parse import urlsplit
 
 from flask import flash, redirect, render_template, request, session, url_for
 
@@ -48,6 +49,18 @@ def nombres_usuarios_login():
     return USUARIOS_POR_DEFECTO
 
 
+def _destino_login_seguro(destino):
+    destino = (destino or "").strip()
+    if not destino:
+        return "/"
+
+    partes = urlsplit(destino)
+    if partes.scheme or partes.netloc or not destino.startswith("/"):
+        return "/"
+
+    return destino
+
+
 def registrar_rutas_auth(app):
     @app.before_request
     def proteger_acceso():
@@ -77,8 +90,7 @@ def registrar_rutas_auth(app):
                 session["usuario_autenticado"] = True
                 session["usuario_nombre"] = usuario
                 flash("Acceso iniciado correctamente.", "success")
-                destino = request.args.get("next") or "/"
-                return redirect(destino)
+                return redirect(_destino_login_seguro(request.args.get("next")))
 
             flash("Usuario o clave incorrectos.", "danger")
 

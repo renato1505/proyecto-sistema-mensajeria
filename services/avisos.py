@@ -7,6 +7,7 @@ from email.message import EmailMessage
 import pandas as pd
 
 from config.settings import (
+    CORREO_EMISOR,
     CORREO_RESPALDO_MENSAJERIA,
 )
 from database.modelos import Envio
