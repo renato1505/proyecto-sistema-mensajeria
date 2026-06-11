@@ -8,9 +8,9 @@ from urllib.parse import urlencode
 import pandas as pd
 from sqlalchemy import func
 
-from config.settings import CORREO_CLAVE_APP, CORREO_EMISOR, CORREO_RESPALDO_MENSAJERIA
+from config.settings import CORREO_EMISOR, CORREO_RESPALDO_MENSAJERIA
 from database.modelos import Envio
-from services.smtp_client import enviar_mensaje_smtp
+from services.email_client import enviar_mensaje, proveedor_correo_configurado
 
 
 OPCIONES_PER_PAGE_HISTORICO = [25, 50, 100]
@@ -267,7 +267,7 @@ def destinatarios_respaldo_historico():
 
 
 def correo_respaldo_historico_configurado():
-    return bool(CORREO_EMISOR and CORREO_CLAVE_APP and destinatarios_respaldo_historico())
+    return bool(destinatarios_respaldo_historico() and proveedor_correo_configurado())
 
 
 def enviar_respaldo_eliminacion_historico(envios, filtros=None):
@@ -311,6 +311,6 @@ def enviar_respaldo_eliminacion_historico(envios, filtros=None):
         filename=nombre_archivo,
     )
 
-    enviar_mensaje_smtp(msg)
+    enviar_mensaje(msg)
 
     return nombre_archivo, destinatarios_respaldo_historico()

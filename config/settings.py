@@ -40,6 +40,10 @@ CORREO_RESPALDO_MENSAJERIA = os.getenv(
     "CORREO_RESPALDO_MENSAJERIA",
     "mensajeria.alcantara@loreal.com",
 )
+EMAIL_PROVIDER = os.getenv("EMAIL_PROVIDER", "smtp").strip().lower()
+BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
+BREVO_SENDER_NAME = os.getenv("BREVO_SENDER_NAME", "Portal Operativo")
+BREVO_API_URL = os.getenv("BREVO_API_URL", "https://api.brevo.com/v3/smtp/email")
 
 OF_IMAP_HOST = os.getenv("OF_IMAP_HOST", "imap.gmail.com")
 OF_IMAP_PORT = int(os.getenv("OF_IMAP_PORT", "993"))

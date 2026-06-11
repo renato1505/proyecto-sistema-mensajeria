@@ -6,12 +6,12 @@ from pathlib import Path
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_DIR))
 
-from config.settings import CORREO_CLAVE_APP, CORREO_DESTINO_STARKEN, CORREO_EMISOR
-from services.smtp_client import enviar_mensaje_smtp
+from config.settings import CORREO_DESTINO_STARKEN, CORREO_EMISOR
+from services.email_client import enviar_mensaje, proveedor_correo_configurado
 
 
 def enviar_prueba():
-    if not CORREO_EMISOR or not CORREO_CLAVE_APP or not CORREO_DESTINO_STARKEN:
+    if not CORREO_DESTINO_STARKEN or not proveedor_correo_configurado():
         raise RuntimeError("Faltan credenciales de correo en el archivo .env")
 
     msg = EmailMessage()
@@ -26,7 +26,7 @@ def enviar_prueba():
         "Saludos."
     )
 
-    enviar_mensaje_smtp(msg)
+    enviar_mensaje(msg)
 
     print("Correo enviado correctamente.")
 

@@ -51,9 +51,14 @@ LOGIN_REQUIRED=1
 APP_USERS=mensajeria:clave-mensajeria;recepcion:clave-recepcion;seguridad:clave-seguridad
 
 CORREO_EMISOR=correo-del-sistema@gmail.com
-CORREO_CLAVE_APP=clave-app-gmail
 CORREO_DESTINO_STARKEN=correo-destino-starken
 CORREO_RESPALDO_MENSAJERIA=mensajeria.alcantara@loreal.com
+EMAIL_PROVIDER=brevo
+BREVO_API_KEY=api-key-brevo
+BREVO_SENDER_NAME=Portal Operativo
+
+# Solo si se usa EMAIL_PROVIDER=smtp
+CORREO_CLAVE_APP=clave-app-gmail
 
 OF_IMAP_HOST=imap.gmail.com
 OF_IMAP_PORT=993
@@ -105,6 +110,16 @@ Para uso cloud estable se recomienda:
 - Mantener respaldo por correo.
 - Usar base de datos para informacion critica.
 - Evaluar disco persistente o almacenamiento externo si se requiere conservar archivos.
+
+En Render se recomienda enviar correos por API HTTPS:
+
+```text
+EMAIL_PROVIDER=brevo
+BREVO_API_KEY=...
+BREVO_SENDER_NAME=Portal Operativo
+```
+
+El modo `smtp` queda disponible para desarrollo local, pero puede fallar en cloud por restricciones de red o bloqueos de proveedores.
 
 En produccion cloud, la eliminacion de historico no debe depender de `respaldos_historico`.
 Antes de borrar registros, el sistema envia un Excel de respaldo a:

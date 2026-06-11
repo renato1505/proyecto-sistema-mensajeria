@@ -7,16 +7,14 @@ from email.message import EmailMessage
 import pandas as pd
 
 from config.settings import (
-    CORREO_CLAVE_APP,
-    CORREO_EMISOR,
     CORREO_RESPALDO_MENSAJERIA,
 )
 from database.modelos import Envio
-from services.smtp_client import enviar_mensaje_smtp
+from services.email_client import enviar_mensaje, proveedor_correo_configurado
 
 
 def correo_avisos_configurado():
-    return bool(CORREO_EMISOR and CORREO_CLAVE_APP and CORREO_RESPALDO_MENSAJERIA)
+    return bool(CORREO_RESPALDO_MENSAJERIA and proveedor_correo_configurado())
 
 
 def _limpiar_nombre_archivo(texto):
@@ -214,7 +212,7 @@ def _enviar_correo(destinatario, asunto, cuerpo, nombre_adjunto, contenido_adjun
         filename=nombre_adjunto,
     )
 
-    enviar_mensaje_smtp(msg)
+    enviar_mensaje(msg)
 
 
 def _html_escape(texto):

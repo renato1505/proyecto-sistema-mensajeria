@@ -1,6 +1,6 @@
 from email.message import EmailMessage
-from config.settings import CORREO_CLAVE_APP, CORREO_DESTINO_STARKEN, CORREO_EMISOR
-from services.smtp_client import enviar_mensaje_smtp
+from config.settings import CORREO_DESTINO_STARKEN, CORREO_EMISOR
+from services.email_client import enviar_mensaje, proveedor_correo_configurado
 
 
 def obtener_correo_destino_starken():
@@ -8,7 +8,7 @@ def obtener_correo_destino_starken():
 
 
 def correo_starken_configurado():
-    return bool(CORREO_EMISOR and CORREO_CLAVE_APP and CORREO_DESTINO_STARKEN)
+    return bool(CORREO_DESTINO_STARKEN and proveedor_correo_configurado())
 
 
 def enviar_archivo_starken(nombre_archivo, contenido_bytes, lote):
@@ -31,4 +31,4 @@ def enviar_archivo_starken(nombre_archivo, contenido_bytes, lote):
         filename=nombre_archivo
     )
 
-    enviar_mensaje_smtp(msg)
+    enviar_mensaje(msg)
