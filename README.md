@@ -47,6 +47,7 @@ Antes de subir cambios o probar una version nueva:
 
 ```powershell
 python -m compileall -q main.py config database routes services scripts tests
+python tests\test_email_client_unit.py
 python tests\smoke_check.py
 ```
 
@@ -75,3 +76,5 @@ No subir ni compartir `.env`, respaldos ni archivos Excel con datos reales. Esos
 - `docs/ARQUITECTURA.md`: mapa tecnico del flujo, modulos y estados.
 - `docs/CALIDAD.md`: controles, checks y recomendaciones para GitHub.
 - `docs/GITHUB.md`: guia para subir el repositorio sin exponer datos sensibles.
+- `docs/CONTINUIDAD_PROYECTO.md`: contexto actual para continuar el desarrollo en otro chat o sesion.
+- `docs/REVISION_CALIDAD_2026-06.md`: revision estricta de calidad, riesgos y prioridades.

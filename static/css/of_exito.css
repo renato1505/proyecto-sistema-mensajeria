@@ -1,0 +1,221 @@
+.of-success-page {
+    display: flex;
+    justify-content: center;
+    padding: 24px 0 38px;
+}
+
+.of-success-card {
+    position: relative;
+    width: min(880px, 100%);
+    padding: 30px;
+    text-align: center;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    box-shadow: 0 18px 48px rgba(15, 23, 42, 0.12);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.of-success-card.oculto {
+    display: none;
+}
+
+.of-close-btn {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 34px;
+    height: 34px;
+    color: #667085;
+    background: #f8fafc;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font-size: 1.3rem;
+    line-height: 1;
+}
+
+.of-close-btn:hover {
+    color: #111827;
+    background: #eef2f5;
+}
+
+.of-success-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    margin-bottom: 14px;
+    color: #047857;
+    background: #ecfdf5;
+    border: 1px solid #bbf7d0;
+    border-radius: 999px;
+}
+
+.of-success-icon svg {
+    width: 34px;
+    height: 34px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2.5;
+}
+
+.of-kicker {
+    display: block;
+    color: var(--brand-gold);
+    font-size: 0.78rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.of-success-card h1 {
+    margin: 7px 0 8px;
+    color: #111827;
+    font-size: 1.85rem;
+    font-weight: 900;
+}
+
+.of-success-card p {
+    max-width: 650px;
+    margin: 0 auto 18px;
+    color: #667085;
+    line-height: 1.5;
+}
+
+.of-lote-chip {
+    display: inline-flex;
+    margin-bottom: 18px;
+    padding: 7px 12px;
+    color: #344054;
+    background: #f8fafc;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font-size: 0.86rem;
+    font-weight: 900;
+}
+
+.of-range {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    max-width: 620px;
+    margin: 0 auto 12px;
+}
+
+.of-number-copy {
+    padding: 18px;
+    background: #111827;
+    border: 1px solid #111827;
+    border-radius: 8px;
+    text-align: left;
+    box-shadow: 0 14px 30px rgba(17, 24, 39, 0.14);
+}
+
+.of-number-copy span,
+.of-number-copy strong {
+    display: block;
+}
+
+.of-number-copy span {
+    color: #d1d5db;
+    font-size: 0.78rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.of-number-copy strong {
+    margin-top: 6px;
+    color: #fff;
+    font-size: 1.8rem;
+    font-weight: 900;
+    letter-spacing: 0;
+}
+
+.of-number-copy:hover,
+.of-number-copy:focus {
+    background: #1f2937;
+    border-color: #1f2937;
+}
+
+.of-copy-feedback {
+    min-height: 24px;
+    color: #047857;
+    font-size: 0.86rem;
+    font-weight: 900;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.of-copy-feedback.visible {
+    opacity: 1;
+}
+
+.of-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin: 10px 0 18px;
+}
+
+.of-summary-grid article {
+    padding: 14px;
+    background: #f8fafc;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+}
+
+.of-summary-grid span,
+.of-summary-grid strong {
+    display: block;
+}
+
+.of-summary-grid span {
+    color: #667085;
+    font-size: 0.78rem;
+    font-weight: 900;
+}
+
+.of-summary-grid strong {
+    margin-top: 4px;
+    color: #111827;
+    font-size: 1.6rem;
+    font-weight: 900;
+}
+
+.of-summary-grid .ok strong {
+    color: #047857;
+}
+
+.of-summary-grid .error strong {
+    color: #dc2626;
+}
+
+.of-warning {
+    margin: 0 0 18px;
+    padding: 12px;
+    color: #92400e;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    font-weight: 800;
+}
+
+.of-success-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+    .of-success-card {
+        padding: 24px 18px;
+    }
+
+    .of-range,
+    .of-summary-grid {
+        grid-template-columns: 1fr;
+    }
+}

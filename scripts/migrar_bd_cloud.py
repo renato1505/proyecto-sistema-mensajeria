@@ -14,6 +14,7 @@ sys.path.insert(0, str(PROJECT_DIR))
 
 from config.settings import DATABASE_URL  # noqa: E402
 from database.modelos import Base, Comuna, Destinatario, Envio, Remitente  # noqa: E402
+from utils.fechas import ahora_chile  # noqa: E402
 
 
 MODELOS = (Comuna, Remitente, Destinatario, Envio)
@@ -60,7 +61,7 @@ def contar_registros(session):
 
 def respaldar_origen(session):
     RESPALDO_DIR.mkdir(parents=True, exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = ahora_chile().strftime("%Y%m%d_%H%M%S")
     ruta = RESPALDO_DIR / f"backup_local_{timestamp}.json"
 
     respaldo = {}

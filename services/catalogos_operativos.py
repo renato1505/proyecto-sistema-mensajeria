@@ -58,6 +58,9 @@ def validar_destinatario(data):
     if not telefono_chile_valido(data["telefono"]):
         return "El telefono debe tener 8 o 9 digitos"
 
+    if data.get("correo") and not email_valido(data["correo"]):
+        return "El correo del destinatario no tiene un formato valido"
+
     return None
 
 
@@ -85,6 +88,8 @@ def serializar_destinatario(destinatario):
         "comuna": destinatario.d_comuna,
         "region": destinatario.d_region,
         "telefono": destinatario.d_telefono,
+        "correo": destinatario.d_correo,
+        "observacion": destinatario.d_observacion,
     }
 
 
@@ -133,6 +138,12 @@ def query_destinatarios_filtrados(db, filtros):
 
     if filtros["d_comuna"]:
         query = query.filter(Destinatario.d_comuna.ilike(f"%{filtros['d_comuna']}%"))
+
+    if filtros.get("d_correo"):
+        query = query.filter(Destinatario.d_correo.ilike(f"%{filtros['d_correo']}%"))
+
+    if filtros.get("d_observacion"):
+        query = query.filter(Destinatario.d_observacion.ilike(f"%{filtros['d_observacion']}%"))
 
     return query
 
@@ -195,6 +206,8 @@ def guardar_destinatario_catalogo(db, data, destinatario_id=None):
         destinatario.d_comuna = data["comuna"]
         destinatario.d_region = data["region"]
         destinatario.d_telefono = data["telefono"]
+        destinatario.d_correo = data.get("correo", "")
+        destinatario.d_observacion = data.get("observacion", "")
         return True, "Destinatario actualizado correctamente"
 
     db.add(Destinatario(
@@ -204,5 +217,7 @@ def guardar_destinatario_catalogo(db, data, destinatario_id=None):
         d_comuna=data["comuna"],
         d_region=data["region"],
         d_telefono=data["telefono"],
+        d_correo=data.get("correo", ""),
+        d_observacion=data.get("observacion", ""),
     ))
     return True, "Destinatario creado correctamente"

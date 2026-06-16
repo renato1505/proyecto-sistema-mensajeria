@@ -75,6 +75,14 @@
                         <input class="form-control" id="d_comuna" name="d_comuna" value="{{ filtros.d_comuna }}" placeholder="Comuna">
                     </div>
                     <div>
+                        <label for="d_correo">Correo</label>
+                        <input class="form-control" id="d_correo" name="d_correo" value="{{ filtros.d_correo }}" placeholder="Correo destinatario">
+                    </div>
+                    <div>
+                        <label for="d_observacion">Observacion</label>
+                        <input class="form-control" id="d_observacion" name="d_observacion" value="{{ filtros.d_observacion }}" placeholder="Tienda o referencia">
+                    </div>
+                    <div>
                         <label for="per_page_destinatarios">Mostrar</label>
                         <select class="form-select" id="per_page_destinatarios" name="per_page">
                             {% for opcion in pagination.opciones_per_page %}
@@ -107,9 +115,9 @@
                             <th>Nombre</th>
                             <th>RUT</th>
                             <th>Direccion</th>
+                            <th>Contacto</th>
                             <th>Comuna</th>
                             <th>Region</th>
-                            <th>Telefono</th>
                             <th class="text-end">Acciones</th>
                         </tr>
                     </thead>
@@ -118,10 +126,20 @@
                             <tr>
                                 <td><strong>{{ destinatario.d_nombre }}</strong></td>
                                 <td>{{ destinatario.d_rut }}</td>
-                                <td>{{ destinatario.d_direccion }}</td>
+                                <td>
+                                    {{ destinatario.d_direccion }}
+                                    {% if destinatario.d_observacion %}
+                                        <small class="d-block text-muted">{{ destinatario.d_observacion }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ destinatario.d_telefono }}
+                                    {% if destinatario.d_correo %}
+                                        <small class="d-block text-muted">{{ destinatario.d_correo }}</small>
+                                    {% endif %}
+                                </td>
                                 <td>{{ destinatario.d_comuna }}</td>
                                 <td>{{ destinatario.d_region }}</td>
-                                <td>{{ destinatario.d_telefono }}</td>
                                 <td class="text-end catalogos-row-actions">
                                     <button
                                         class="btn btn-outline-secondary btn-sm"
@@ -133,6 +151,8 @@
                                         data-comuna="{{ destinatario.d_comuna|e }}"
                                         data-region="{{ destinatario.d_region|e }}"
                                         data-telefono="{{ destinatario.d_telefono|e }}"
+                                        data-correo="{{ (destinatario.d_correo or '')|e }}"
+                                        data-observacion="{{ (destinatario.d_observacion or '')|e }}"
                                         onclick="editarDestinatario(this)"
                                     >
                                         Editar
@@ -391,13 +411,35 @@
                             class="form-control"
                             name="telefono_destinatario"
                             id="destinatario_telefono"
-                            maxlength="9"
-                            pattern="[0-9]{8,9}"
+                            maxlength="20"
+                            pattern="(?:\+?56\s*)?0?[0-9\s.-]{8,14}"
                             inputmode="numeric"
-                            title="Ingresa 8 o 9 digitos"
+                            title="Ingresa 8 o 9 digitos; tambien se acepta +56 con espacios"
                             required
                         >
                     </div>
+                </div>
+                <div>
+                    <label class="form-label">Correo destinatario <span class="text-muted">(opcional)</span></label>
+                    <input
+                        class="form-control"
+                        type="email"
+                        name="correo_destinatario"
+                        id="destinatario_correo"
+                        maxlength="120"
+                        placeholder="correo@empresa.cl"
+                    >
+                </div>
+                <div>
+                    <label class="form-label">Observacion <span class="text-muted">(opcional)</span></label>
+                    <textarea
+                        class="form-control"
+                        name="observacion"
+                        id="destinatario_observacion"
+                        maxlength="500"
+                        rows="2"
+                        placeholder="Tienda, horario, contacto o referencia"
+                    ></textarea>
                 </div>
             </div>
             <div class="modal-footer">
@@ -469,6 +511,8 @@
         setInput("destinatario_comuna", "");
         setInput("destinatario_region", "");
         setInput("destinatario_telefono", "");
+        setInput("destinatario_correo", "");
+        setInput("destinatario_observacion", "");
         destinatarioModal.show();
     }
 
@@ -481,6 +525,8 @@
         setInput("destinatario_comuna", button.dataset.comuna);
         setInput("destinatario_region", button.dataset.region);
         setInput("destinatario_telefono", button.dataset.telefono);
+        setInput("destinatario_correo", button.dataset.correo);
+        setInput("destinatario_observacion", button.dataset.observacion);
         destinatarioModal.show();
     }
 

@@ -1,7 +1,7 @@
 from collections import Counter
-from datetime import datetime
 
 from database.modelos import Envio
+from utils.fechas import ahora_chile
 
 
 MESES_CORTOS = {
@@ -21,7 +21,7 @@ MESES_CORTOS = {
 
 
 def _ultimos_meses(cantidad=6):
-    hoy = datetime.now()
+    hoy = ahora_chile()
     meses = []
     year = hoy.year
     month = hoy.month
@@ -57,7 +57,7 @@ def obtener_dashboard_mensajeria(db):
         .all()
     )
 
-    hoy = datetime.now()
+    hoy = ahora_chile()
     envios_mes = [
         envio for envio in envios
         if envio.e_fecha_creacion

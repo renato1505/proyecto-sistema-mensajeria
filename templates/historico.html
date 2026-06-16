@@ -15,18 +15,49 @@
             <p>Busca, revisa, exporta y respalda los envios procesados por el sistema.</p>
         </div>
 
-        <div class="historico-actions">
+        <div class="historico-actions" aria-label="Acciones del historico">
             <a
-                href="/exportar_historico?mes={{ mes_seleccionado|urlencode }}&of={{ filtro_of|urlencode }}&destinatario={{ filtro_destinatario|urlencode }}&remitente={{ filtro_remitente|urlencode }}&fecha={{ filtro_fecha|urlencode }}&fecha_desde={{ fecha_desde|urlencode }}&fecha_hasta={{ fecha_hasta|urlencode }}"
-                class="btn btn-primary btn-sm"
+                href="/exportar_historico?mes={{ mes_seleccionado|urlencode }}&of={{ filtro_of|urlencode }}&destinatario={{ filtro_destinatario|urlencode }}&remitente={{ filtro_remitente|urlencode }}&fecha={{ filtro_fecha|urlencode }}&fecha_desde={{ fecha_desde|urlencode }}&fecha_hasta={{ fecha_hasta|urlencode }}&estado_of={{ estado_of|urlencode }}"
+                class="historico-action-btn export"
+                title="Exportar Excel"
+                aria-label="Exportar Excel"
+                data-label="Exportar Excel"
             >
-                Exportar Excel
+                <svg aria-hidden="true" viewBox="0 0 24 24">
+                    <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"></path>
+                    <path d="M14 2v5h5"></path>
+                    <path d="m9 16 6-6"></path>
+                    <path d="m9 10 6 6"></path>
+                </svg>
             </a>
-            <button class="btn btn-outline-secondary btn-sm" type="button" onclick="descargarSeleccionados()">
-                Descargar seleccionados
+            <button class="historico-action-btn download" type="button" onclick="descargarSeleccionados()" title="Descargar seleccionados" aria-label="Descargar seleccionados" data-label="Descargar seleccionados">
+                <svg aria-hidden="true" viewBox="0 0 24 24">
+                    <path d="M12 3v12"></path>
+                    <path d="m7 10 5 5 5-5"></path>
+                    <path d="M5 21h14"></path>
+                </svg>
             </button>
-            <button class="btn btn-outline-danger btn-sm" type="button" onclick="abrirModalEliminar()">
-                Eliminar filtrados
+            <button class="historico-action-btn annul" type="button" onclick="abrirModalAnularSeleccionados()" title="Anular seleccionados" aria-label="Anular seleccionados" data-label="Anular seleccionados">
+                <svg aria-hidden="true" viewBox="0 0 24 24">
+                    <path d="M18 6 6 18"></path>
+                    <path d="m6 6 12 12"></path>
+                </svg>
+            </button>
+            <button class="historico-action-btn delete-selected" type="button" onclick="abrirModalEliminarSeleccionados()" title="Eliminar seleccionados" aria-label="Eliminar seleccionados" data-label="Eliminar seleccionados">
+                <svg aria-hidden="true" viewBox="0 0 24 24">
+                    <path d="M3 6h18"></path>
+                    <path d="M8 6V4h8v2"></path>
+                    <path d="M19 6l-1 15H6L5 6"></path>
+                    <path d="M10 11v6"></path>
+                    <path d="M14 11v6"></path>
+                </svg>
+            </button>
+            <button class="historico-action-btn delete-filtered" type="button" onclick="abrirModalEliminar()" title="Eliminar filtrados" aria-label="Eliminar filtrados" data-label="Eliminar filtrados">
+                <svg aria-hidden="true" viewBox="0 0 24 24">
+                    <path d="M4 5h16"></path>
+                    <path d="M7 12h10"></path>
+                    <path d="M10 19h4"></path>
+                </svg>
             </button>
         </div>
     </section>
@@ -107,6 +138,15 @@
                 </div>
 
                 <div class="filter-field">
+                    <label for="estado_of">Estado OF</label>
+                    <select name="estado_of" id="estado_of" class="form-select">
+                        <option value="todos" {% if estado_of == "todos" %}selected{% endif %}>Todos</option>
+                        <option value="vigentes" {% if estado_of == "vigentes" %}selected{% endif %}>Vigentes</option>
+                        <option value="anulados" {% if estado_of == "anulados" %}selected{% endif %}>Anulados</option>
+                    </select>
+                </div>
+
+                <div class="filter-field">
                     <label for="per_page">Mostrar</label>
                     <select name="per_page" id="per_page" class="form-select">
                         {% for opcion in pagination.opciones_per_page %}
@@ -158,7 +198,7 @@
                     </thead>
                     <tbody>
                         {% for envio in envios %}
-                        <tr class="fila-principal">
+                        <tr class="fila-principal {% if envio.e_anulado %}fila-anulada{% endif %}">
                             <td class="text-center">
                                 <input type="checkbox" name="envio_ids" value="{{ envio.id }}" class="check-envio">
                             </td>
@@ -167,25 +207,83 @@
                                         class="btn-toggle-detalle"
                                         onclick="toggleDetalle('{{ envio.id }}')"
                                         title="Ver detalle">
-                                    v
+                                    <svg aria-hidden="true" viewBox="0 0 24 24">
+                                        <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path>
+                                        <circle cx="12" cy="12" r="2.5"></circle>
+                                    </svg>
                                 </button>
                             </td>
                             <td>
-                                {% if envio.e_fecha_creacion %}
-                                    {{ envio.e_fecha_creacion.strftime('%d/%m/%Y %H:%M') }}
-                                {% endif %}
+                                <div class="fecha-cell">
+                                    {% if envio.e_fecha_creacion %}
+                                        <strong>{{ envio.e_fecha_creacion.strftime('%d/%m/%Y') }}</strong>
+                                        <span>{{ envio.e_fecha_creacion.strftime('%H:%M') }}</span>
+                                    {% endif %}
+                                </div>
                             </td>
-                            <td>{{ envio.e_remitente }}</td>
-                            <td>{{ envio.e_destinatario }}</td>
                             <td>
-                                <span class="of-badge">
-                                    {{ envio.e_orden_flete if envio.e_orden_flete else 'Sin OF' }}
-                                </span>
+                                {% set remitente_partes = (envio.e_remitente or '').split() %}
+                                <div class="persona-cell">
+                                    <span class="persona-avatar remitente-avatar">
+                                        {{ remitente_partes[0][0] if remitente_partes else '?' }}{{ remitente_partes[1][0] if remitente_partes|length > 1 else '' }}
+                                    </span>
+                                    <div>
+                                        <strong>{{ envio.e_remitente }}</strong>
+                                        <small>{{ envio.e_division or 'Sin division' }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% set destinatario_partes = (envio.e_destinatario or '').split() %}
+                                <div class="persona-cell">
+                                    <span class="persona-avatar destinatario-avatar">
+                                        {{ destinatario_partes[0][0] if destinatario_partes else '?' }}{{ destinatario_partes[1][0] if destinatario_partes|length > 1 else '' }}
+                                    </span>
+                                    <div>
+                                        <strong>{{ envio.e_destinatario }}</strong>
+                                        <small>{{ envio.e_comuna or 'Sin comuna' }}</small>
+                                        {% if envio.e_observacion %}
+                                            <small>{{ envio.e_observacion }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-status-card {% if envio.e_anulado %}anulada{% else %}vigente{% endif %}">
+                                    {% if envio.e_anulado %}
+                                        <span class="of-status-icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24">
+                                                <path d="M12 9v4"></path>
+                                                <path d="M12 17h.01"></path>
+                                                <path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z"></path>
+                                            </svg>
+                                        </span>
+                                        <span class="of-status-body">
+                                            <strong>Anulada</strong>
+                                            <small>{{ envio.e_orden_flete if envio.e_orden_flete else 'Sin OF' }}</small>
+                                        </span>
+                                    {% else %}
+                                        <span class="of-status-icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24">
+                                                <path d="M20 6 9 17l-5-5"></path>
+                                            </svg>
+                                        </span>
+                                        <span class="of-status-body">
+                                            <strong>Vigente</strong>
+                                            <small>{{ envio.e_orden_flete if envio.e_orden_flete else 'Sin OF' }}</small>
+                                        </span>
+                                    {% endif %}
+                                </div>
                             </td>
                             <td class="text-center">
                                 <a href="/descargar_envio_historico/{{ envio.id }}"
-                                   class="btn btn-outline-success btn-sm">
-                                    Descargar
+                                   class="download-row-btn">
+                                    <svg aria-hidden="true" viewBox="0 0 24 24">
+                                        <path d="M12 3v12"></path>
+                                        <path d="m7 10 5 5 5-5"></path>
+                                        <path d="M5 21h14"></path>
+                                    </svg>
+                                    <span>Descargar</span>
                                 </a>
                             </td>
                         </tr>
@@ -193,51 +291,125 @@
                         <tr id="detalle-{{ envio.id }}" class="fila-detalle d-none">
                             <td colspan="7">
                                 <div class="detalle-box">
-                                    <div class="detalle-box-head">
-                                        <h3>Detalle del envio</h3>
-                                        <span>{{ envio.e_tipo_envio }}</span>
-                                    </div>
+                                    <aside class="detalle-status {% if envio.e_anulado %}anulada{% else %}vigente{% endif %}">
+                                        <span class="detalle-status-icon" aria-hidden="true">
+                                            {% if envio.e_anulado %}
+                                                <svg viewBox="0 0 24 24">
+                                                    <path d="M12 9v4"></path>
+                                                    <path d="M12 17h.01"></path>
+                                                    <path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z"></path>
+                                                </svg>
+                                            {% else %}
+                                                <svg viewBox="0 0 24 24">
+                                                    <path d="m21 8-9-5-9 5 9 5 9-5Z"></path>
+                                                    <path d="M3 8v8l9 5 9-5V8"></path>
+                                                    <path d="M12 13v8"></path>
+                                                </svg>
+                                            {% endif %}
+                                        </span>
+                                        <small>Estado</small>
+                                        <strong>{% if envio.e_anulado %}Anulada{% else %}Vigente{% endif %}</strong>
+                                    </aside>
 
                                     <div class="detalle-grid">
-                                        <div>
-                                            <h4>Remitente</h4>
-                                            <p><strong>Nombre:</strong> {{ envio.e_remitente }}</p>
-                                            <p><strong>Correo:</strong> {{ envio.e_correo_remitente }}</p>
-                                            <p><strong>Division:</strong> {{ envio.e_division }}</p>
-                                            <p><strong>Centro costo:</strong> {{ envio.e_centro_costo }}</p>
+                                        <div class="detalle-card">
+                                            <h4>
+                                                <span class="detalle-card-icon" aria-hidden="true">
+                                                    <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                                </span>
+                                                Remitente
+                                            </h4>
+                                            <dl>
+                                                <dt>Remitente</dt>
+                                                <dd>{{ envio.e_remitente }}</dd>
+                                                <dt>Correo</dt>
+                                                <dd>{{ envio.e_correo_remitente }}</dd>
+                                                <dt>Division</dt>
+                                                <dd>{{ envio.e_division }}</dd>
+                                                <dt>Centro costo</dt>
+                                                <dd>{{ envio.e_centro_costo }}</dd>
+                                            </dl>
                                         </div>
 
-                                        <div>
-                                            <h4>Destinatario</h4>
-                                            <p><strong>Nombre:</strong> {{ envio.e_destinatario }}</p>
-                                            <p><strong>RUT:</strong> {{ envio.e_rut_destinatario }}</p>
-                                            <p><strong>Direccion:</strong> {{ envio.e_direccion }}</p>
-                                            <p><strong>Comuna:</strong> {{ envio.e_comuna }}</p>
+                                        <div class="detalle-card">
+                                            <h4>
+                                                <span class="detalle-card-icon" aria-hidden="true">
+                                                    <svg viewBox="0 0 24 24"><path d="M18 20a6 6 0 0 0-12 0"></path><circle cx="12" cy="8" r="4"></circle><path d="M20 8v6"></path><path d="M23 11h-6"></path></svg>
+                                                </span>
+                                                Destinatario
+                                            </h4>
+                                            <dl>
+                                                <dt>Destinatario</dt>
+                                                <dd>{{ envio.e_destinatario }}</dd>
+                                                <dt>RUT</dt>
+                                                <dd>{{ envio.e_rut_destinatario }}</dd>
+                                                <dt>Direccion</dt>
+                                                <dd>{{ envio.e_direccion }}</dd>
+                                                <dt>Comuna</dt>
+                                                <dd>{{ envio.e_comuna }}</dd>
+                                                <dt>Correo</dt>
+                                                <dd>{{ envio.e_correo_destinatario or 'No informado' }}</dd>
+                                                <dt>Observacion</dt>
+                                                <dd>{{ envio.e_observacion or 'Sin observacion' }}</dd>
+                                            </dl>
                                         </div>
 
-                                        <div>
-                                            <h4>Entrega</h4>
-                                            <p><strong>Region:</strong> {{ envio.e_region }}</p>
-                                            <p><strong>Telefono:</strong> {{ envio.e_telefono_destinatario }}</p>
-                                            <p><strong>Codigo agencia:</strong>
-                                                {% if envio.e_tipo_envio == 'Agencia' %}
-                                                    {{ envio.e_codigo_agencia }}
-                                                {% else %}
-                                                    No aplica
+                                        <div class="detalle-card">
+                                            <h4>
+                                                <span class="detalle-card-icon" aria-hidden="true">
+                                                    <svg viewBox="0 0 24 24"><path d="M10 17h4V5H2v12h3"></path><path d="M14 17h1"></path><path d="M14 8h4l4 4v5h-3"></path><circle cx="7.5" cy="17.5" r="2.5"></circle><circle cx="17.5" cy="17.5" r="2.5"></circle></svg>
+                                                </span>
+                                                Entrega
+                                            </h4>
+                                            <dl>
+                                                <dt>Region</dt>
+                                                <dd>{{ envio.e_region }}</dd>
+                                                <dt>Telefono</dt>
+                                                <dd>{{ envio.e_telefono_destinatario }}</dd>
+                                                <dt>Codigo agencia</dt>
+                                                <dd>
+                                                    {% if envio.e_tipo_envio == 'Agencia' %}
+                                                        {{ envio.e_codigo_agencia }}
+                                                    {% else %}
+                                                        No aplica
+                                                    {% endif %}
+                                                </dd>
+                                                <dt>Orden OF</dt>
+                                                <dd>{{ envio.e_orden_flete if envio.e_orden_flete else 'Sin OF' }}</dd>
+                                                <dt>Estado OF</dt>
+                                                <dd>{% if envio.e_anulado %}Anulada{% else %}Vigente{% endif %}</dd>
+                                                {% if envio.e_anulado %}
+                                                    <dt>Fecha anulacion</dt>
+                                                    <dd>
+                                                        {% if envio.e_fecha_anulacion %}
+                                                            {{ envio.e_fecha_anulacion.strftime('%d/%m/%Y %H:%M') }}
+                                                        {% endif %}
+                                                    </dd>
+                                                    <dt>Motivo</dt>
+                                                    <dd>{{ envio.e_motivo_anulacion or 'Sin motivo registrado' }}</dd>
                                                 {% endif %}
-                                            </p>
-                                            <p><strong>OF:</strong> {{ envio.e_orden_flete if envio.e_orden_flete else 'Sin OF' }}</p>
+                                            </dl>
                                         </div>
 
-                                        <div>
-                                            <h4>Carga</h4>
-                                            <p><strong>Bultos:</strong> {{ envio.e_bultos }}</p>
-                                            <p><strong>Kilos:</strong> {{ envio.e_kilos }}</p>
-                                            <p><strong>Fecha:</strong>
-                                                {% if envio.e_fecha_creacion %}
-                                                    {{ envio.e_fecha_creacion.strftime('%d/%m/%Y %H:%M') }}
-                                                {% endif %}
-                                            </p>
+                                        <div class="detalle-card">
+                                            <h4>
+                                                <span class="detalle-card-icon" aria-hidden="true">
+                                                    <svg viewBox="0 0 24 24"><path d="m21 8-9-5-9 5 9 5 9-5Z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path></svg>
+                                                </span>
+                                                Carga
+                                            </h4>
+                                            <dl>
+                                                <dt>Bultos</dt>
+                                                <dd>{{ envio.e_bultos }}</dd>
+                                                <dt>Kilos</dt>
+                                                <dd>{{ envio.e_kilos }}</dd>
+                                                <dt>Fecha</dt>
+                                                <dd>
+                                                    {% if envio.e_fecha_creacion %}
+                                                        {{ envio.e_fecha_creacion.strftime('%d/%m/%Y %H:%M') }}
+                                                    {% endif %}
+                                                </dd>
+                                            </dl>
                                         </div>
                                     </div>
                                 </div>
@@ -284,7 +456,7 @@
         <h2>Eliminar registros filtrados</h2>
         <p>Se eliminara lo que coincida con los filtros actuales. Antes de eliminar, el sistema genera un respaldo Excel.</p>
 
-        {% if mes_seleccionado == "todos" and not filtro_of and not filtro_destinatario and not filtro_remitente and not filtro_fecha and not fecha_desde and not fecha_hasta %}
+        {% if mes_seleccionado == "todos" and not filtro_of and not filtro_destinatario and not filtro_remitente and not filtro_fecha and not fecha_desde and not fecha_hasta and estado_of == "todos" %}
             <div class="delete-warning">
                 No hay filtros activos. Esta accion intentara eliminar todos los registros visibles del historico.
             </div>
@@ -299,15 +471,60 @@
             <input type="hidden" name="fecha" value="{{ filtro_fecha }}">
             <input type="hidden" name="fecha_desde" value="{{ fecha_desde }}">
             <input type="hidden" name="fecha_hasta" value="{{ fecha_hasta }}">
+            <input type="hidden" name="estado_of" value="{{ estado_of }}">
 
             <div class="mb-3">
-                <label for="clave" class="form-label fw-semibold">Contrasena</label>
+                <label for="clave" class="form-label fw-semibold">Contraseña</label>
                 <input type="password" class="form-control" id="clave" name="clave" required>
             </div>
 
             <div class="d-flex gap-2 justify-content-end">
                 <button type="button" class="btn btn-outline-secondary btn-sm" onclick="cerrarModalEliminar()">Cancelar</button>
                 <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modalAnularSeleccionados" class="historico-modal">
+    <div class="historico-modal-card">
+        <h2>Anular registros seleccionados</h2>
+        <p>Los registros seguiran en el historico, pero la orden de flete quedara marcada como anulada.</p>
+
+        <form id="formAnularSeleccionados" method="POST" action="/anular_historico_seleccionados">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div id="idsAnularSeleccionados"></div>
+
+            <div class="mb-3">
+                <label for="motivo_anulacion" class="form-label fw-semibold">Motivo de anulacion</label>
+                <textarea class="form-control" id="motivo_anulacion" name="motivo_anulacion" rows="3" maxlength="500" required placeholder="Ej: pedido duplicado, error de tipeo, solicitud cancelada"></textarea>
+            </div>
+
+            <div class="d-flex gap-2 justify-content-end">
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="cerrarModalAnularSeleccionados()">Cancelar</button>
+                <button type="submit" class="btn btn-danger btn-sm">Marcar anulados</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modalEliminarSeleccionados" class="historico-modal">
+    <div class="historico-modal-card">
+        <h2>Eliminar registros seleccionados</h2>
+        <p>Esta accion borra solo los registros seleccionados. Antes de eliminar, el sistema envia un respaldo Excel por correo.</p>
+
+        <form id="formEliminarSeleccionados" method="POST" action="/eliminar_historico_seleccionados">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div id="idsEliminarSeleccionados"></div>
+
+            <div class="mb-3">
+                <label for="clave_seleccionados" class="form-label fw-semibold">Contraseña</label>
+                <input type="password" class="form-control" id="clave_seleccionados" name="clave" required>
+            </div>
+
+            <div class="d-flex gap-2 justify-content-end">
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="cerrarModalEliminarSeleccionados()">Cancelar</button>
+                <button type="submit" class="btn btn-danger btn-sm">Eliminar seleccionados</button>
             </div>
         </form>
     </div>
@@ -327,13 +544,54 @@ function cerrarModalEliminar() {
     document.getElementById("modalEliminarHistorico").style.display = "none";
 }
 
+function checksSeleccionados() {
+    return Array.from(document.querySelectorAll(".check-envio:checked"));
+}
+
+function poblarIdsSeleccionados(containerId) {
+    const contenedor = document.getElementById(containerId);
+    contenedor.innerHTML = "";
+    checksSeleccionados().forEach(check => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "envio_ids";
+        input.value = check.value;
+        contenedor.appendChild(input);
+    });
+}
+
 function descargarSeleccionados() {
-    const checks = document.querySelectorAll(".check-envio:checked");
-    if (!checks.length) {
+    if (!checksSeleccionados().length) {
         alert("Debes seleccionar al menos un registro.");
         return;
     }
     document.getElementById("formDescargaSeleccionados").submit();
+}
+
+function abrirModalAnularSeleccionados() {
+    if (!checksSeleccionados().length) {
+        alert("Debes seleccionar al menos un registro.");
+        return;
+    }
+    poblarIdsSeleccionados("idsAnularSeleccionados");
+    document.getElementById("modalAnularSeleccionados").style.display = "block";
+}
+
+function cerrarModalAnularSeleccionados() {
+    document.getElementById("modalAnularSeleccionados").style.display = "none";
+}
+
+function abrirModalEliminarSeleccionados() {
+    if (!checksSeleccionados().length) {
+        alert("Debes seleccionar al menos un registro.");
+        return;
+    }
+    poblarIdsSeleccionados("idsEliminarSeleccionados");
+    document.getElementById("modalEliminarSeleccionados").style.display = "block";
+}
+
+function cerrarModalEliminarSeleccionados() {
+    document.getElementById("modalEliminarSeleccionados").style.display = "none";
 }
 
 const checkTodos = document.getElementById("checkTodos");

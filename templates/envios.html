@@ -91,6 +91,9 @@
                             <td>
                                 <strong>{{ envio.e_destinatario }}</strong>
                                 <small>RUT: {{ envio.e_rut_destinatario }}</small>
+                                {% if envio.e_observacion %}
+                                    <small>{{ envio.e_observacion }}</small>
+                                {% endif %}
                             </td>
                             <td>
                                 <span class="delivery-badge {% if envio.e_tipo_envio == 'Agencia' %}agencia{% else %}domicilio{% endif %}">

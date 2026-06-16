@@ -28,15 +28,25 @@
             </div>
             <div class="of-actions">
                 {% if busqueda_realizada and not mostrar_todos %}
-                    <a href="/of_correo?buscar=1&mostrar_todos=1" class="btn btn-outline-secondary">
+                    <a href="/of_correo?buscar=1&mostrar_todos=1" class="btn btn-outline-secondary"
+                       data-loading-link="true"
+                       data-loading-title="Revisando correos OF"
+                       data-loading-text="Consultando la bandeja y cruzando respuestas con lotes activos.">
                         Ver todos
                     </a>
                 {% elif busqueda_realizada and mostrar_todos %}
-                    <a href="/of_correo?buscar=1" class="btn btn-outline-secondary">
+                    <a href="/of_correo?buscar=1" class="btn btn-outline-secondary"
+                       data-loading-link="true"
+                       data-loading-title="Revisando correos OF"
+                       data-loading-text="Consultando la bandeja y cruzando respuestas con lotes activos.">
                         Solo activos
                     </a>
                 {% endif %}
-                <a href="/of_correo?buscar=1" class="btn btn-success" {% if not correo_configurado %}aria-disabled="true"{% endif %}>
+                <a href="/of_correo?buscar=1" class="btn btn-success"
+                   data-loading-link="true"
+                   data-loading-title="Revisando correo"
+                   data-loading-text="Buscando respuestas de Starken y leyendo adjuntos OF disponibles."
+                   {% if not correo_configurado %}aria-disabled="true"{% endif %}>
                     Revisar correo
                 </a>
             </div>
@@ -101,6 +111,8 @@
                         <div class="adjuntos-list">
                             {% for adjunto in correo.adjuntos %}
                                 <form action="/procesar_of_correo" method="POST" class="adjunto-row"
+                                      data-loading-title="Procesando archivo OF"
+                                      data-loading-text="Validando el adjunto, actualizando el lote y preparando los avisos."
                                       onsubmit="return confirm('Procesar este adjunto OF para el lote seleccionado?');">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <input type="hidden" name="uid" value="{{ correo.uid }}">

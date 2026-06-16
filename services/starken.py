@@ -78,6 +78,9 @@ HEADERS_STARKEN = [
     "DIAMETRO",
 ]
 
+INDICE_EMAIL_DESTINATARIO = HEADERS_STARKEN.index("E-MAIL DESTINATARIO")
+INDICE_OBSERVACION_CLIENTE = HEADERS_STARKEN.index("OBSERVACION_CLIENTE")
+
 
 def normalizar_comuna(texto):
     if not texto:
@@ -100,7 +103,7 @@ def construir_fila_starken(envio):
     codigo_agencia = envio.e_codigo_agencia if envio.e_tipo_envio == "Agencia" else ""
     division_sigla = obtener_sigla_division(envio.e_division)
 
-    return [
+    fila = [
         codigo_agencia,
         "",
         "",
@@ -156,6 +159,9 @@ def construir_fila_starken(envio):
         "",
         "",
     ]
+    fila[INDICE_EMAIL_DESTINATARIO] = envio.e_correo_destinatario or ""
+    fila[INDICE_OBSERVACION_CLIENTE] = envio.e_observacion or ""
+    return fila
 
 
 def generar_csv_starken(envios, fecha_actual):
@@ -188,4 +194,3 @@ def guardar_respaldo_lote(nombre_archivo, contenido_bytes):
     ruta_archivo = carpeta / nombre_archivo
     ruta_archivo.write_bytes(contenido_bytes)
     return ruta_archivo
-

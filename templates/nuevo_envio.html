@@ -159,6 +159,18 @@
                                 </select>
                             </div>
                         </div>
+
+                        <div class="observacion-field">
+                            <label class="form-label">Observacion <span class="text-muted">(opcional)</span></label>
+                            <textarea
+                                class="form-control form-control-sm"
+                                name="observacion"
+                                id="observacion"
+                                maxlength="500"
+                                rows="5"
+                                placeholder="Tienda, horario, contacto, referencia para etiqueta o instruccion especial"
+                            ></textarea>
+                        </div>
                     </div>
                 </section>
 
@@ -212,7 +224,7 @@
                                         class="form-control"
                                         name="telefono_destinatario"
                                         id="telefono_destinatario"
-                                        maxlength="9"
+                                        maxlength="20"
                                         inputmode="numeric"
                                         placeholder="999999999"
                                         required
@@ -230,6 +242,18 @@
                                 id="direccion"
                                 maxlength="120"
                                 required
+                            >
+                        </div>
+
+                        <div>
+                            <label class="form-label">Correo destinatario <span class="text-muted">(opcional)</span></label>
+                            <input
+                                type="email"
+                                class="form-control form-control-sm"
+                                name="correo_destinatario"
+                                id="correo_destinatario"
+                                maxlength="120"
+                                placeholder="correo@empresa.cl"
                             >
                         </div>
 
@@ -261,6 +285,7 @@
                                 >
                             </div>
                         </div>
+
                     </div>
                 </section>
             </div>

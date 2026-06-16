@@ -169,6 +169,11 @@
     color: var(--muted-strong);
 }
 
+.observacion-field textarea {
+    height: 124px;
+    resize: none;
+}
+
 .autocomplete-wrap {
     position: relative;
 }

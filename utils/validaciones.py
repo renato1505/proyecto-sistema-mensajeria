@@ -45,8 +45,11 @@ def normalizar_telefono_chile(telefono):
 
     telefono = re.sub(r"\D", "", telefono)
 
-    if telefono.startswith("56") and len(telefono) in {10, 11}:
+    if telefono.startswith("56") and len(telefono) >= 10:
         telefono = telefono[2:]
+
+    if telefono.startswith("0") and len(telefono) in {9, 10}:
+        telefono = telefono[1:]
 
     return telefono
 

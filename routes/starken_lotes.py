@@ -1,6 +1,5 @@
 import io
 import logging
-from datetime import datetime
 
 from flask import flash, redirect, render_template, request, send_file
 
@@ -29,6 +28,7 @@ from services.lotes import (
 )
 from services.of_processor import OFProcessingError, procesar_archivo_of
 from services.starken import generar_csv_starken, guardar_respaldo_lote
+from utils.fechas import ahora_chile
 
 
 logger = logging.getLogger(__name__)
@@ -63,12 +63,48 @@ def _enviar_respaldo_post_of(db, lote, resultado):
 
 def _redirect_post_of(lote, resultado):
     if resultado.get("total_ok", 0) > 0:
-        return redirect(f"/avisos_lote/{lote}")
+        return redirect(f"/of_exito/{lote}")
 
     return redirect("/en_proceso")
 
 
+def _resumen_of_lote(db, lote):
+    envios = (
+        db.query(Envio)
+        .filter(Envio.e_lote == lote)
+        .order_by(Envio.e_fila_excel.asc(), Envio.id.asc())
+        .all()
+    )
+    envios_ok = [envio for envio in envios if envio.e_resultado_of == "OK" and envio.e_orden_flete]
+    envios_error = [envio for envio in envios if envio.e_resultado_of == "ERROR"]
+    ofs = [envio.e_orden_flete for envio in envios_ok]
+
+    return {
+        "lote": lote,
+        "total": len(envios),
+        "total_ok": len(envios_ok),
+        "total_error": len(envios_error),
+        "primera_of": ofs[0] if ofs else "",
+        "ultima_of": ofs[-1] if ofs else "",
+        "envios_ok": envios_ok,
+        "envios_error": envios_error,
+    }
+
+
 def registrar_rutas_starken_lotes(app):
+    @app.route("/of_exito/<lote>")
+    def of_exito(lote):
+        db = SessionLocal()
+        try:
+            resumen = _resumen_of_lote(db, lote)
+            if not resumen["total"]:
+                flash("No se encontro informacion del lote procesado.", "warning")
+                return redirect("/en_proceso")
+
+            return render_template("of_exito.html", resumen=resumen)
+        finally:
+            db.close()
+
     @app.route("/generar_excel", methods=["POST"])
     def generar_excel():
         # Crea el lote operativo y guarda respaldo local antes de descargar o enviar.
@@ -105,7 +141,7 @@ def registrar_rutas_starken_lotes(app):
             flash("Faltan credenciales de correo en .env. No se genero ningun lote.", "danger")
             return redirect("/envios")
 
-        fecha_actual = datetime.now()
+        fecha_actual = ahora_chile()
         lote = fecha_actual.strftime("LOTE-%Y%m%d-%H%M%S")
         nombre_archivo, contenido_bytes = generar_csv_starken(envios_pendientes, fecha_actual)
 
@@ -157,7 +193,7 @@ def registrar_rutas_starken_lotes(app):
             flash(f"No se pudo enviar el correo del lote {lote}: {str(e)}", "danger")
             return redirect("/en_proceso")
         else:
-            fecha_envio = datetime.now()
+            fecha_envio = ahora_chile()
             for envio in envios_pendientes:
                 envio.e_fecha_envio_correo = fecha_envio
                 envio.e_estado_correo = "enviado"

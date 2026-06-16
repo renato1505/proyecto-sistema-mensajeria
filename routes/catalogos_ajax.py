@@ -46,6 +46,8 @@ def _leer_form_destinatario():
         "telefono": normalizar_telefono_chile(
             request.form.get("telefono_destinatario", "").strip()
         ),
+        "correo": request.form.get("correo_destinatario", "").strip(),
+        "observacion": request.form.get("observacion", "").strip(),
     }
 
 

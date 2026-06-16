@@ -144,6 +144,9 @@
                                         <td>
                                             <strong>{{ envio.e_destinatario }}</strong>
                                             <small>{{ envio.e_comuna }} · {{ envio.e_direccion }}</small>
+                                            {% if envio.e_observacion %}
+                                                <small>{{ envio.e_observacion }}</small>
+                                            {% endif %}
                                         </td>
                                         <td>
                                             <span class="delivery-badge {% if envio.e_tipo_envio == 'Agencia' %}agencia{% else %}domicilio{% endif %}">

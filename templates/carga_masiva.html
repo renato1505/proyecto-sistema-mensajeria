@@ -199,7 +199,9 @@
                                                         data-direccion-target="#carga_direccion_{{ idx }}"
                                                         data-comuna-target="#carga_comuna_{{ idx }}"
                                                         data-region-target="#carga_region_{{ idx }}"
-                                                        data-telefono-target="#carga_telefono_{{ idx }}">
+                                                        data-telefono-target="#carga_telefono_{{ idx }}"
+                                                        data-correo-target="#carga_correo_destinatario_{{ idx }}"
+                                                        data-observacion-target="#carga_observacion_{{ idx }}">
                                                     <div class="list-group autocomplete-list"></div>
                                                 </div>
                                                 <div>
@@ -231,6 +233,10 @@
                                                     <input class="form-control form-control-sm" id="carga_telefono_{{ idx }}" name="filas-{{ idx }}-telefono_destinatario" value="{{ fila.data.telefono_destinatario }}">
                                                 </div>
                                                 <div>
+                                                    <label class="form-label">Correo destinatario</label>
+                                                    <input class="form-control form-control-sm" type="email" id="carga_correo_destinatario_{{ idx }}" name="filas-{{ idx }}-correo_destinatario" value="{{ fila.data.correo_destinatario }}">
+                                                </div>
+                                                <div>
                                                     <label class="form-label">Tipo envio</label>
                                                     <select class="form-select form-select-sm" name="filas-{{ idx }}-tipo_envio">
                                                         {% for tipo in ["Domicilio", "Agencia"] %}
@@ -248,7 +254,7 @@
                                                 </div>
                                                 <div class="span-2">
                                                     <label class="form-label">Observacion</label>
-                                                    <input class="form-control form-control-sm" name="filas-{{ idx }}-observacion" value="{{ fila.data.observacion }}">
+                                                    <input class="form-control form-control-sm" id="carga_observacion_{{ idx }}" name="filas-{{ idx }}-observacion" value="{{ fila.data.observacion }}">
                                                 </div>
                                             </div>
                                         </td>

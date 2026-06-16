@@ -1,7 +1,6 @@
 import io
 import re
 from collections import defaultdict
-from datetime import datetime
 from email.message import EmailMessage
 
 import pandas as pd
@@ -12,6 +11,12 @@ from config.settings import (
 )
 from database.modelos import Envio
 from services.email_client import enviar_mensaje, proveedor_correo_configurado
+from services.email_templates import (
+    correo_destinatario_html,
+    correo_funcionario_html,
+    correo_respaldo_mensajeria_html,
+)
+from utils.fechas import ahora_chile, fecha_hora_chile_texto
 
 
 def correo_avisos_configurado():
@@ -132,6 +137,8 @@ def _fila_envio(envio, incluir_remitente=True, incluir_detalle_of=True):
         "Comuna": envio.e_comuna,
         "Region": envio.e_region,
         "Telefono": envio.e_telefono_destinatario,
+        "Correo destinatario": envio.e_correo_destinatario,
+        "Observacion": envio.e_observacion,
         "Tipo envio": envio.e_tipo_envio,
         "Codigo agencia": envio.e_codigo_agencia or "",
         "Bultos": envio.e_bultos,
@@ -196,7 +203,7 @@ def preparar_resumen_avisos(envios):
     }
 
 
-def _enviar_correo(destinatario, asunto, cuerpo, nombre_adjunto, contenido_adjunto, html=None):
+def _enviar_correo(destinatario, asunto, cuerpo, nombre_adjunto=None, contenido_adjunto=None, html=None):
     msg = EmailMessage()
     msg["Subject"] = asunto
     msg["From"] = CORREO_EMISOR
@@ -206,96 +213,20 @@ def _enviar_correo(destinatario, asunto, cuerpo, nombre_adjunto, contenido_adjun
     if html:
         msg.add_alternative(html, subtype="html")
 
-    msg.add_attachment(
-        contenido_adjunto,
-        maintype="application",
-        subtype="vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        filename=nombre_adjunto,
-    )
+    if nombre_adjunto and contenido_adjunto:
+        msg.add_attachment(
+            contenido_adjunto,
+            maintype="application",
+            subtype="vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            filename=nombre_adjunto,
+        )
 
     enviar_mensaje(msg)
 
 
-def _html_escape(texto):
-    return (
-        str(texto or "")
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace('"', "&quot;")
-    )
-
-
-def _tabla_of_html(envios):
-    filas = []
-    for envio in envios[:12]:
-        filas.append(
-            "<tr>"
-            f"<td>{_html_escape(envio.e_destinatario)}</td>"
-            f"<td>{_html_escape(envio.e_comuna)}</td>"
-            f"<td><strong>{_html_escape(envio.e_orden_flete)}</strong></td>"
-            "</tr>"
-        )
-
-    if len(envios) > 12:
-        filas.append(
-            "<tr>"
-            f"<td colspan=\"3\">Y {len(envios) - 12} envio(s) mas en el Excel adjunto.</td>"
-            "</tr>"
-        )
-
-    return "".join(filas)
-
-
-def _correo_funcionario_html(lote, remitente, envios):
-    return f"""
-    <!doctype html>
-    <html>
-    <body style="margin:0;padding:0;background:#f3f5f7;font-family:Arial,Helvetica,sans-serif;color:#161a1f;">
-      <div style="max-width:680px;margin:0 auto;padding:28px 18px;">
-        <div style="background:#111827;color:#ffffff;border-radius:8px 8px 0 0;padding:22px 24px;">
-          <div style="font-size:18px;font-weight:800;letter-spacing:0;">L'OREAL Mensajeria</div>
-          <div style="width:72px;height:3px;background:#d9b66b;margin-top:12px;"></div>
-        </div>
-        <div style="background:#ffffff;border:1px solid #d9dee5;border-top:0;border-radius:0 0 8px 8px;padding:24px;">
-          <p style="margin:0 0 14px;font-size:16px;">Hola {_html_escape(remitente)},</p>
-          <p style="margin:0 0 18px;color:#344054;line-height:1.45;">
-            Tus envios ya fueron procesados por Mensajeria y cuentan con orden de flete.
-          </p>
-
-          <div style="display:block;background:#f8fafb;border:1px solid #e8ebef;border-radius:8px;padding:16px;margin-bottom:18px;">
-            <div style="font-size:12px;color:#667085;font-weight:800;text-transform:uppercase;">Resumen</div>
-            <div style="font-size:22px;font-weight:900;margin-top:4px;">{len(envios)} envio(s)</div>
-            <div style="color:#667085;margin-top:4px;">Lote: {_html_escape(lote)}</div>
-            <div style="color:#667085;">Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}</div>
-          </div>
-
-          <table style="width:100%;border-collapse:collapse;margin:0 0 18px;">
-            <thead>
-              <tr>
-                <th align="left" style="padding:10px;border-bottom:1px solid #d9dee5;background:#eef1f4;">Destinatario</th>
-                <th align="left" style="padding:10px;border-bottom:1px solid #d9dee5;background:#eef1f4;">Comuna</th>
-                <th align="left" style="padding:10px;border-bottom:1px solid #d9dee5;background:#eef1f4;">Orden de flete</th>
-              </tr>
-            </thead>
-            <tbody>
-              {_tabla_of_html(envios)}
-            </tbody>
-          </table>
-
-          <p style="margin:0;color:#344054;line-height:1.45;">
-            Adjuntamos un Excel con el detalle completo para tu respaldo.
-          </p>
-          <p style="margin:20px 0 0;color:#667085;">
-            Saludos,<br>
-            <strong>Equipo de Mensajeria</strong><br>
-            L'Oreal
-          </p>
-        </div>
-      </div>
-    </body>
-    </html>
-    """
+def _primer_nombre(nombre_completo, respaldo="Funcionario"):
+    partes = str(nombre_completo or "").strip().split()
+    return partes[0] if partes else respaldo
 
 
 def enviar_respaldo_mensajeria(lote, envios):
@@ -305,7 +236,7 @@ def enviar_respaldo_mensajeria(lote, envios):
     cuerpo = (
         f"Se adjunta respaldo completo del lote {lote}.\n\n"
         f"Total de envios: {len(envios)}\n"
-        f"Fecha respaldo: {datetime.now().strftime('%d/%m/%Y %H:%M')}\n\n"
+        f"Fecha respaldo: {fecha_hora_chile_texto()}\n\n"
         "Equipo de Mensajeria\n"
     )
 
@@ -315,7 +246,38 @@ def enviar_respaldo_mensajeria(lote, envios):
         cuerpo,
         nombre_adjunto,
         contenido,
+        html=correo_respaldo_mensajeria_html(lote, envios),
     )
+
+
+def enviar_aviso_destinatario(envio):
+    correo = (envio.e_correo_destinatario or "").strip()
+    if not correo:
+        return False
+
+    asunto = "L'Oreal Mensajeria - envio en curso"
+    cuerpo = (
+        "Te informamos que Mensajeria L'Oreal gestiono un envio a tu nombre mediante Starken.\n\n"
+        f"Remitente: {envio.e_remitente}\n"
+        f"Orden de flete: {envio.e_orden_flete or 'Sin OF'}\n"
+        f"Direccion de entrega: {envio.e_direccion}\n"
+        f"Comuna / Region: {envio.e_comuna} / {envio.e_region or 'No informada'}\n"
+        f"Telefono registrado: {envio.e_telefono_destinatario or 'No informado'}\n"
+        f"Observacion: {envio.e_observacion or 'Sin observacion'}\n\n"
+        "Puedes revisar el seguimiento en Starken:\n"
+        "https://www.starken.cl/seguimiento\n\n"
+        "Si algun dato de entrega no corresponde, comunicate con mensajeria.alcantara@loreal.com.\n\n"
+        "Equipo de Mensajeria\n"
+        "L'Oreal\n"
+    )
+
+    _enviar_correo(
+        correo,
+        asunto,
+        cuerpo,
+        html=correo_destinatario_html(envio),
+    )
+    return True
 
 
 def enviar_aviso_funcionario(lote, correo, envios):
@@ -327,19 +289,20 @@ def enviar_aviso_funcionario(lote, correo, envios):
     )
     nombre_adjunto = f"ordenes_flete_{_limpiar_nombre_archivo(lote)}.xlsx"
     remitente = envios[0].e_remitente or "Funcionario"
+    saludo = _primer_nombre(remitente)
     asunto = f"Tus envios Starken ya fueron procesados"
     detalle_of = "\n".join(
         f"- {envio.e_orden_flete or 'Sin OF'} | {envio.e_destinatario} | {envio.e_comuna}"
         for envio in envios
     )
     cuerpo = (
-        f"Hola {remitente},\n\n"
+        f"Hola {saludo},\n\n"
         "Tus envios fueron procesados por Mensajeria y ya cuentan con orden de flete.\n"
         "Adjuntamos el detalle correspondiente para tu respaldo.\n\n"
         f"Resumen:\n"
         f"- Lote: {lote}\n"
         f"- Total de envios: {len(envios)}\n"
-        f"- Fecha de aviso: {datetime.now().strftime('%d/%m/%Y %H:%M')}\n\n"
+        f"- Fecha de aviso: {fecha_hora_chile_texto()}\n\n"
         "Ordenes de flete:\n"
         f"{detalle_of}\n\n"
         "Saludos,\n"
@@ -353,7 +316,7 @@ def enviar_aviso_funcionario(lote, correo, envios):
         cuerpo,
         nombre_adjunto,
         contenido,
-        html=_correo_funcionario_html(lote, remitente, envios),
+        html=correo_funcionario_html(lote, saludo, envios, fecha_hora_chile_texto()),
     )
 
 
@@ -364,6 +327,7 @@ def enviar_avisos_lote(lote, envios, correos_funcionarios):
     resumen = preparar_resumen_avisos(envios)
     seleccionados = {correo.strip().lower() for correo in correos_funcionarios}
     enviados_funcionarios = 0
+    enviados_destinatarios = 0
 
     for funcionario in resumen["funcionarios"]:
         correo = funcionario["correo"]
@@ -372,10 +336,24 @@ def enviar_avisos_lote(lote, envios, correos_funcionarios):
 
         enviar_aviso_funcionario(lote, correo, funcionario["envios"])
         for envio in funcionario["envios"]:
+            if enviar_aviso_destinatario(envio):
+                enviados_destinatarios += 1
+
+        for envio in funcionario["envios"]:
             envio.e_aviso_funcionario_estado = "enviado"
-            envio.e_fecha_aviso_funcionario = datetime.now()
+            envio.e_fecha_aviso_funcionario = ahora_chile()
         enviados_funcionarios += 1
 
     return {
         "funcionarios": enviados_funcionarios,
+        "destinatarios": enviados_destinatarios,
     }
+
+
+def cancelar_avisos_lote(envios):
+    cantidad = 0
+    for envio in envios:
+        if envio.e_aviso_funcionario_estado == "pendiente":
+            envio.e_aviso_funcionario_estado = "cancelado"
+            cantidad += 1
+    return cantidad

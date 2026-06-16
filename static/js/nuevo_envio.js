@@ -18,6 +18,8 @@ const inputDireccion = document.getElementById("direccion");
 const inputComun = document.getElementById("comuna");
 const inputRegio = document.getElementById("region");
 const inputTelefonoDestinatario = document.getElementById("telefono_destinatario");
+const inputCorreoDestinatario = document.getElementById("correo_destinatario");
+const inputObservacion = document.getElementById("observacion");
 const listaDestinatarios = document.getElementById("lista_destinatarios");
 
 const inputBultos = document.getElementById("bultos");
@@ -32,6 +34,17 @@ const autocompleteState = {
 
 const STORAGE_KEY = "nuevo_envio_remitente";
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || "";
+
+function normalizarTelefonoChileInput(valor) {
+    let telefono = String(valor || "").replace(/\D/g, "");
+    if (telefono.startsWith("56") && telefono.length >= 10) {
+        telefono = telefono.slice(2);
+    }
+    if (telefono.startsWith("0") && (telefono.length === 9 || telefono.length === 10)) {
+        telefono = telefono.slice(1);
+    }
+    return telefono.slice(0, 9);
+}
 
 function limpiarLista(lista, stateKey) {
     lista.innerHTML = "";
@@ -171,11 +184,7 @@ codigoAgencia.addEventListener("input", function () {
 });
 
 inputTelefonoDestinatario.addEventListener("input", function () {
-    let telefono = this.value.replace(/\D/g, "");
-    if ((telefono.length === 10 || telefono.length === 11) && telefono.startsWith("56")) {
-        telefono = telefono.slice(2);
-    }
-    this.value = telefono.slice(0, 9);
+    this.value = normalizarTelefonoChileInput(this.value);
     actualizarPreview();
 });
 
@@ -330,6 +339,8 @@ async function guardarDestinatario() {
     formData.append("comuna", comuna);
     formData.append("region", region);
     formData.append("telefono_destinatario", telefono);
+    formData.append("correo_destinatario", inputCorreoDestinatario ? inputCorreoDestinatario.value.trim() : "");
+    formData.append("observacion", inputObservacion ? inputObservacion.value.trim() : "");
 
     const response = await fetch("/guardar_destinatario", {
         method: "POST",
@@ -373,6 +384,8 @@ inputDestinatario.addEventListener("input", async function () {
             inputComun.value = destinatario.comuna || "";
             inputRegio.value = destinatario.region || "";
             inputTelefonoDestinatario.value = destinatario.telefono || "";
+            if (inputCorreoDestinatario) inputCorreoDestinatario.value = destinatario.correo || "";
+            if (inputObservacion) inputObservacion.value = destinatario.observacion || "";
             limpiarLista(listaDestinatarios, "destinatarios");
             actualizarPreview();
         };

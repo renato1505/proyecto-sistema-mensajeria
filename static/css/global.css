@@ -25,7 +25,8 @@ body {
     background:
         linear-gradient(180deg, #eef1f4 0, var(--app-bg) 240px),
         var(--app-bg);
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: "Inter", "Aptos", "Helvetica Neue", Arial, sans-serif;
+    font-size: 0.95rem;
 }
 
 a {
@@ -36,85 +37,144 @@ a {
     position: sticky;
     top: 0;
     z-index: 1020;
-    background: rgba(255, 255, 255, 0.96);
-    border-bottom: 1px solid var(--line);
-    box-shadow: 0 1px 8px rgba(15, 23, 42, 0.06);
+    padding: 7px 8px;
+    background: rgba(246, 248, 250, 0.9);
+    border-bottom: 1px solid rgba(217, 222, 229, 0.5);
+    backdrop-filter: blur(14px);
 }
 
 .app-header-inner {
     display: grid;
-    grid-template-columns: minmax(170px, 210px) minmax(0, 1fr) minmax(260px, 330px);
+    grid-template-columns: 128px minmax(0, 1fr) max-content;
     align-items: center;
-    gap: 14px;
+    gap: 8px;
     max-width: 1360px;
-    min-height: 72px;
+    min-height: 64px;
     margin: 0 auto;
-    padding: 10px 24px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(217, 222, 229, 0.82);
+    border-radius: 8px;
+    box-shadow: 0 14px 36px rgba(15, 23, 42, 0.08);
 }
 
 .brand-main {
     display: inline-flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
+    min-height: 46px;
     min-width: 0;
     color: var(--brand-black);
+    padding-right: 10px;
+    border-right: 1px solid var(--line-soft);
 }
 
 .brand-main img {
-    max-width: 178px;
-    max-height: 48px;
+    max-width: 150px;
+    max-height: 44px;
     object-fit: contain;
 }
 
 .brand-fallback {
     display: inline-flex;
     flex-direction: column;
-    line-height: 1.05;
+    line-height: 1.08;
 }
 
 .brand-fallback strong {
     color: var(--brand-black);
-    font-size: 1.1rem;
+    font-size: 0.95rem;
+    font-weight: 900;
     letter-spacing: 0;
 }
 
 .brand-fallback small {
     color: var(--muted);
-    font-size: 0.78rem;
+    font-size: 0.68rem;
+    font-weight: 600;
 }
 
 .app-nav {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 2px;
+    justify-content: flex-start;
+    gap: 3px;
     min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 3px 2px;
+}
+
+.app-nav::-webkit-scrollbar {
+    display: none;
 }
 
 .app-nav a {
     position: relative;
     display: inline-flex;
+    flex-direction: row;
     align-items: center;
-    gap: 6px;
-    color: #2e3440;
-    border-radius: 6px;
-    padding: 8px 9px;
-    font-size: 0.88rem;
-    font-weight: 600;
+    flex: 0 0 auto;
+    gap: 5px;
+    min-width: max-content;
+    min-height: 40px;
+    color: #4b5563;
+    border-radius: 999px;
+    padding: 9px 10px 10px;
+    font-size: 0.74rem;
+    font-weight: 750;
+    line-height: 1.15;
     white-space: nowrap;
+    transition: color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.app-nav a.nav-with-badge {
+    padding-right: 20px;
+}
+
+.app-nav a svg {
+    width: 15px;
+    height: 15px;
+    flex: 0 0 auto;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+}
+
+.app-nav a.active {
+    color: #111827;
+    background: #fff8ed;
+    box-shadow: inset 0 0 0 1px rgba(176, 138, 60, 0.18);
+}
+
+.app-nav a.active::after {
+    content: "";
+    position: absolute;
+    left: 18px;
+    right: 18px;
+    bottom: 6px;
+    height: 2px;
+    background: var(--brand-gold);
+    border-radius: 999px;
 }
 
 .nav-badge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 20px;
-    height: 20px;
-    padding: 0 6px;
+    position: absolute;
+    top: -2px;
+    right: 1px;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 5px;
     color: #fff;
-    background: var(--brand-red);
+    background: #b4232f;
+    border: 2px solid #fff;
     border-radius: 999px;
-    font-size: 0.72rem;
+    font-size: 0.62rem;
     font-weight: 900;
     line-height: 1;
 }
@@ -122,17 +182,20 @@ a {
 .app-nav a:hover,
 .app-nav a:focus {
     color: var(--brand-black);
-    background: #eef2f5;
+    background: #f5f7f9;
+    transform: translateY(-1px);
 }
 
 .brand-partner {
     display: inline-flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 7px;
+    gap: 5px;
     color: var(--muted-strong);
     min-width: 0;
     flex-wrap: nowrap;
+    padding-left: 10px;
+    border-left: 1px solid var(--line-soft);
 }
 
 .brand-partner img {
@@ -145,13 +208,13 @@ a {
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    min-height: 28px;
-    padding: 4px 9px;
+    min-height: 30px;
+    padding: 5px 9px;
     color: var(--brand-green-dark);
     background: rgba(22, 155, 77, 0.08);
     border: 1px solid rgba(22, 155, 77, 0.18);
     border-radius: 999px;
-    font-size: 0.78rem;
+    font-size: 0.72rem;
     font-weight: 900;
     white-space: nowrap;
 }
@@ -162,12 +225,12 @@ a {
 
 .logout-form button {
     color: var(--muted-strong);
-    background: #eef2f5;
+    background: #f8fafc;
     border: 1px solid var(--line);
-    border-radius: 6px;
-    min-height: 28px;
-    padding: 4px 8px;
-    font-size: 0.76rem;
+    border-radius: 8px;
+    min-height: 30px;
+    padding: 5px 9px;
+    font-size: 0.72rem;
     font-weight: 800;
 }
 
@@ -184,13 +247,13 @@ a {
 .user-chip {
     display: inline-flex;
     align-items: center;
-    min-height: 28px;
-    padding: 4px 9px;
+    min-height: 30px;
+    padding: 5px 9px;
     color: #344054;
     background: #f5f7f9;
     border: 1px solid var(--line);
     border-radius: 999px;
-    font-size: 0.76rem;
+    font-size: 0.72rem;
     font-weight: 800;
 }
 
@@ -203,7 +266,7 @@ a {
 }
 
 .app-main {
-    margin-top: 18px;
+    margin-top: 14px;
     padding-bottom: 36px;
 }
 
@@ -492,6 +555,8 @@ a {
     .brand-main,
     .brand-partner {
         justify-content: center;
+        padding: 0;
+        border: 0;
     }
 
     .app-nav {
@@ -507,8 +572,8 @@ a {
     }
 
     .app-nav a {
-        padding: 7px 9px;
-        font-size: 0.84rem;
+        padding: 7px 8px;
+        font-size: 0.76rem;
     }
 
     .brand-partner {

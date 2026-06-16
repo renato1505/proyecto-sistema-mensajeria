@@ -38,13 +38,23 @@ No repetir esta accion si no hay claridad sobre el estado del lote.
 
 Si las filas, estados u ordenes de flete no coinciden, el sistema bloquea el procesamiento.
 
+Cuando el archivo OF se procesa correctamente, el sistema muestra una pantalla de exito con:
+
+- total de envios del lote;
+- cantidad OK;
+- cantidad con error;
+- primera OF;
+- ultima OF.
+
+La primera y ultima OF se pueden copiar haciendo clic sobre cada numero. Esta pantalla ayuda a imprimir etiquetas en Starken usando rango desde/hasta.
+
 ## 5. Avisos y respaldo
 
 Al procesar OF:
 
 - El sistema intenta enviar respaldo completo del lote a Mensajeria.
 - Los envios OK pasan al historico.
-- Los avisos a funcionarios quedan pendientes.
+- Los avisos a funcionarios y destinatarios quedan pendientes.
 
 Cuando Starken ya haya retirado los pedidos:
 
@@ -53,7 +63,13 @@ Cuando Starken ya haya retirado los pedidos:
 3. Seleccionar funcionarios.
 4. Enviar correos.
 
-Los avisos enviados dejan de aparecer como pendientes.
+Al enviar avisos:
+
+- El funcionario recibe un correo resumen con Excel adjunto.
+- El destinatario recibe un correo formal si el envio tiene correo destinatario registrado.
+- Los avisos enviados dejan de aparecer como pendientes.
+
+Si el lote no debe ser avisado, usar `Cancelar avisos`. Esto marca el lote como cancelado para que no vuelva a aparecer en la lista de avisos pendientes.
 
 ## 6. Historico
 
@@ -62,11 +78,16 @@ Los envios con resultado `OK` pasan al historico.
 Desde `Historico` se puede:
 
 - Filtrar por mes, OF, remitente, destinatario o fechas.
+- Filtrar por estado OF: vigentes o anuladas.
 - Exportar resultados filtrados.
 - Descargar registros seleccionados.
+- Anular registros seleccionados con motivo.
+- Eliminar registros seleccionados con clave de eliminacion.
 - Eliminar registros filtrados con clave de eliminacion.
 
 Cuando se elimina historico en cloud, primero se envia un respaldo Excel por correo a Mensajeria. Si el correo de respaldo falla, no se eliminan registros.
+
+La anulacion no elimina el registro. Solo marca la OF como anulada y guarda motivo/fecha para mantener trazabilidad.
 
 ## 7. Pruebas manuales
 

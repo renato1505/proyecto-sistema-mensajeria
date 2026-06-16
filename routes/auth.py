@@ -1,9 +1,15 @@
 import hmac
+import time
 from urllib.parse import urlsplit
 
 from flask import flash, redirect, render_template, request, session, url_for
 
-from config.settings import APP_ACCESS_PASSWORD, APP_USERS, LOGIN_REQUIRED
+from config.settings import (
+    APP_ACCESS_PASSWORD,
+    APP_USERS,
+    LOGIN_REQUIRED,
+    SESSION_TIMEOUT_MINUTES,
+)
 
 
 USUARIOS_POR_DEFECTO = ["mensajeria", "recepcion", "seguridad"]
@@ -61,6 +67,15 @@ def _destino_login_seguro(destino):
     return destino
 
 
+def _sesion_expirada():
+    ultima_actividad = session.get("ultima_actividad")
+    if not ultima_actividad:
+        return False
+
+    segundos_limite = max(1, SESSION_TIMEOUT_MINUTES) * 60
+    return time.time() - float(ultima_actividad) > segundos_limite
+
+
 def registrar_rutas_auth(app):
     @app.before_request
     def proteger_acceso():
@@ -73,6 +88,13 @@ def registrar_rutas_auth(app):
 
         if not session.get("usuario_autenticado"):
             return redirect(url_for("login", next=request.path))
+
+        if _sesion_expirada():
+            session.clear()
+            flash("Sesion expirada por inactividad.", "info")
+            return redirect(url_for("login", next=request.path))
+
+        session["ultima_actividad"] = time.time()
 
     @app.route("/login", methods=["GET", "POST"])
     def login():
@@ -87,8 +109,10 @@ def registrar_rutas_auth(app):
             clave_esperada = usuarios.get(usuario, "")
 
             if clave_esperada and hmac.compare_digest(clave, clave_esperada):
+                session.permanent = True
                 session["usuario_autenticado"] = True
                 session["usuario_nombre"] = usuario
+                session["ultima_actividad"] = time.time()
                 flash("Acceso iniciado correctamente.", "success")
                 return redirect(_destino_login_seguro(request.args.get("next")))
 
@@ -101,7 +125,6 @@ def registrar_rutas_auth(app):
 
     @app.route("/logout", methods=["POST"])
     def logout():
-        session.pop("usuario_autenticado", None)
-        session.pop("usuario_nombre", None)
+        session.clear()
         flash("Sesion cerrada correctamente.", "info")
         return redirect("/login" if LOGIN_REQUIRED else "/")

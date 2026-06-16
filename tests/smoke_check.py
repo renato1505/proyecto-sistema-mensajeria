@@ -31,7 +31,6 @@ def main():
         "/en_proceso",
         "/historico",
         "/of_correo",
-        "/estado_sistema",
     ]:
         response = client.get(ruta)
         print(f"{ruta}: {response.status_code}")

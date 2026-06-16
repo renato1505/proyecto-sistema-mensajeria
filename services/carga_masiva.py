@@ -31,6 +31,7 @@ COLUMNAS_PLANTILLA_ANTERIOR = [
     "Region",
     "Comuna",
     "Telefono",
+    "Correo destinatario",
     "Tipo envio",
     "Bultos",
     "Kilos",
@@ -44,6 +45,7 @@ COLUMNAS_ENVIOS_PLANTILLA = [
     "Comuna",
     "Region",
     "Telefono",
+    "Correo destinatario",
     "Tipo envio",
     "Bultos",
     "Kilos",
@@ -69,6 +71,10 @@ MAPA_COLUMNAS = {
     "comuna": "comuna",
     "telefono": "telefono_destinatario",
     "numero telefono": "telefono_destinatario",
+    "correo destinatario": "correo_destinatario",
+    "e-mail destinatario": "correo_destinatario",
+    "email destinatario": "correo_destinatario",
+    "e-mail desti": "correo_destinatario",
     "tipo envio": "tipo_envio",
     "tipo de envio": "tipo_envio",
     "bultos": "bultos",
@@ -104,6 +110,14 @@ def _numero_entero(valor):
         return int(float(valor))
     except (TypeError, ValueError):
         return None
+
+
+def _es_valor_ejemplo(valor):
+    return _normalizar_columna(valor) in {
+        "destinatario ejemplo",
+        "av. ejemplo 123",
+        "av ejemplo 123",
+    }
 
 
 def _obtener_catalogo_comunas(db):
@@ -148,6 +162,7 @@ def generar_plantilla_carga_masiva(db):
         "F8FAFC",
         "F4F7FB",
         "F8FAFC",
+        "F4F9F6",
     ]
 
     ws.cell(row=1, column=1, value="Datos del remitente").fill = title_fill
@@ -178,22 +193,6 @@ def generar_plantilla_carga_masiva(db):
         for col, color in enumerate(column_fills, start=1):
             ws.cell(row=row, column=col).fill = PatternFill("solid", fgColor=color)
 
-    comuna_ejemplo = comunas_nombres[0] if comunas_nombres else ""
-    ejemplo = [
-        "Destinatario Ejemplo",
-        "0",
-        "Av. Ejemplo 123",
-        comuna_ejemplo,
-        f'=IFERROR(VLOOKUP(D9,Comunas!$A:$B,2,FALSE),"")',
-        "912345678",
-        "Domicilio",
-        1,
-        1,
-        "",
-    ]
-    for col, valor in enumerate(ejemplo, start=1):
-        ws.cell(row=9, column=col, value=valor)
-
     listas = wb.create_sheet("Listas")
     for row, region in enumerate(regiones, start=1):
         listas.cell(row=row, column=1, value=region)
@@ -209,6 +208,29 @@ def generar_plantilla_carga_masiva(db):
         comunas_ws.cell(row=row, column=1, value=comuna)
         comunas_ws.cell(row=row, column=2, value=region_por_comuna[_normalizar_columna(comuna)])
 
+    ejemplo_ws = wb.create_sheet("Ejemplo")
+    for col, titulo in enumerate(COLUMNAS_ENVIOS_PLANTILLA, start=1):
+        cell = ejemplo_ws.cell(row=1, column=col, value=titulo)
+        cell.fill = header_fill
+        cell.font = header_font
+        ejemplo_ws.column_dimensions[cell.column_letter].width = max(16, len(titulo) + 4)
+    comuna_ejemplo = comunas_nombres[0] if comunas_nombres else "Comuna"
+    ejemplo = [
+        "Nombre Destinatario",
+        "0",
+        "Direccion real 123",
+        comuna_ejemplo,
+        region_por_comuna.get(_normalizar_columna(comuna_ejemplo), "Region"),
+        "912345678",
+        "correo.destinatario@empresa.cl",
+        "Domicilio",
+        1,
+        1,
+        "Tienda, horario o referencia",
+    ]
+    for col, valor in enumerate(ejemplo, start=1):
+        ejemplo_ws.cell(row=2, column=col, value=valor)
+
     rango_division = f"Listas!$B$1:$B${len(DIVISIONES)}"
     rango_tipo = f"Listas!$C$1:$C${len(TIPOS_ENVIO)}"
     rango_comunas = f"Listas!$D$1:$D${max(1, len(comunas_nombres))}"
@@ -221,7 +243,7 @@ def generar_plantilla_carga_masiva(db):
     ws.add_data_validation(dv_comuna)
     dv_division.add("B5")
     dv_comuna.add("D9:D308")
-    dv_tipo.add("G9:G308")
+    dv_tipo.add("H9:H308")
 
     ws.freeze_panes = "A9"
     listas.sheet_state = "hidden"
@@ -323,6 +345,7 @@ def validar_archivo_carga_masiva(archivo, db):
             "region": _texto(row.get("region")),
             "comuna": _texto(row.get("comuna")),
             "telefono_destinatario": _telefono(row.get("telefono_destinatario")),
+            "correo_destinatario": _texto(row.get("correo_destinatario")),
             "tipo_envio": _texto(row.get("tipo_envio")).capitalize(),
             "bultos": _numero_entero(row.get("bultos")),
             "kilos": _numero_entero(row.get("kilos")),
@@ -366,6 +389,7 @@ def validar_registros_carga_masiva(registros, db):
             "region": _texto(registro.get("region")),
             "comuna": _texto(registro.get("comuna")),
             "telefono_destinatario": _telefono(registro.get("telefono_destinatario")),
+            "correo_destinatario": _texto(registro.get("correo_destinatario")),
             "tipo_envio": _texto(registro.get("tipo_envio")).capitalize(),
             "bultos": _numero_entero(registro.get("bultos")),
             "kilos": _numero_entero(registro.get("kilos")),
@@ -385,6 +409,12 @@ def validar_registros_carga_masiva(registros, db):
 
         if data["correo_remitente"] and not email_valido(data["correo_remitente"]):
             errores.append("correo_remitente: formato invalido")
+
+        if _es_valor_ejemplo(data["destinatario"]) or _es_valor_ejemplo(data["direccion"]):
+            errores.append("fila de ejemplo: reemplaza destinatario y direccion por datos reales")
+
+        if data["correo_destinatario"] and not email_valido(data["correo_destinatario"]):
+            errores.append("correo_destinatario: formato invalido")
 
         if data["rut_destinatario"] and not rut_operativo_valido(data["rut_destinatario"]):
             errores.append("rut_destinatario: ingresa RUT o 0")
@@ -491,6 +521,8 @@ def construir_envio_desde_carga(data):
         e_comuna=data["comuna"],
         e_region=data["region"],
         e_telefono_destinatario=data["telefono_destinatario"],
+        e_correo_destinatario=data.get("correo_destinatario", ""),
+        e_observacion=data.get("observacion", ""),
         e_tipo_envio=data["tipo_envio"],
         e_codigo_agencia="",
         e_bultos=data["bultos"],

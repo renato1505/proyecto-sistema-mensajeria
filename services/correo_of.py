@@ -14,6 +14,7 @@ from config.settings import (
     OF_IMAP_HOST,
     OF_IMAP_PORT,
 )
+from utils.fechas import a_hora_chile
 
 
 EXTENSIONES_OF = (".xlsx", ".xls")
@@ -181,7 +182,7 @@ def buscar_correos_of(limite=10):
 
             fecha_raw = mensaje.get("Date")
             try:
-                fecha = parsedate_to_datetime(fecha_raw) if fecha_raw else None
+                fecha = a_hora_chile(parsedate_to_datetime(fecha_raw)) if fecha_raw else None
             except (TypeError, ValueError):
                 fecha = None
 

@@ -29,6 +29,7 @@ CAMPOS_CARGA_MASIVA = [
     "region",
     "comuna",
     "telefono_destinatario",
+    "correo_destinatario",
     "tipo_envio",
     "bultos",
     "kilos",

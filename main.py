@@ -1,6 +1,8 @@
+from datetime import timedelta
+
 from flask import Flask, session
 from config.logging_config import configurar_logging
-from config.settings import FLASK_DEBUG, SECRET_KEY
+from config.settings import FLASK_DEBUG, SECRET_KEY, SESSION_TIMEOUT_MINUTES
 from database.conexion import engine
 from database.modelos import Base
 from database.schema import asegurar_columnas_operativas
@@ -21,6 +23,7 @@ from utils.csrf import obtener_csrf_token, validar_csrf
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
+app.permanent_session_lifetime = timedelta(minutes=max(1, SESSION_TIMEOUT_MINUTES))
 configurar_logging(app)
 
 

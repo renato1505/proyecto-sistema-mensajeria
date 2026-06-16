@@ -96,7 +96,28 @@ function setValue(selector, value) {
     }
 }
 
+function normalizarTelefonoChileInput(valor) {
+    let telefono = String(valor || "").replace(/\D/g, "");
+    if (telefono.startsWith("56") && telefono.length >= 10) {
+        telefono = telefono.slice(2);
+    }
+    if (telefono.startsWith("0") && (telefono.length === 9 || telefono.length === 10)) {
+        telefono = telefono.slice(1);
+    }
+    return telefono.slice(0, 9);
+}
+
+function inicializarTelefonosOperativos() {
+    document.querySelectorAll("input[name$='telefono_destinatario']").forEach((input) => {
+        input.addEventListener("input", function () {
+            this.value = normalizarTelefonoChileInput(this.value);
+        });
+    });
+}
+
 function inicializarAutocompletadosOperativos() {
+    inicializarTelefonosOperativos();
+
     document.querySelectorAll("[data-autocomplete='comunas']").forEach((input) => {
         crearAutocomplete(input, {
             url: "/buscar_comunas",
@@ -132,6 +153,8 @@ function inicializarAutocompletadosOperativos() {
                 setValue(input.dataset.comunaTarget, destinatario.comuna);
                 setValue(input.dataset.regionTarget, destinatario.region);
                 setValue(input.dataset.telefonoTarget, destinatario.telefono);
+                setValue(input.dataset.correoTarget, destinatario.correo);
+                setValue(input.dataset.observacionTarget, destinatario.observacion);
             }
         });
     });

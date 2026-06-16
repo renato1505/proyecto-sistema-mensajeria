@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}OF procesada{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/of_exito.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="of-success-page">
+    <section class="of-success-card" id="ofSuccessCard">
+        <button type="button" class="of-close-btn" id="cerrarExitoOf" title="Cerrar resumen">×</button>
+
+        <div class="of-success-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+                <path d="M20 6 9 17l-5-5"></path>
+            </svg>
+        </div>
+
+        <span class="of-kicker">OF procesada correctamente</span>
+        <h1>Lote listo para imprimir etiquetas</h1>
+        <p>
+            Usa el rango de ordenes de flete para buscar e imprimir las etiquetas en Starken.
+            Puedes copiar cada numero haciendo clic sobre el.
+        </p>
+
+        <div class="of-lote-chip">{{ resumen.lote }}</div>
+
+        <div class="of-range">
+            <button type="button" class="of-number-copy" data-copy="{{ resumen.primera_of }}">
+                <span>Primera OF</span>
+                <strong>{{ resumen.primera_of or "Sin OF" }}</strong>
+            </button>
+            <button type="button" class="of-number-copy" data-copy="{{ resumen.ultima_of }}">
+                <span>Ultima OF</span>
+                <strong>{{ resumen.ultima_of or "Sin OF" }}</strong>
+            </button>
+        </div>
+
+        <div class="of-copy-feedback" id="ofCopyFeedback" aria-live="polite"></div>
+
+        <div class="of-summary-grid">
+            <article>
+                <span>Envios del lote</span>
+                <strong>{{ resumen.total }}</strong>
+            </article>
+            <article class="ok">
+                <span>Procesados OK</span>
+                <strong>{{ resumen.total_ok }}</strong>
+            </article>
+            <article class="{% if resumen.total_error %}error{% endif %}">
+                <span>Con error</span>
+                <strong>{{ resumen.total_error }}</strong>
+            </article>
+        </div>
+
+        {% if resumen.total_error %}
+            <div class="of-warning">
+                Hay envios con error OF que quedaron pendientes de revision en En proceso.
+            </div>
+        {% endif %}
+
+        <div class="of-success-actions">
+            <a href="/avisos_lote/{{ resumen.lote }}" class="btn btn-success">Ir a avisos</a>
+            <a href="/historico" class="btn btn-outline-secondary">Ir a historico</a>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const card = document.getElementById("ofSuccessCard");
+    const closeButton = document.getElementById("cerrarExitoOf");
+    const feedback = document.getElementById("ofCopyFeedback");
+
+    function cerrarResumen() {
+        if (!card) return;
+        card.classList.add("oculto");
+    }
+
+    if (closeButton) {
+        closeButton.addEventListener("click", cerrarResumen);
+    }
+
+    setTimeout(cerrarResumen, 300000);
+
+    document.querySelectorAll(".of-number-copy").forEach(function (button) {
+        button.addEventListener("click", async function () {
+            const valor = button.dataset.copy || "";
+            if (!valor) return;
+
+            try {
+                await navigator.clipboard.writeText(valor);
+                if (feedback) {
+                    feedback.textContent = "OF copiada: " + valor;
+                    feedback.classList.add("visible");
+                    setTimeout(function () {
+                        feedback.classList.remove("visible");
+                    }, 2200);
+                }
+            } catch (error) {
+                if (feedback) {
+                    feedback.textContent = "No se pudo copiar automaticamente.";
+                    feedback.classList.add("visible");
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

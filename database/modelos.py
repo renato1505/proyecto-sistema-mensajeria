@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Boolean, Column, Integer, String, DateTime
 from sqlalchemy.orm import declarative_base
-from datetime import datetime
+
+from utils.fechas import ahora_chile
 
 Base = declarative_base()
 
@@ -24,6 +25,8 @@ class Destinatario(Base):
     d_comuna = Column(String)
     d_region = Column(String)
     d_telefono = Column(String)
+    d_correo = Column(String)
+    d_observacion = Column(String)
 
 
 class Comuna(Base):
@@ -52,6 +55,8 @@ class Envio(Base):
     e_comuna = Column(String, nullable=False)
     e_region = Column(String)
     e_telefono_destinatario = Column(String)
+    e_correo_destinatario = Column(String)
+    e_observacion = Column(String)
 
     # Datos del envío
     e_tipo_envio = Column(String, nullable=False)
@@ -78,5 +83,9 @@ class Envio(Base):
     e_aviso_funcionario_estado = Column(String(50), nullable=True, index=True)
     e_fecha_aviso_funcionario = Column(DateTime, nullable=True)
 
+    e_anulado = Column(Boolean, default=False, nullable=False, index=True)
+    e_fecha_anulacion = Column(DateTime, nullable=True)
+    e_motivo_anulacion = Column(String(500), nullable=True)
+
     # Fechas internas
-    e_fecha_creacion = Column(DateTime, default=datetime.utcnow, index=True)
+    e_fecha_creacion = Column(DateTime, default=ahora_chile, index=True)

@@ -38,6 +38,7 @@ Antes de desplegar:
 4. Debe existir una clave fuerte en `SECRET_KEY`.
 5. Debe activarse login con `LOGIN_REQUIRED=1`.
 6. Deben definirse los usuarios en `APP_USERS`.
+7. Debe definirse `SESSION_TIMEOUT_MINUTES` segun la politica de inactividad deseada.
 
 ## Variables de entorno obligatorias
 
@@ -49,6 +50,7 @@ SECRET_KEY=clave-larga-y-segura
 FLASK_DEBUG=0
 LOGIN_REQUIRED=1
 APP_USERS=mensajeria:clave-mensajeria;recepcion:clave-recepcion;seguridad:clave-seguridad
+SESSION_TIMEOUT_MINUTES=30
 
 CORREO_EMISOR=correo-del-sistema@gmail.com
 CORREO_DESTINO_STARKEN=correo-destino-starken
@@ -153,6 +155,7 @@ No publicar la app sin:
 
 - `LOGIN_REQUIRED=1`.
 - `APP_USERS` con claves fuertes.
+- `SESSION_TIMEOUT_MINUTES` definido.
 - `SECRET_KEY` fuerte.
 - HTTPS activo.
 - `.env` fuera de Git.
@@ -186,6 +189,8 @@ Despues de desplegar validar:
 - Avisos.
 - Catalogos.
 - Envio de correos.
+- Hora correcta de Chile en correos, lotes y respaldos.
+- Pantalla de exito OF con primera y ultima OF.
 
 ## Pendiente para produccion estable
 
@@ -194,3 +199,4 @@ Despues de desplegar validar:
 - Crear usuario/clave de acceso robusta.
 - Evaluar dominio propio.
 - Evaluar almacenamiento persistente para respaldos.
+- Evaluar proveedor de correo transaccional si Gmail SMTP deja de ser estable.

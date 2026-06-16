@@ -24,6 +24,8 @@ def _leer_form_envio():
         "telefono_destinatario": normalizar_telefono_chile(
             request.form.get("telefono_destinatario", "").strip()
         ),
+        "correo_destinatario": request.form.get("correo_destinatario", "").strip(),
+        "observacion": request.form.get("observacion", "").strip(),
         "tipo_envio": request.form.get("tipo_envio", "").strip(),
         "codigo_agencia": request.form.get("codigo_agencia", "").strip(),
         "bultos": request.form.get("bultos", "").strip(),
@@ -59,6 +61,9 @@ def _validar_form_envio(data):
 
     if not telefono_chile_valido(data["telefono_destinatario"]):
         return None, None, "El telefono debe tener 8 o 9 digitos"
+
+    if data["correo_destinatario"] and not email_valido(data["correo_destinatario"]):
+        return None, None, "El correo del destinatario no tiene un formato valido"
 
     if data["tipo_envio"] == "Agencia":
         if not data["codigo_agencia"]:
@@ -96,6 +101,8 @@ def _aplicar_data_envio(envio, data, bultos_int, kilos_int):
     envio.e_comuna = data["comuna"]
     envio.e_region = data["region"]
     envio.e_telefono_destinatario = data["telefono_destinatario"]
+    envio.e_correo_destinatario = data["correo_destinatario"]
+    envio.e_observacion = data["observacion"]
     envio.e_tipo_envio = data["tipo_envio"]
     envio.e_codigo_agencia = data["codigo_agencia"]
     envio.e_bultos = bultos_int

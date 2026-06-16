@@ -32,6 +32,7 @@ FLASK_DEBUG = os.getenv("FLASK_DEBUG", "0").strip() == "1"
 LOGIN_REQUIRED = os.getenv("LOGIN_REQUIRED", "0").strip() == "1"
 APP_ACCESS_PASSWORD = os.getenv("APP_ACCESS_PASSWORD", "")
 APP_USERS = os.getenv("APP_USERS", "")
+SESSION_TIMEOUT_MINUTES = int(os.getenv("SESSION_TIMEOUT_MINUTES", "30"))
 
 CORREO_EMISOR = os.getenv("CORREO_EMISOR", "")
 CORREO_CLAVE_APP = os.getenv("CORREO_CLAVE_APP", "")

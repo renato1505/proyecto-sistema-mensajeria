@@ -3,7 +3,7 @@ from flask import render_template
 from database.conexion import SessionLocal
 from database.modelos import Envio
 from services.dashboard import obtener_dashboard_mensajeria
-from services.estado_sistema import obtener_estado_sistema
+from services.novedades import obtener_novedades_portal
 
 
 def _resumen_pendientes(envios):
@@ -97,13 +97,11 @@ def registrar_rutas_paginas(app):
         finally:
             db.close()
 
-        estado = obtener_estado_sistema()
-        return render_template("index.html", estado=estado, dashboard=dashboard)
-
-    @app.route("/estado_sistema")
-    def estado_sistema():
-        estado = obtener_estado_sistema()
-        return render_template("estado_sistema.html", estado=estado)
+        return render_template(
+            "index.html",
+            dashboard=dashboard,
+            novedades=obtener_novedades_portal(),
+        )
 
     @app.route("/envios")
     def ver_envio():

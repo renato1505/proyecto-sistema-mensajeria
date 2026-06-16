@@ -42,15 +42,31 @@
                 <h2>Correos por enviar</h2>
                 <p>
                     El respaldo completo ya se envia automaticamente a Mensajeria al procesar la OF.
-                    Desde aqui puedes avisar a los funcionarios cuando corresponda.
+                    Desde aqui puedes avisar a los funcionarios y, cuando exista correo registrado,
+                    tambien al destinatario del envio.
                 </p>
             </div>
             <span class="backup-badge">Respaldo automatico: {{ resumen.respaldo_destino }}</span>
         </div>
 
+        <form id="formCancelarAvisos" action="/cancelar_avisos_lote/{{ lote }}" method="POST" class="d-none">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        </form>
+
         {% if not correo_configurado %}
             <div class="avisos-note danger">
                 Faltan credenciales de correo para enviar avisos. Revisa CORREO_EMISOR, CORREO_CLAVE_APP y CORREO_RESPALDO_MENSAJERIA.
+            </div>
+            <div class="avisos-actions">
+                <a href="/historico" class="btn btn-outline-secondary">Omitir</a>
+                <button
+                    type="submit"
+                    class="btn btn-outline-danger"
+                    form="formCancelarAvisos"
+                    onclick="return confirm('Cancelar los avisos pendientes de este lote? El lote dejara de aparecer en avisos.');"
+                >
+                    Cancelar avisos
+                </button>
             </div>
         {% elif not resumen.funcionarios %}
             <div class="avisos-empty">
@@ -76,9 +92,17 @@
 
                 <div class="avisos-actions">
                     <a href="/historico" class="btn btn-outline-secondary">Omitir</a>
+                    <button
+                        type="submit"
+                        class="btn btn-outline-danger"
+                        form="formCancelarAvisos"
+                        onclick="return confirm('Cancelar los avisos pendientes de este lote? El lote dejara de aparecer en avisos.');"
+                    >
+                        Cancelar avisos
+                    </button>
                     <button type="submit" class="btn btn-success"
-                            onclick="return confirm('Enviar avisos a funcionarios seleccionados?');">
-                        Enviar avisos a funcionarios
+                            onclick="return confirm('Enviar avisos a funcionarios seleccionados y destinatarios con correo registrado?');">
+                        Enviar avisos
                     </button>
                 </div>
             </form>

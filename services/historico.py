@@ -11,6 +11,8 @@ from sqlalchemy import func
 from config.settings import CORREO_EMISOR, CORREO_RESPALDO_MENSAJERIA
 from database.modelos import Envio
 from services.email_client import enviar_mensaje, proveedor_correo_configurado
+from services.email_templates import correo_eliminacion_historico_html
+from utils.fechas import fecha_hora_chile_texto, timestamp_archivo_chile
 
 
 OPCIONES_PER_PAGE_HISTORICO = [25, 50, 100]
@@ -38,6 +40,7 @@ def construir_url_historico(
     fecha="",
     fecha_desde="",
     fecha_hasta="",
+    estado_of="todos",
     page=None,
     per_page=None,
 ):
@@ -49,6 +52,7 @@ def construir_url_historico(
         "fecha": fecha,
         "fecha_desde": fecha_desde,
         "fecha_hasta": fecha_hasta,
+        "estado_of": estado_of,
     }
 
     if page is not None:
@@ -75,6 +79,7 @@ def leer_filtros_historico(args):
         "fecha": args.get("fecha", "").strip(),
         "fecha_desde": args.get("fecha_desde", "").strip(),
         "fecha_hasta": args.get("fecha_hasta", "").strip(),
+        "estado_of": args.get("estado_of", "todos").strip() or "todos",
     }
 
 
@@ -107,6 +112,7 @@ def construir_query_historico(
     filtro_fecha,
     fecha_desde,
     fecha_hasta,
+    estado_of="todos",
 ):
     query = db.query(Envio).filter(Envio.e_estado == "historico")
 
@@ -155,6 +161,11 @@ def construir_query_historico(
         except ValueError:
             pass
 
+    if estado_of == "vigentes":
+        query = query.filter(func.coalesce(Envio.e_anulado, False) == False)  # noqa: E712
+    elif estado_of == "anulados":
+        query = query.filter(Envio.e_anulado == True)  # noqa: E712
+
     return query
 
 
@@ -168,6 +179,7 @@ def query_desde_filtros(db, filtros):
         filtros["fecha"],
         filtros["fecha_desde"],
         filtros["fecha_hasta"],
+        filtros.get("estado_of", "todos"),
     )
 
 
@@ -180,6 +192,7 @@ def url_desde_filtros(filtros, page=None, per_page=None):
         filtros["fecha"],
         filtros["fecha_desde"],
         filtros["fecha_hasta"],
+        filtros.get("estado_of", "todos"),
         page,
         per_page,
     )
@@ -219,6 +232,11 @@ def convertir_envios_a_dataframe(envios):
             "Comuna": envio.e_comuna,
             "Region": envio.e_region,
             "Telefono": envio.e_telefono_destinatario,
+            "Correo destinatario": envio.e_correo_destinatario,
+            "Observacion": envio.e_observacion,
+            "Estado OF": "Anulada" if envio.e_anulado else "Vigente",
+            "Fecha anulacion": envio.e_fecha_anulacion.strftime("%d/%m/%Y %H:%M") if envio.e_fecha_anulacion else "",
+            "Motivo anulacion": envio.e_motivo_anulacion or "",
             "Tipo envio": envio.e_tipo_envio,
             "Codigo agencia": envio.e_codigo_agencia if envio.e_tipo_envio == "Agencia" else "No aplica",
             "Bultos": envio.e_bultos,
@@ -245,7 +263,7 @@ def guardar_respaldo_historico(envios):
     carpeta_respaldos = os.path.join(project_dir, "respaldos_historico")
     os.makedirs(carpeta_respaldos, exist_ok=True)
 
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    timestamp = timestamp_archivo_chile()
     nombre_archivo = f"respaldo_historico_{timestamp}.xlsx"
     ruta_archivo = os.path.join(carpeta_respaldos, nombre_archivo)
 
@@ -275,7 +293,7 @@ def enviar_respaldo_eliminacion_historico(envios, filtros=None):
     if not correo_respaldo_historico_configurado():
         raise RuntimeError("Faltan credenciales o destinatarios para respaldo historico.")
 
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    timestamp = timestamp_archivo_chile()
     nombre_archivo = f"respaldo_historico_eliminado_{timestamp}.xlsx"
     contenido = generar_excel_historico_bytes(envios)
     filtros = filtros or {}
@@ -298,11 +316,19 @@ def enviar_respaldo_eliminacion_historico(envios, filtros=None):
     msg.set_content(
         "Se eliminaron registros del historico del Portal Operativo.\n\n"
         f"Total de registros eliminados: {len(envios)}\n"
-        f"Fecha de respaldo: {datetime.now().strftime('%d/%m/%Y %H:%M')}\n\n"
+        f"Fecha de respaldo: {fecha_hora_chile_texto()}\n\n"
         "Filtros aplicados:\n"
         f"{detalle_filtros}\n\n"
         "Se adjunta respaldo Excel de los registros eliminados.\n\n"
         "Equipo de Mensajeria\n"
+    )
+    msg.add_alternative(
+        correo_eliminacion_historico_html(
+            len(envios),
+            detalle_filtros,
+            fecha_hora_chile_texto(),
+        ),
+        subtype="html",
     )
     msg.add_attachment(
         contenido,
