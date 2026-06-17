@@ -14,7 +14,10 @@ from routes.auth import _destino_login_seguro
 from services import avisos, email_client
 from services.email_templates import correo_destinatario_html
 from utils.texto import (
+    normalizar_correo_operativo,
     normalizar_nombre_operativo,
+    normalizar_nombre_remitente,
+    normalizar_observacion_operativa,
     normalizar_orden_flete,
     normalizar_texto_operativo,
 )
@@ -198,6 +201,20 @@ class ValidacionesTests(unittest.TestCase):
     def test_normalizar_nombre_operativo_usa_mayuscula_por_palabra(self):
         self.assertEqual(normalizar_nombre_operativo("soFIA lArrea"), "Sofia Larrea")
         self.assertEqual(normalizar_nombre_operativo("josé luis pérez"), "Jose Luis Perez")
+
+    def test_normalizar_nombre_remitente_usa_nombre_corto(self):
+        self.assertEqual(normalizar_nombre_remitente("Carolina Alejandra Jeria Ramirez"), "Carolina Jeria")
+        self.assertEqual(normalizar_nombre_remitente("Carolina Jeria"), "Carolina Jeria")
+        self.assertEqual(normalizar_nombre_remitente("maria jose gonzalez soto"), "Maria Gonzalez")
+
+    def test_normalizar_correo_operativo_deja_minusculas(self):
+        self.assertEqual(normalizar_correo_operativo(" Persona.LOREAL@GMAIL.COM "), "persona.loreal@gmail.com")
+
+    def test_normalizar_observacion_operativa_quita_puntuacion_h2h(self):
+        self.assertEqual(
+            normalizar_observacion_operativa("Tienda, horario; contacto. urgente"),
+            "Tienda horario contacto urgente",
+        )
 
     def test_normalizar_orden_flete_quita_decimal_excel(self):
         self.assertEqual(normalizar_orden_flete("272472119.0"), "272472119")

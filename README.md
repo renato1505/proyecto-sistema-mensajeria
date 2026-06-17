@@ -2,6 +2,8 @@
 
 Aplicacion Flask para centralizar procesos operativos internos. El modulo principal actual es Mensajeria: registra envios, genera archivos CSV para Starken, carga respuestas OF y mantiene historico descargable.
 
+Actualmente el modulo opera con normalizacion de telefonos, OF, nombres y textos operativos para reducir duplicados por acentos, mayusculas inconsistentes o valores pegados desde Excel.
+
 ## Flujo principal
 
 1. Registrar envios en estado pendiente.

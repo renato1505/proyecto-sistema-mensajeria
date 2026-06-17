@@ -27,6 +27,26 @@ def normalizar_nombre_operativo(texto):
     return texto.title()
 
 
+def normalizar_nombre_remitente(texto):
+    nombre = normalizar_nombre_operativo(texto)
+    partes = nombre.split()
+
+    if len(partes) <= 2:
+        return nombre
+
+    return f"{partes[0]} {partes[-2]}"
+
+
+def normalizar_correo_operativo(texto):
+    return normalizar_texto_operativo(texto).lower()
+
+
+def normalizar_observacion_operativa(texto):
+    texto = normalizar_texto_operativo(texto)
+    texto = re.sub(r"[.,;]+", " ", texto)
+    return re.sub(r"\s+", " ", texto).strip()
+
+
 def normalizar_orden_flete(valor):
     if valor is None:
         return ""

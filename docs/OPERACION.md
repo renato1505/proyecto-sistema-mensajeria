@@ -11,6 +11,12 @@ Este documento resume el uso diario del modulo de Mensajeria dentro del Portal O
 
 El envio queda en estado `pendiente` para revision.
 
+El sistema normaliza automaticamente:
+
+- telefonos pegados con espacios, simbolos o `+56`;
+- nombres con mayusculas/minusculas inconsistentes;
+- acentos en nombres y datos operativos para evitar duplicados funcionales.
+
 ## 2. Revisar pendientes
 
 1. Entrar a `Pendientes`.
@@ -37,6 +43,8 @@ No repetir esta accion si no hay claridad sobre el estado del lote.
 5. Procesar el archivo OF correspondiente al lote.
 
 Si las filas, estados u ordenes de flete no coinciden, el sistema bloquea el procesamiento.
+
+Si la OF viene desde Excel con formato numerico, el sistema limpia automaticamente sufijos como `.0`.
 
 Cuando el archivo OF se procesa correctamente, el sistema muestra una pantalla de exito con:
 

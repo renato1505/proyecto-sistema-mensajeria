@@ -17,7 +17,10 @@ from services.catalogos_operativos import (
 )
 from utils.texto import (
     clave_texto_operativo,
+    normalizar_correo_operativo,
     normalizar_nombre_operativo,
+    normalizar_nombre_remitente,
+    normalizar_observacion_operativa,
     normalizar_texto_operativo,
 )
 from utils.validaciones import normalizar_telefono_chile
@@ -48,8 +51,8 @@ def _deduplicar_items(items, clave_fn):
 
 def _leer_form_remitente():
     return {
-        "nombre": normalizar_nombre_operativo(request.form.get("remitente", "").strip()),
-        "correo": request.form.get("correo_remitente", "").strip(),
+        "nombre": normalizar_nombre_remitente(request.form.get("remitente", "").strip()),
+        "correo": normalizar_correo_operativo(request.form.get("correo_remitente", "").strip()),
         "division": normalizar_texto_operativo(request.form.get("division", "").strip(), upper=True),
         "centro_costo": request.form.get("centro_costo", "").strip(),
     }
@@ -65,8 +68,8 @@ def _leer_form_destinatario():
         "telefono": normalizar_telefono_chile(
             request.form.get("telefono_destinatario", "").strip()
         ),
-        "correo": request.form.get("correo_destinatario", "").strip(),
-        "observacion": normalizar_texto_operativo(request.form.get("observacion", "").strip()),
+        "correo": normalizar_correo_operativo(request.form.get("correo_destinatario", "").strip()),
+        "observacion": normalizar_observacion_operativa(request.form.get("observacion", "").strip()),
     }
 
 

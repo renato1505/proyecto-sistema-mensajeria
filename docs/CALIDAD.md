@@ -8,6 +8,7 @@
 - Cierre de sesion por inactividad configurable con `SESSION_TIMEOUT_MINUTES`.
 - Validacion de entradas principales antes de guardar.
 - RUT operativo: acepta `0` cuando no fue informado.
+- Normalizacion operativa de telefonos, OF, acentos y nombres.
 - Respaldos antes de eliminar historico.
 - Eliminacion de historico bloqueada si falla el correo de respaldo.
 - Anulacion de OF sin eliminar datos historicos.
@@ -15,6 +16,7 @@
 - Logs tecnicos rotativos en `logs/sistema_mensajeria.log`.
 - Smoke test seguro sin envio de correo ni cambio de estados.
 - Pruebas unitarias para cliente de correo, plantillas, avisos y validaciones.
+- Limpieza automatica de datos operativos al iniciar la app para mantener consistencia en nombres, comunas y OF.
 
 ## Checks recomendados antes de subir cambios
 
@@ -39,6 +41,7 @@ python scripts\aplicar_indices.py
 - La seguridad inicial depende del login interno, control de credenciales y correo configurado.
 - La eliminacion historica exige clave y genera respaldo previo.
 - Los correos dependen actualmente de Gmail SMTP/IMAP. Si Render o Gmail bloquean envios, migrar a proveedor transaccional.
+- La eliminacion de acentos mejora la consistencia operativa, pero puede no ser deseable si a futuro se requiere conservar nombres exactamente como fueron ingresados por razones legales o de auditoria.
 
 ## Mejoras futuras
 

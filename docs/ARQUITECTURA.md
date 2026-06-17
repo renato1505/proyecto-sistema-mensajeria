@@ -41,6 +41,8 @@ Este documento resume como esta organizado el Portal Operativo. Actualmente el m
 - `services/avisos.py`: generacion de Excel y envio de avisos/respaldo.
 - `services/carga_masiva.py`: plantilla Excel, validacion y construccion de envios masivos.
 - `services/lotes.py`: reglas de cruce entre lotes, CSV y correos OF.
+- `services/normalizacion_operativa.py`: limpieza de datos operativos existentes al iniciar la app.
+- `utils/texto.py`: normalizacion de nombres, textos y ordenes de flete.
 
 ## Estados relevantes
 
@@ -64,6 +66,9 @@ Este documento resume como esta organizado el Portal Operativo. Actualmente el m
 ## Reglas de seguridad operativa
 
 - No procesar OF si el archivo no coincide en filas, ordenes o lote.
+- Normalizar OF tipo Excel para evitar valores como `272472119.0`.
+- Guardar nombres de remitentes y destinatarios con mayuscula inicial por palabra.
+- Eliminar tildes de nombres, comunas, regiones, direcciones y observaciones operativas para evitar duplicados funcionales.
 - No mostrar avisos antiguos si no fueron marcados desde el nuevo flujo.
 - El respaldo a Mensajeria se intenta enviar inmediatamente al procesar OF.
 - Los avisos a funcionarios son manuales/asistidos para evitar correos prematuros.
@@ -76,3 +81,4 @@ Este documento resume como esta organizado el Portal Operativo. Actualmente el m
 - Agregar pruebas unitarias para `services/of_processor.py`, `services/avisos.py` y `services/starken.py`.
 - Evaluar migraciones formales con Alembic cuando la base quede instalada en otro equipo.
 - Revisar si conviene dividir `services/carga_masiva.py` en plantilla, lectura y validacion cuando crezcan las reglas.
+- Evaluar una estrategia de auditoria en base de datos para anular, eliminar y procesar lotes con trazabilidad formal.

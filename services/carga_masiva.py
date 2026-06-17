@@ -11,8 +11,14 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 from openpyxl.worksheet.datavalidation import DataValidation
 
-from database.modelos import Comuna, Envio
-from utils.texto import normalizar_nombre_operativo, normalizar_texto_operativo
+from database.modelos import Comuna, Envio, Remitente
+from utils.texto import (
+    normalizar_correo_operativo,
+    normalizar_nombre_operativo,
+    normalizar_nombre_remitente,
+    normalizar_observacion_operativa,
+    normalizar_texto_operativo,
+)
 from utils.validaciones import (
     email_valido,
     normalizar_telefono_chile,
@@ -102,6 +108,20 @@ def _texto(valor):
 
 def _telefono(valor):
     return normalizar_telefono_chile(_texto(valor))
+
+
+def _remitente_desde_correo(db, nombre, correo):
+    correo = normalizar_correo_operativo(correo)
+    if correo:
+        remitente = (
+            db.query(Remitente)
+            .filter(Remitente.r_correo.ilike(correo))
+            .first()
+        )
+        if remitente:
+            return normalizar_nombre_remitente(remitente.r_nombre), correo
+
+    return normalizar_nombre_remitente(nombre), correo
 
 
 def _numero_entero(valor):
@@ -280,10 +300,12 @@ def validar_archivo_carga_masiva(archivo, db):
             nrows=5,
         )
         datos_remitente = {
-            "remitente": normalizar_nombre_operativo(
+            "remitente": normalizar_nombre_remitente(
                 _texto(remitente_df.iloc[1, 1] if len(remitente_df) > 1 else "")
             ),
-            "correo_remitente": _texto(remitente_df.iloc[2, 1] if len(remitente_df) > 2 else ""),
+            "correo_remitente": normalizar_correo_operativo(
+                _texto(remitente_df.iloc[2, 1] if len(remitente_df) > 2 else "")
+            ),
             "centro_costo": _texto(remitente_df.iloc[3, 1] if len(remitente_df) > 3 else ""),
             "division": normalizar_texto_operativo(
                 _texto(remitente_df.iloc[4, 1] if len(remitente_df) > 4 else ""),
@@ -351,11 +373,11 @@ def validar_archivo_carga_masiva(archivo, db):
             "region": normalizar_texto_operativo(_texto(row.get("region"))),
             "comuna": normalizar_texto_operativo(_texto(row.get("comuna"))),
             "telefono_destinatario": _telefono(row.get("telefono_destinatario")),
-            "correo_destinatario": _texto(row.get("correo_destinatario")),
+            "correo_destinatario": normalizar_correo_operativo(_texto(row.get("correo_destinatario"))),
             "tipo_envio": _texto(row.get("tipo_envio")).capitalize(),
             "bultos": _numero_entero(row.get("bultos")),
             "kilos": _numero_entero(row.get("kilos")),
-            "observacion": normalizar_texto_operativo(_texto(row.get("observacion"))),
+            "observacion": normalizar_observacion_operativa(_texto(row.get("observacion"))),
         })
 
     return validar_registros_carga_masiva(registros, db)
@@ -384,9 +406,14 @@ def validar_registros_carga_masiva(registros, db):
     ]
 
     for index, registro in enumerate(registros):
+        remitente_nombre, remitente_correo = _remitente_desde_correo(
+            db,
+            _texto(registro.get("remitente")),
+            _texto(registro.get("correo_remitente")),
+        )
         data = {
-            "remitente": normalizar_nombre_operativo(_texto(registro.get("remitente"))),
-            "correo_remitente": _texto(registro.get("correo_remitente")),
+            "remitente": remitente_nombre,
+            "correo_remitente": remitente_correo,
             "centro_costo": _texto(registro.get("centro_costo")),
             "division": normalizar_texto_operativo(_texto(registro.get("division")), upper=True),
             "destinatario": normalizar_nombre_operativo(_texto(registro.get("destinatario"))),
@@ -395,11 +422,11 @@ def validar_registros_carga_masiva(registros, db):
             "region": normalizar_texto_operativo(_texto(registro.get("region"))),
             "comuna": normalizar_texto_operativo(_texto(registro.get("comuna"))),
             "telefono_destinatario": _telefono(registro.get("telefono_destinatario")),
-            "correo_destinatario": _texto(registro.get("correo_destinatario")),
+            "correo_destinatario": normalizar_correo_operativo(_texto(registro.get("correo_destinatario"))),
             "tipo_envio": _texto(registro.get("tipo_envio")).capitalize(),
             "bultos": _numero_entero(registro.get("bultos")),
             "kilos": _numero_entero(registro.get("kilos")),
-            "observacion": normalizar_texto_operativo(_texto(registro.get("observacion"))),
+            "observacion": normalizar_observacion_operativa(_texto(registro.get("observacion"))),
         }
         errores = []
         advertencias = []

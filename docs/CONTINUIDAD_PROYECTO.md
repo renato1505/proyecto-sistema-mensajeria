@@ -83,6 +83,28 @@ Se ajusto para aceptar telefonos pegados con formatos como:
 
 La normalizacion principal esta en `utils/validaciones.py` y tambien hay apoyo JS en los formularios.
 
+### Normalizacion de OF y textos operativos
+
+Se agrego `utils/texto.py` para centralizar:
+
+- normalizacion de nombres;
+- eliminacion de tildes en textos operativos;
+- conversion de OF con sufijo `.0` a valor limpio;
+- claves de comparacion para evitar duplicados por acento o mayusculas.
+
+El arranque de la app ejecuta `services/normalizacion_operativa.py`, que limpia datos ya existentes en:
+
+- `envios`;
+- `remitentes`;
+- `destinatarios`;
+- `comunas`.
+
+Reglas activas:
+
+- remitentes y destinatarios: mayuscula inicial por palabra;
+- OF: sin decimal de Excel;
+- comunas, regiones, direcciones y observaciones: sin tildes para reducir duplicados funcionales.
+
 ### Historico
 
 El historico ahora permite:
@@ -174,6 +196,8 @@ En cada request autenticado se refresca la ultima actividad. Si se supera el lim
 - cancelacion de avisos pendientes;
 - plantilla de destinatario sin exponer RUT;
 - normalizacion de telefonos copiados.
+- normalizacion de OF con `.0`;
+- normalizacion de nombres operativos.
 
 ## Precauciones de Desarrollo
 

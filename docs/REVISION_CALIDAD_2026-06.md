@@ -26,7 +26,7 @@ La prioridad actual no es agregar muchas funciones nuevas, sino consolidar estab
 - No hay migraciones formales versionadas. `database/schema.py` cubre columnas operativas, pero a futuro conviene Alembic.
 - No existe auditoria dedicada para acciones criticas como anular, eliminar, cancelar avisos o procesar OF.
 - El envio de correos depende de Gmail SMTP/IMAP. Funciona, pero en cloud puede ser menos robusto que un proveedor transaccional.
-- El sistema aun no tiene timeout de sesion por inactividad.
+- Falta decidir formalmente si la eliminacion de tildes sera una regla permanente del negocio o una normalizacion solo operativa.
 
 ### Prioridad media
 
@@ -43,7 +43,6 @@ La prioridad actual no es agregar muchas funciones nuevas, sino consolidar estab
 ## Recomendaciones inmediatas
 
 1. Crear pruebas unitarias para:
-   - normalizacion de telefono;
    - validacion OF;
    - generacion CSV Starken;
    - agrupacion/envio de avisos;
@@ -54,7 +53,7 @@ La prioridad actual no es agregar muchas funciones nuevas, sino consolidar estab
    - lote/envio;
    - fecha Chile;
    - detalle.
-3. Implementar timeout de sesion por inactividad.
+3. Revisar impacto funcional de la normalizacion automatica sobre nombres y catalogos historicos.
 4. Evaluar proveedor transaccional para correos si el volumen crece.
 5. Mantener `.env.example` sin secretos y documentar cada variable nueva.
 6. Antes de expandir a otros modulos, definir estructura de navegacion y permisos por area.

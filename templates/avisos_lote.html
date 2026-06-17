@@ -79,14 +79,40 @@
 
                 <div class="funcionarios-list">
                     {% for funcionario in resumen.funcionarios %}
-                        <label class="funcionario-row">
-                            <input type="checkbox" name="correos" value="{{ funcionario.correo }}" checked>
-                            <span>
-                                <strong>{{ funcionario.remitente }}</strong>
-                                <small>{{ funcionario.correo }}</small>
-                            </span>
-                            <em>{{ funcionario.cantidad }} envio(s)</em>
-                        </label>
+                        <article class="funcionario-card">
+                            <label class="funcionario-row">
+                                <input type="checkbox" name="correos" value="{{ funcionario.correo }}" checked>
+                                <span>
+                                    <strong>{{ funcionario.remitente }}</strong>
+                                    <small>{{ funcionario.correo }}</small>
+                                </span>
+                                <em>{{ funcionario.cantidad }} envio(s)</em>
+                            </label>
+                            <details class="funcionario-detalle">
+                                <summary>Ver detalle de pedidos</summary>
+                                <div class="detalle-envios">
+                                    {% for envio in funcionario.envios %}
+                                        <div class="detalle-envio">
+                                            <div>
+                                                <span>Destinatario</span>
+                                                <strong>{{ envio.e_destinatario }}</strong>
+                                                <small>{{ envio.e_direccion }}, {{ envio.e_comuna }}</small>
+                                            </div>
+                                            <div>
+                                                <span>Orden de flete</span>
+                                                <strong>{{ envio.e_orden_flete or 'Sin OF' }}</strong>
+                                                <small>{{ envio.e_tipo_envio }}</small>
+                                            </div>
+                                            <div>
+                                                <span>Correo destinatario</span>
+                                                <strong>{{ envio.e_correo_destinatario or 'No informado' }}</strong>
+                                                <small>{{ envio.e_observacion or 'Sin observacion' }}</small>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </details>
+                        </article>
                     {% endfor %}
                 </div>
 

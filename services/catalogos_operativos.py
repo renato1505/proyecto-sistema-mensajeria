@@ -165,11 +165,20 @@ def guardar_remitente_catalogo(db, data, remitente_id=None):
         if not remitente:
             return False, "No se encontro el remitente solicitado"
     else:
-        remitente = (
-            db.query(Remitente)
-            .filter(func.lower(Remitente.r_nombre) == data["nombre"].lower())
-            .first()
-        )
+        remitente = None
+        if data["correo"]:
+            remitente = (
+                db.query(Remitente)
+                .filter(func.lower(Remitente.r_correo) == data["correo"].lower())
+                .first()
+            )
+
+        if not remitente:
+            remitente = (
+                db.query(Remitente)
+                .filter(func.lower(Remitente.r_nombre) == data["nombre"].lower())
+                .first()
+            )
 
     if remitente:
         remitente.r_nombre = data["nombre"]
