@@ -2,6 +2,7 @@ from flask import flash, redirect, render_template, request
 
 from database.conexion import SessionLocal
 from database.modelos import Envio
+from utils.texto import normalizar_nombre_operativo, normalizar_texto_operativo
 from utils.validaciones import (
     email_valido,
     normalizar_telefono_chile,
@@ -12,20 +13,20 @@ from utils.validaciones import (
 
 def _leer_form_envio():
     return {
-        "remitente": request.form.get("remitente", "").strip(),
+        "remitente": normalizar_nombre_operativo(request.form.get("remitente", "").strip()),
         "correo_remitente": request.form.get("correo_remitente", "").strip(),
-        "division": request.form.get("division", "").strip(),
+        "division": normalizar_texto_operativo(request.form.get("division", "").strip(), upper=True),
         "centro_costo": request.form.get("centro_costo", "").strip(),
-        "destinatario": request.form.get("destinatario", "").strip(),
+        "destinatario": normalizar_nombre_operativo(request.form.get("destinatario", "").strip()),
         "rut_destinatario": request.form.get("rut_destinatario", "").strip(),
-        "direccion": request.form.get("direccion", "").strip(),
-        "comuna": request.form.get("comuna", "").strip(),
-        "region": request.form.get("region", "").strip(),
+        "direccion": normalizar_texto_operativo(request.form.get("direccion", "").strip()),
+        "comuna": normalizar_texto_operativo(request.form.get("comuna", "").strip()),
+        "region": normalizar_texto_operativo(request.form.get("region", "").strip()),
         "telefono_destinatario": normalizar_telefono_chile(
             request.form.get("telefono_destinatario", "").strip()
         ),
         "correo_destinatario": request.form.get("correo_destinatario", "").strip(),
-        "observacion": request.form.get("observacion", "").strip(),
+        "observacion": normalizar_texto_operativo(request.form.get("observacion", "").strip()),
         "tipo_envio": request.form.get("tipo_envio", "").strip(),
         "codigo_agencia": request.form.get("codigo_agencia", "").strip(),
         "bultos": request.form.get("bultos", "").strip(),

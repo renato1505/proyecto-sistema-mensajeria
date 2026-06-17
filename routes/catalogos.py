@@ -16,6 +16,7 @@ from services.catalogos_operativos import (
     validar_destinatario,
     validar_remitente,
 )
+from utils.texto import normalizar_nombre_operativo, normalizar_texto_operativo
 from utils.validaciones import normalizar_telefono_chile
 
 
@@ -24,9 +25,9 @@ logger = logging.getLogger(__name__)
 
 def _leer_form_remitente():
     return {
-        "nombre": request.form.get("remitente", "").strip(),
+        "nombre": normalizar_nombre_operativo(request.form.get("remitente", "").strip()),
         "correo": request.form.get("correo_remitente", "").strip(),
-        "division": request.form.get("division", "").strip(),
+        "division": normalizar_texto_operativo(request.form.get("division", "").strip(), upper=True),
         "centro_costo": request.form.get("centro_costo", "").strip(),
     }
 
@@ -34,30 +35,30 @@ def _leer_form_remitente():
 def _leer_form_destinatario():
     return {
         "rut": request.form.get("rut_destinatario", "").strip(),
-        "nombre": request.form.get("destinatario", "").strip(),
-        "direccion": request.form.get("direccion", "").strip(),
-        "comuna": request.form.get("comuna", "").strip(),
-        "region": request.form.get("region", "").strip(),
+        "nombre": normalizar_nombre_operativo(request.form.get("destinatario", "").strip()),
+        "direccion": normalizar_texto_operativo(request.form.get("direccion", "").strip()),
+        "comuna": normalizar_texto_operativo(request.form.get("comuna", "").strip()),
+        "region": normalizar_texto_operativo(request.form.get("region", "").strip()),
         "telefono": normalizar_telefono_chile(
             request.form.get("telefono_destinatario", "").strip()
         ),
         "correo": request.form.get("correo_destinatario", "").strip(),
-        "observacion": request.form.get("observacion", "").strip(),
+        "observacion": normalizar_texto_operativo(request.form.get("observacion", "").strip()),
     }
 
 
 def _leer_filtros_catalogos(args):
     return {
         "tab": args.get("tab", "remitentes").strip() or "remitentes",
-        "r_nombre": args.get("r_nombre", "").strip(),
-        "r_division": args.get("r_division", "").strip(),
+        "r_nombre": normalizar_texto_operativo(args.get("r_nombre", "").strip()),
+        "r_division": normalizar_texto_operativo(args.get("r_division", "").strip(), upper=True),
         "r_centro_costo": args.get("r_centro_costo", "").strip(),
-        "d_nombre": args.get("d_nombre", "").strip(),
+        "d_nombre": normalizar_texto_operativo(args.get("d_nombre", "").strip()),
         "d_rut": args.get("d_rut", "").strip(),
-        "d_direccion": args.get("d_direccion", "").strip(),
-        "d_comuna": args.get("d_comuna", "").strip(),
+        "d_direccion": normalizar_texto_operativo(args.get("d_direccion", "").strip()),
+        "d_comuna": normalizar_texto_operativo(args.get("d_comuna", "").strip()),
         "d_correo": args.get("d_correo", "").strip(),
-        "d_observacion": args.get("d_observacion", "").strip(),
+        "d_observacion": normalizar_texto_operativo(args.get("d_observacion", "").strip()),
     }
 
 

@@ -13,6 +13,11 @@ sys.path.insert(0, str(PROJECT_DIR))
 from routes.auth import _destino_login_seguro
 from services import avisos, email_client
 from services.email_templates import correo_destinatario_html
+from utils.texto import (
+    normalizar_nombre_operativo,
+    normalizar_orden_flete,
+    normalizar_texto_operativo,
+)
 from utils.validaciones import normalizar_telefono_chile
 
 
@@ -184,6 +189,20 @@ class ValidacionesTests(unittest.TestCase):
         self.assertEqual(normalizar_telefono_chile("+569 3190 5658"), "931905658")
         self.assertEqual(normalizar_telefono_chile("56 9 8508 9918"), "985089918")
         self.assertEqual(normalizar_telefono_chile("56946554638"), "946554638")
+
+    def test_normalizar_texto_operativo_quita_tildes(self):
+        self.assertEqual(normalizar_texto_operativo("Región Metropolitana de Santiago"), "Region Metropolitana de Santiago")
+        self.assertEqual(normalizar_texto_operativo("Sofía Larrea"), "Sofia Larrea")
+        self.assertEqual(normalizar_texto_operativo("döp", upper=True), "DOP")
+
+    def test_normalizar_nombre_operativo_usa_mayuscula_por_palabra(self):
+        self.assertEqual(normalizar_nombre_operativo("soFIA lArrea"), "Sofia Larrea")
+        self.assertEqual(normalizar_nombre_operativo("josé luis pérez"), "Jose Luis Perez")
+
+    def test_normalizar_orden_flete_quita_decimal_excel(self):
+        self.assertEqual(normalizar_orden_flete("272472119.0"), "272472119")
+        self.assertEqual(normalizar_orden_flete(272472117.0), "272472117")
+        self.assertEqual(normalizar_orden_flete("272472126"), "272472126")
 
 
 class AuthTests(unittest.TestCase):

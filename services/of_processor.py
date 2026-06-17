@@ -1,6 +1,7 @@
 import pandas as pd
 
 from database.modelos import Envio
+from utils.texto import normalizar_orden_flete
 
 
 class OFProcessingError(Exception):
@@ -72,7 +73,7 @@ def procesar_archivo_of(db, lote, archivo, nombre_archivo):
         orden_flete = fila.get("orden flete")
 
         if estado == "OK" and not pd.isna(orden_flete):
-            orden_texto = str(orden_flete).strip()
+            orden_texto = normalizar_orden_flete(orden_flete)
             if orden_texto:
                 ofs_archivo.append(orden_texto)
 
@@ -126,7 +127,7 @@ def procesar_archivo_of(db, lote, archivo, nombre_archivo):
             continue
 
         detalle_texto = "" if pd.isna(detalle) else str(detalle).strip()
-        orden_texto = "" if pd.isna(orden_flete) else str(orden_flete).strip()
+        orden_texto = "" if pd.isna(orden_flete) else normalizar_orden_flete(orden_flete)
 
         envio.e_resultado_of = estado
         envio.e_detalle_of = detalle_texto

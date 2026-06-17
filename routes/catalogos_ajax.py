@@ -15,6 +15,11 @@ from services.catalogos_operativos import (
     validar_destinatario,
     validar_remitente,
 )
+from utils.texto import (
+    clave_texto_operativo,
+    normalizar_nombre_operativo,
+    normalizar_texto_operativo,
+)
 from utils.validaciones import normalizar_telefono_chile
 
 
@@ -27,11 +32,25 @@ def _json_error(mensaje, status_code=400):
     return response
 
 
+def _deduplicar_items(items, clave_fn):
+    vistos = set()
+    resultado = []
+
+    for item in items:
+        clave = clave_fn(item)
+        if clave in vistos:
+            continue
+        vistos.add(clave)
+        resultado.append(item)
+
+    return resultado
+
+
 def _leer_form_remitente():
     return {
-        "nombre": request.form.get("remitente", "").strip(),
+        "nombre": normalizar_nombre_operativo(request.form.get("remitente", "").strip()),
         "correo": request.form.get("correo_remitente", "").strip(),
-        "division": request.form.get("division", "").strip(),
+        "division": normalizar_texto_operativo(request.form.get("division", "").strip(), upper=True),
         "centro_costo": request.form.get("centro_costo", "").strip(),
     }
 
@@ -39,22 +58,22 @@ def _leer_form_remitente():
 def _leer_form_destinatario():
     return {
         "rut": request.form.get("rut_destinatario", "").strip(),
-        "nombre": request.form.get("destinatario", "").strip(),
-        "direccion": request.form.get("direccion", "").strip(),
-        "comuna": request.form.get("comuna", "").strip(),
-        "region": request.form.get("region", "").strip(),
+        "nombre": normalizar_nombre_operativo(request.form.get("destinatario", "").strip()),
+        "direccion": normalizar_texto_operativo(request.form.get("direccion", "").strip()),
+        "comuna": normalizar_texto_operativo(request.form.get("comuna", "").strip()),
+        "region": normalizar_texto_operativo(request.form.get("region", "").strip()),
         "telefono": normalizar_telefono_chile(
             request.form.get("telefono_destinatario", "").strip()
         ),
         "correo": request.form.get("correo_destinatario", "").strip(),
-        "observacion": request.form.get("observacion", "").strip(),
+        "observacion": normalizar_texto_operativo(request.form.get("observacion", "").strip()),
     }
 
 
 def registrar_rutas_catalogos_ajax(app):
     @app.route("/buscar_comunas")
     def buscar_comunas():
-        termino = request.args.get("q", "").strip()
+        termino = normalizar_texto_operativo(request.args.get("q", "").strip())
 
         if len(termino) < 2:
             return jsonify([])
@@ -68,13 +87,21 @@ def registrar_rutas_catalogos_ajax(app):
                 .limit(MAX_RESULTADOS_AUTOCOMPLETE)
                 .all()
             )
-            return jsonify([serializar_comuna(comuna) for comuna in resultados])
+            items = [serializar_comuna(comuna) for comuna in resultados]
+            items = _deduplicar_items(
+                items,
+                lambda item: (
+                    clave_texto_operativo(item["nombre"]),
+                    clave_texto_operativo(item["region"]),
+                ),
+            )
+            return jsonify(items)
         finally:
             db.close()
 
     @app.route("/buscar_remitentes")
     def buscar_remitentes():
-        termino = request.args.get("q", "").strip()
+        termino = normalizar_texto_operativo(request.args.get("q", "").strip())
 
         if len(termino) < 2:
             return jsonify([])
@@ -88,7 +115,17 @@ def registrar_rutas_catalogos_ajax(app):
                 .limit(MAX_RESULTADOS_AUTOCOMPLETE)
                 .all()
             )
-            return jsonify([serializar_remitente(remitente) for remitente in resultados])
+            items = [serializar_remitente(remitente) for remitente in resultados]
+            items = _deduplicar_items(
+                items,
+                lambda item: (
+                    clave_texto_operativo(item["nombre"]),
+                    item["correo"].strip().lower(),
+                    clave_texto_operativo(item["division"]),
+                    item["centro_costo"].strip(),
+                ),
+            )
+            return jsonify(items)
         finally:
             db.close()
 
@@ -117,7 +154,7 @@ def registrar_rutas_catalogos_ajax(app):
 
     @app.route("/buscar_destinatarios")
     def buscar_destinatarios():
-        termino = request.args.get("q", "").strip()
+        termino = normalizar_texto_operativo(request.args.get("q", "").strip())
 
         if len(termino) < 2:
             return jsonify([])
@@ -131,10 +168,20 @@ def registrar_rutas_catalogos_ajax(app):
                 .limit(MAX_RESULTADOS_AUTOCOMPLETE)
                 .all()
             )
-            return jsonify([
+            items = [
                 serializar_destinatario(destinatario)
                 for destinatario in resultados
-            ])
+            ]
+            items = _deduplicar_items(
+                items,
+                lambda item: (
+                    item["rut"].strip(),
+                    clave_texto_operativo(item["nombre"]),
+                    clave_texto_operativo(item["direccion"]),
+                    clave_texto_operativo(item["comuna"]),
+                ),
+            )
+            return jsonify(items)
         finally:
             db.close()
 

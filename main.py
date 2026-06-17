@@ -18,6 +18,7 @@ from routes.historico import registrar_rutas_historico
 from routes.historico_ajax import registrar_rutas_historico_ajax
 from routes.starken_lotes import registrar_rutas_starken_lotes
 from services.avisos import contar_lotes_avisos_pendientes
+from services.normalizacion_operativa import normalizar_datos_operativos
 from database.modelos import Envio
 from utils.csrf import obtener_csrf_token, validar_csrf
 
@@ -64,6 +65,7 @@ def inyectar_estado_auth():
 
 Base.metadata.create_all(bind=engine)
 asegurar_columnas_operativas()
+normalizar_datos_operativos()
 
 registrar_rutas_auth(app)
 registrar_rutas_paginas(app)
