@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Actualizar clave{% endblock %}
+
+{% block header %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="login-page login-page-premium">
+    <span class="login-line login-line-one" aria-hidden="true"></span>
+    <span class="login-line login-line-two" aria-hidden="true"></span>
+
+    <section class="login-panel login-panel-premium">
+        <div class="login-brand">
+            <span class="login-logo">L'OREAL</span>
+            <span class="login-gold-line"></span>
+            <h1>Actualizar clave</h1>
+            <div class="login-module">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+                <span>Clave temporal</span>
+            </div>
+        </div>
+
+        <form method="POST" class="login-form login-form-premium">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <label for="clave">Nueva clave</label>
+            <div class="login-input-shell">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+                <input
+                    type="password"
+                    class="form-control"
+                    id="clave"
+                    name="clave"
+                    autocomplete="new-password"
+                    placeholder="Minimo 6 caracteres"
+                    minlength="6"
+                    required
+                >
+            </div>
+
+            <label for="confirmar_clave">Confirmar clave</label>
+            <div class="login-input-shell">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"></path><circle cx="12" cy="12" r="10"></circle></svg>
+                <input
+                    type="password"
+                    class="form-control"
+                    id="confirmar_clave"
+                    name="confirmar_clave"
+                    autocomplete="new-password"
+                    placeholder="Repite la nueva clave"
+                    minlength="6"
+                    required
+                >
+            </div>
+
+            <button class="login-submit" type="submit">
+                <span>Guardar clave</span>
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
+            </button>
+        </form>
+
+        <div class="login-secure">
+            <span></span>
+            <strong>
+                <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+                Acceso protegido
+            </strong>
+            <span></span>
+        </div>
+    </section>
+</div>
+{% endblock %}

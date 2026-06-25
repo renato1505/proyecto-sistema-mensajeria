@@ -229,7 +229,7 @@ def _primer_nombre(nombre_completo, respaldo="Funcionario"):
     return partes[0] if partes else respaldo
 
 
-def enviar_respaldo_mensajeria(lote, envios):
+def enviar_respaldo_mensajeria(lote, envios, responsable="Usuario no identificado"):
     contenido = generar_excel_envios(envios, "Lote completo")
     nombre_adjunto = f"respaldo_{_limpiar_nombre_archivo(lote)}.xlsx"
     asunto = f"Respaldo lote Starken {lote}"
@@ -237,6 +237,7 @@ def enviar_respaldo_mensajeria(lote, envios):
         f"Se adjunta respaldo completo del lote {lote}.\n\n"
         f"Total de envios: {len(envios)}\n"
         f"Fecha respaldo: {fecha_hora_chile_texto()}\n\n"
+        f"Responsable: {responsable}\n\n"
         "Equipo de Mensajeria\n"
     )
 
@@ -246,7 +247,7 @@ def enviar_respaldo_mensajeria(lote, envios):
         cuerpo,
         nombre_adjunto,
         contenido,
-        html=correo_respaldo_mensajeria_html(lote, envios),
+        html=correo_respaldo_mensajeria_html(lote, envios, responsable),
     )
 
 

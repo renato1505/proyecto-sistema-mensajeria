@@ -34,6 +34,9 @@ def normalizar_nombre_remitente(texto):
     if len(partes) <= 2:
         return nombre
 
+    if len(partes) == 3:
+        return f"{partes[0]} {partes[-1]}"
+
     return f"{partes[0]} {partes[-2]}"
 
 

@@ -17,6 +17,7 @@ const inputRutDestinatario = document.getElementById("rut_destinatario");
 const inputDireccion = document.getElementById("direccion");
 const inputComun = document.getElementById("comuna");
 const inputRegio = document.getElementById("region");
+const inputTelefonoCodigoPais = document.getElementById("telefono_codigo_pais");
 const inputTelefonoDestinatario = document.getElementById("telefono_destinatario");
 const inputCorreoDestinatario = document.getElementById("correo_destinatario");
 const inputObservacion = document.getElementById("observacion");
@@ -34,9 +35,31 @@ const autocompleteState = {
 
 const STORAGE_KEY = "nuevo_envio_remitente";
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || "";
+const CODIGOS_TELEFONO = ["598", "56", "54", "51", "57", "52", "55", "1"];
 
-function normalizarTelefonoChileInput(valor) {
-    let telefono = String(valor || "").replace(/\D/g, "");
+function normalizarTelefonoOperativoInput(valor, codigoPais = "56") {
+    const texto = String(valor || "").trim();
+    let telefono = texto.replace(/\D/g, "");
+
+    if (texto.startsWith("+")) {
+        const codigoDetectado = CODIGOS_TELEFONO.find((codigo) => telefono.startsWith(codigo));
+        if (codigoDetectado) {
+            if (inputTelefonoCodigoPais) inputTelefonoCodigoPais.value = codigoDetectado;
+            codigoPais = codigoDetectado;
+            telefono = telefono.slice(codigoDetectado.length);
+        }
+    }
+
+    if (codigoPais !== "56") {
+        if (telefono.startsWith(codigoPais)) {
+            telefono = telefono.slice(codigoPais.length);
+        }
+        if (telefono.startsWith("0")) {
+            telefono = telefono.slice(1);
+        }
+        return telefono.slice(0, 15);
+    }
+
     if (telefono.startsWith("56") && telefono.length >= 10) {
         telefono = telefono.slice(2);
     }
@@ -184,9 +207,19 @@ codigoAgencia.addEventListener("input", function () {
 });
 
 inputTelefonoDestinatario.addEventListener("input", function () {
-    this.value = normalizarTelefonoChileInput(this.value);
+    this.value = normalizarTelefonoOperativoInput(this.value, inputTelefonoCodigoPais?.value || "56");
     actualizarPreview();
 });
+
+if (inputTelefonoCodigoPais) {
+    inputTelefonoCodigoPais.addEventListener("change", function () {
+        inputTelefonoDestinatario.value = normalizarTelefonoOperativoInput(
+            inputTelefonoDestinatario.value,
+            this.value
+        );
+        actualizarPreview();
+    });
+}
 
 inputRutDestinatario.addEventListener("input", function () {
     this.value = this.value.replace(/[^0-9kK-]/g, "").slice(0, 10);
@@ -338,6 +371,7 @@ async function guardarDestinatario() {
     formData.append("direccion", direccion);
     formData.append("comuna", comuna);
     formData.append("region", region);
+    formData.append("telefono_codigo_pais", inputTelefonoCodigoPais ? inputTelefonoCodigoPais.value : "56");
     formData.append("telefono_destinatario", telefono);
     formData.append("correo_destinatario", inputCorreoDestinatario ? inputCorreoDestinatario.value.trim() : "");
     formData.append("observacion", inputObservacion ? inputObservacion.value.trim() : "");
@@ -383,7 +417,10 @@ inputDestinatario.addEventListener("input", async function () {
             inputDireccion.value = destinatario.direccion || "";
             inputComun.value = destinatario.comuna || "";
             inputRegio.value = destinatario.region || "";
-            inputTelefonoDestinatario.value = destinatario.telefono || "";
+            inputTelefonoDestinatario.value = normalizarTelefonoOperativoInput(
+                destinatario.telefono || "",
+                inputTelefonoCodigoPais?.value || "56"
+            );
             if (inputCorreoDestinatario) inputCorreoDestinatario.value = destinatario.correo || "";
             if (inputObservacion) inputObservacion.value = destinatario.observacion || "";
             limpiarLista(listaDestinatarios, "destinatarios");
@@ -464,6 +501,7 @@ function actualizarPreview() {
     "direccion",
     "comuna",
     "region",
+    "telefono_codigo_pais",
     "telefono_destinatario",
     "bultos",
     "kilos"

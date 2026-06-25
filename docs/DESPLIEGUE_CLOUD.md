@@ -49,7 +49,7 @@ DATABASE_URL=postgresql+psycopg2://...
 SECRET_KEY=clave-larga-y-segura
 FLASK_DEBUG=0
 LOGIN_REQUIRED=1
-APP_USERS=mensajeria:clave-mensajeria;recepcion:clave-recepcion;seguridad:clave-seguridad
+APP_USERS=mensajeria|mensajeria|clave-mensajeria;fcespedes|mensajeria|clave-temporal;recepcion|recepcion|clave-recepcion;seguridad|seguridad|clave-seguridad
 SESSION_TIMEOUT_MINUTES=30
 
 CORREO_EMISOR=correo-del-sistema@gmail.com

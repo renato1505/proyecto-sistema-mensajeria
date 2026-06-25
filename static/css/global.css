@@ -34,39 +34,37 @@ a {
 }
 
 .app-header {
-    position: sticky;
-    top: 0;
+    position: static;
     z-index: 1020;
-    padding: 7px 8px;
-    background: rgba(246, 248, 250, 0.9);
-    border-bottom: 1px solid rgba(217, 222, 229, 0.5);
-    backdrop-filter: blur(14px);
 }
 
 .app-header-inner {
+    display: contents;
+}
+
+.app-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 1030;
     display: grid;
-    grid-template-columns: 128px minmax(0, 1fr) max-content;
-    align-items: center;
-    gap: 8px;
-    max-width: 1360px;
-    min-height: 64px;
-    margin: 0 auto;
-    padding: 8px 12px;
-    background: rgba(255, 255, 255, 0.96);
-    border: 1px solid rgba(217, 222, 229, 0.82);
-    border-radius: 8px;
-    box-shadow: 0 14px 36px rgba(15, 23, 42, 0.08);
+    grid-template-rows: auto 1fr auto;
+    width: 200px;
+    padding: 18px 10px 16px;
+    background: rgba(255, 255, 255, 0.94);
+    border-right: 1px solid rgba(217, 222, 229, 0.75);
+    box-shadow: 18px 0 42px rgba(15, 23, 42, 0.06);
+    backdrop-filter: blur(18px);
 }
 
 .brand-main {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    min-height: 46px;
+    min-height: 54px;
     min-width: 0;
     color: var(--brand-black);
-    padding-right: 10px;
-    border-right: 1px solid var(--line-soft);
+    padding: 0 8px 20px;
+    border-bottom: 1px solid var(--line-soft);
 }
 
 .brand-main img {
@@ -78,31 +76,34 @@ a {
 .brand-fallback {
     display: inline-flex;
     flex-direction: column;
-    line-height: 1.08;
+    line-height: 1.1;
 }
 
 .brand-fallback strong {
     color: var(--brand-black);
-    font-size: 0.95rem;
+    font-size: 1.18rem;
     font-weight: 900;
     letter-spacing: 0;
 }
 
 .brand-fallback small {
-    color: var(--muted);
-    font-size: 0.68rem;
-    font-weight: 600;
+    color: var(--brand-gold);
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
 }
 
 .app-nav {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     justify-content: flex-start;
-    gap: 3px;
+    flex-direction: column;
+    gap: 6px;
     min-width: 0;
-    overflow-x: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
     scrollbar-width: none;
-    padding: 3px 2px;
+    padding: 20px 0;
 }
 
 .app-nav::-webkit-scrollbar {
@@ -115,47 +116,58 @@ a {
     flex-direction: row;
     align-items: center;
     flex: 0 0 auto;
-    gap: 5px;
-    min-width: max-content;
-    min-height: 40px;
-    color: #4b5563;
-    border-radius: 999px;
-    padding: 9px 10px 10px;
-    font-size: 0.74rem;
-    font-weight: 750;
+    justify-content: flex-start;
+    gap: 10px;
+    width: 100%;
+    min-height: 44px;
+    color: #334155;
+    border-radius: 14px;
+    padding: 10px 11px;
+    font-size: 0.8rem;
+    font-weight: 800;
     line-height: 1.15;
+    text-align: left;
     white-space: nowrap;
     transition: color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
 
+.app-nav a span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .app-nav a.nav-with-badge {
-    padding-right: 20px;
+    padding-right: 38px;
 }
 
 .app-nav a svg {
-    width: 15px;
-    height: 15px;
+    width: 20px;
+    height: 20px;
     flex: 0 0 auto;
     fill: none;
     stroke: currentColor;
     stroke-linecap: round;
     stroke-linejoin: round;
-    stroke-width: 2;
+    stroke-width: 1.85;
 }
 
 .app-nav a.active {
-    color: #111827;
-    background: #fff8ed;
-    box-shadow: inset 0 0 0 1px rgba(176, 138, 60, 0.18);
+    color: #0f172a;
+    background: linear-gradient(90deg, #fffaf0, #ffffff);
+    box-shadow:
+        inset 0 0 0 1px rgba(176, 138, 60, 0.2),
+        0 10px 20px rgba(176, 138, 60, 0.1);
 }
 
 .app-nav a.active::after {
     content: "";
     position: absolute;
-    left: 18px;
-    right: 18px;
-    bottom: 6px;
-    height: 2px;
+    left: -14px;
+    top: 9px;
+    bottom: 9px;
+    width: 3px;
+    height: auto;
     background: var(--brand-gold);
     border-radius: 999px;
 }
@@ -165,10 +177,10 @@ a {
     align-items: center;
     justify-content: center;
     position: absolute;
-    top: -2px;
-    right: 1px;
-    min-width: 17px;
-    height: 17px;
+    top: 6px;
+    right: 9px;
+    min-width: 18px;
+    height: 18px;
     padding: 0 5px;
     color: #fff;
     background: #b4232f;
@@ -182,20 +194,62 @@ a {
 .app-nav a:hover,
 .app-nav a:focus {
     color: var(--brand-black);
-    background: #f5f7f9;
-    transform: translateY(-1px);
+    background: #f8fafc;
+    transform: translateX(2px);
 }
 
-.brand-partner {
+.app-topbar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 200px;
+    z-index: 1025;
     display: inline-flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 5px;
+    gap: 16px;
     color: var(--muted-strong);
     min-width: 0;
     flex-wrap: nowrap;
-    padding-left: 10px;
-    border-left: 1px solid var(--line-soft);
+    min-height: 68px;
+    padding: 10px 22px;
+    background: rgba(246, 248, 250, 0.82);
+    border-bottom: 1px solid rgba(217, 222, 229, 0.6);
+    backdrop-filter: blur(16px);
+}
+
+.topbar-search {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    width: min(420px, 38vw);
+    min-height: 40px;
+    margin-left: auto;
+    padding: 0 18px;
+    color: #8a94a6;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(230, 234, 240, 0.8);
+    border-radius: 999px;
+    box-shadow: 0 10px 26px rgba(15, 23, 42, 0.04);
+}
+
+.topbar-search svg,
+.profile-panel-link svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+}
+
+.topbar-search span {
+    overflow: hidden;
+    font-size: 0.86rem;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .brand-partner img {
@@ -208,15 +262,34 @@ a {
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    min-height: 30px;
-    padding: 5px 9px;
+    min-height: 28px;
+    padding: 4px 9px;
     color: var(--brand-green-dark);
     background: rgba(22, 155, 77, 0.08);
     border: 1px solid rgba(22, 155, 77, 0.18);
     border-radius: 999px;
-    font-size: 0.72rem;
+    font-size: 0.74rem;
     font-weight: 900;
     white-space: nowrap;
+}
+
+.sidebar-footer {
+    display: grid;
+    gap: 2px;
+    padding: 16px 10px 2px;
+    color: #172033;
+}
+
+.sidebar-footer strong {
+    font-size: 0.9rem;
+    font-weight: 900;
+}
+
+.sidebar-footer small,
+.sidebar-footer span {
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 700;
 }
 
 .logout-form {
@@ -227,10 +300,10 @@ a {
     color: var(--muted-strong);
     background: #f8fafc;
     border: 1px solid var(--line);
-    border-radius: 8px;
-    min-height: 30px;
-    padding: 5px 9px;
-    font-size: 0.72rem;
+    border-radius: 10px;
+    min-height: 34px;
+    padding: 7px 12px;
+    font-size: 0.78rem;
     font-weight: 800;
 }
 
@@ -244,19 +317,6 @@ a {
     font-size: 0.76rem;
 }
 
-.user-chip {
-    display: inline-flex;
-    align-items: center;
-    min-height: 30px;
-    padding: 5px 9px;
-    color: #344054;
-    background: #f5f7f9;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    font-size: 0.72rem;
-    font-weight: 800;
-}
-
 .status-dot {
     width: 9px;
     height: 9px;
@@ -265,9 +325,157 @@ a {
     box-shadow: 0 0 0 3px rgba(22, 155, 77, 0.12);
 }
 
+.profile-menu {
+    position: relative;
+}
+
+.profile-menu summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 184px;
+    min-height: 48px;
+    padding: 6px 10px;
+    list-style: none;
+    cursor: pointer;
+    color: #172033;
+    background: linear-gradient(180deg, #ffffff, #f8fafc);
+    border: 1px solid var(--line);
+    border-radius: 15px;
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.05);
+}
+
+.profile-menu summary::-webkit-details-marker {
+    display: none;
+}
+
+.profile-avatar {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    color: #fff;
+    background: #102033;
+    border: 2px solid var(--brand-gold);
+    border-radius: 50%;
+    font-size: 0.82rem;
+    font-weight: 900;
+    letter-spacing: 0;
+    box-shadow: 0 8px 18px rgba(16, 32, 51, 0.18);
+}
+
+.profile-avatar::after {
+    content: "";
+    position: absolute;
+    right: -1px;
+    bottom: 2px;
+    width: 10px;
+    height: 10px;
+    background: var(--brand-green);
+    border: 2px solid #fff;
+    border-radius: 50%;
+}
+
+.profile-copy {
+    display: inline-flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.15;
+}
+
+.profile-copy strong {
+    max-width: 108px;
+    overflow: hidden;
+    color: #172033;
+    font-size: 0.82rem;
+    font-weight: 900;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.profile-copy small {
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.profile-chevron {
+    width: 18px;
+    height: 18px;
+    margin-left: auto;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+}
+
+.profile-panel {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    z-index: 1040;
+    min-width: 220px;
+    padding: 12px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
+}
+
+.profile-panel div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 10px;
+}
+
+.profile-panel-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 8px;
+    color: #172033;
+    border-radius: 10px;
+    font-size: 0.86rem;
+    font-weight: 800;
+}
+
+.profile-panel-link:hover {
+    color: #172033;
+    background: #f5f7f9;
+}
+
+.profile-panel strong {
+    color: #172033;
+    font-size: 0.88rem;
+}
+
+.profile-label {
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.profile-panel .logout-form {
+    margin: 0;
+}
+
+.profile-panel .logout-form button {
+    width: 100%;
+    color: #fff;
+    background: #172033;
+    border-color: #172033;
+}
+
 .app-main {
-    margin-top: 14px;
-    padding-bottom: 36px;
+    width: auto;
+    max-width: none;
+    margin: 0 0 0 200px;
+    padding: 84px 22px 36px;
 }
 
 .app-alerts {
@@ -423,55 +631,6 @@ a {
     animation: app-spin 0.8s linear infinite;
 }
 
-.login-page {
-    display: flex;
-    justify-content: center;
-    padding: 52px 0;
-}
-
-.login-panel {
-    width: min(440px, 100%);
-    padding: 26px;
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    box-shadow: var(--shadow-soft);
-}
-
-.login-kicker {
-    display: inline-flex;
-    margin-bottom: 7px;
-    color: var(--brand-gold);
-    font-size: 0.78rem;
-    font-weight: 800;
-    text-transform: uppercase;
-}
-
-.login-panel h1 {
-    margin: 0;
-    color: var(--text);
-    font-size: 1.55rem;
-    font-weight: 900;
-}
-
-.login-panel p {
-    margin: 7px 0 18px;
-    color: var(--muted);
-}
-
-.login-form {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.login-form label {
-    color: #344054;
-    font-size: 0.84rem;
-    font-weight: 800;
-    margin-bottom: -5px;
-}
-
 @keyframes app-spin {
     to {
         transform: rotate(360deg);
@@ -528,6 +687,11 @@ a {
     box-shadow: 0 0 0 0.2rem rgba(17, 24, 39, 0.08);
 }
 
+.country-code-select {
+    flex: 0 0 92px;
+    max-width: 92px;
+}
+
 .autocomplete-wrap {
     position: relative;
 }
@@ -547,40 +711,110 @@ a {
 }
 
 @media (max-width: 1100px) {
-    .app-header-inner {
-        grid-template-columns: 1fr;
-        gap: 8px;
+    .app-sidebar {
+        width: 92px;
+        padding: 18px 10px;
     }
 
-    .brand-main,
-    .brand-partner {
+    .brand-main {
         justify-content: center;
-        padding: 0;
-        border: 0;
+        padding: 0 0 18px;
     }
 
-    .app-nav {
-        justify-content: flex-start;
-        overflow-x: auto;
-        padding-bottom: 4px;
+    .brand-fallback small,
+    .app-nav a span,
+    .sidebar-footer {
+        display: none;
+    }
+
+    .brand-fallback strong {
+        font-size: 0.95rem;
+    }
+
+    .app-nav a {
+        justify-content: center;
+        padding: 13px 8px;
+    }
+
+    .app-nav a.nav-with-badge {
+        padding-right: 8px;
+    }
+
+    .app-nav a.active::after {
+        left: -10px;
+    }
+
+    .nav-badge {
+        right: 8px;
+    }
+
+    .app-topbar {
+        left: 92px;
+    }
+
+    .app-main {
+        margin-left: 92px;
     }
 }
 
 @media (max-width: 576px) {
-    .app-header-inner {
-        padding: 10px 14px;
+    .app-sidebar {
+        right: 0;
+        bottom: 0;
+        top: auto;
+        display: block;
+        width: auto;
+        height: 72px;
+        padding: 8px;
+        border-top: 1px solid rgba(217, 222, 229, 0.75);
+        border-right: 0;
+    }
+
+    .brand-main,
+    .sidebar-footer {
+        display: none;
+    }
+
+    .app-nav {
+        flex-direction: row;
+        gap: 4px;
+        padding: 0;
+        overflow-x: auto;
     }
 
     .app-nav a {
-        padding: 7px 8px;
-        font-size: 0.76rem;
+        width: 58px;
+        min-height: 54px;
+        padding: 8px;
+        border-radius: 14px;
     }
 
-    .brand-partner {
-        display: flex;
+    .nav-badge {
+        top: 4px;
+        right: 5px;
     }
 
     .integration-pill {
+        display: none;
+    }
+
+    .app-topbar {
+        left: 0;
+        min-height: 72px;
+        padding: 12px;
+    }
+
+    .topbar-search {
+        display: none;
+    }
+
+    .profile-menu summary {
+        min-width: 0;
+        min-height: 48px;
+        padding: 6px 10px;
+    }
+
+    .profile-copy {
         display: none;
     }
 
@@ -588,5 +822,748 @@ a {
         top: 12px;
         right: 12px;
         width: calc(100vw - 24px);
+    }
+
+    .app-main {
+        margin-left: 0;
+        padding: 88px 14px 92px;
+    }
+}
+
+/* Layout superior definitivo: deja el menu en una barra horizontal para todas las pantallas. */
+.app-header {
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+    padding: 12px 18px 0;
+}
+
+.app-header-inner {
+    display: flex;
+    align-items: stretch;
+    gap: 14px;
+    width: min(1500px, calc(100vw - 36px));
+    min-height: 76px;
+    margin: 0 auto;
+    padding: 0 14px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(226, 232, 240, 0.92);
+    border-radius: 14px;
+    box-shadow: 0 20px 48px rgba(15, 23, 42, 0.09);
+    backdrop-filter: blur(18px);
+}
+
+.app-sidebar {
+    position: static;
+    inset: auto;
+    z-index: auto;
+    display: grid;
+    grid-template-columns: 170px minmax(0, 1fr);
+    grid-template-rows: 1fr;
+    align-items: center;
+    gap: 14px;
+    width: auto;
+    min-width: 0;
+    flex: 1 1 auto;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+}
+
+.brand-main {
+    min-height: 58px;
+    padding: 0 18px 0 2px;
+    border-right: 1px solid var(--line-soft);
+    border-bottom: 0;
+}
+
+.brand-fallback strong {
+    color: #0f172a;
+    font-size: 1.05rem;
+    letter-spacing: 0.01em;
+}
+
+.brand-fallback small {
+    color: var(--brand-gold);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+}
+
+.app-nav {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 0;
+    padding: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.app-nav a {
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    width: 76px;
+    min-height: 62px;
+    padding: 7px 8px;
+    border-radius: 14px;
+    color: #344054;
+    font-size: 0.7rem;
+    text-align: center;
+}
+
+.app-nav a span {
+    max-width: 100%;
+    line-height: 1.1;
+}
+
+.app-nav a.nav-with-badge {
+    padding-right: 8px;
+}
+
+.app-nav a svg {
+    width: 21px;
+    height: 21px;
+    stroke-width: 1.75;
+}
+
+.app-nav a.active {
+    color: #0f172a;
+    background: linear-gradient(180deg, #fffdf8, #fff7eb);
+    box-shadow:
+        inset 0 0 0 1px rgba(176, 138, 60, 0.24),
+        0 12px 26px rgba(176, 138, 60, 0.13);
+}
+
+.app-nav a.active::after {
+    left: 18px;
+    right: 18px;
+    top: auto;
+    bottom: 5px;
+    width: auto;
+    height: 3px;
+}
+
+.app-nav a:hover,
+.app-nav a:focus {
+    transform: translateY(-1px);
+}
+
+.nav-badge {
+    top: 6px;
+    right: 13px;
+}
+
+.sidebar-footer {
+    display: none;
+}
+
+.app-topbar {
+    position: static;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 0 0 auto;
+    gap: 10px;
+    min-height: auto;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    backdrop-filter: none;
+}
+
+.topbar-search {
+    width: 42px;
+    min-height: 42px;
+    justify-content: center;
+    padding: 0;
+    margin-left: 0;
+    color: #182230;
+    background: #fff;
+    border-color: var(--line-soft);
+}
+
+.topbar-search span {
+    display: none;
+}
+
+.topbar-icon-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    color: #182230;
+    background: #fff;
+    border: 1px solid var(--line-soft);
+    border-radius: 999px;
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.04);
+}
+
+.topbar-icon-btn svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+}
+
+.topbar-icon-btn span {
+    position: absolute;
+    top: -4px;
+    right: -2px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    color: #fff;
+    background: #b4232f;
+    border: 2px solid #fff;
+    border-radius: 999px;
+    font-size: 0.62rem;
+    font-weight: 900;
+    line-height: 14px;
+}
+
+.integration-pill {
+    min-height: 30px;
+    padding: 5px 12px;
+}
+
+.profile-menu summary {
+    min-width: 178px;
+    min-height: 50px;
+    border-radius: 999px;
+}
+
+.app-alerts {
+    top: 104px;
+}
+
+.app-main {
+    margin: 0;
+    padding: 22px 22px 36px;
+}
+
+@media (max-width: 1260px) {
+    .app-header-inner {
+        gap: 10px;
+        padding: 0 10px;
+    }
+
+    .app-sidebar {
+        grid-template-columns: 138px minmax(0, 1fr);
+        gap: 8px;
+    }
+
+    .brand-main {
+        padding-right: 10px;
+    }
+
+    .app-nav a {
+        width: 66px;
+        font-size: 0.66rem;
+    }
+
+    .profile-menu summary {
+        min-width: 58px;
+        padding: 6px 8px;
+    }
+
+    .profile-copy {
+        display: none;
+    }
+}
+
+@media (max-width: 980px) {
+    .app-header {
+        padding: 8px 10px 0;
+    }
+
+    .app-header-inner {
+        width: calc(100vw - 20px);
+        display: grid;
+        grid-template-columns: 1fr auto;
+        min-height: auto;
+        padding: 10px;
+    }
+
+    .app-sidebar {
+        grid-column: 1 / -1;
+        grid-template-columns: 132px minmax(0, 1fr);
+        order: 2;
+    }
+
+    .app-topbar {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    .brand-main {
+        grid-column: 1;
+        grid-row: 1;
+        min-height: 46px;
+    }
+
+    .app-nav {
+        grid-column: 1 / -1;
+        justify-content: flex-start;
+        padding-top: 8px;
+    }
+
+    .app-nav a {
+        width: 64px;
+        min-height: 56px;
+    }
+
+    .app-main {
+        padding: 18px 14px 32px;
+    }
+}
+
+@media (max-width: 576px) {
+    .app-header-inner {
+        grid-template-columns: 1fr auto;
+        border-radius: 12px;
+    }
+
+    .app-sidebar {
+        position: static;
+        display: grid;
+        width: auto;
+        height: auto;
+        padding: 0;
+        border: 0;
+        box-shadow: none;
+    }
+
+    .brand-main {
+        display: inline-flex;
+    }
+
+    .brand-fallback small {
+        display: inline;
+    }
+
+    .app-nav {
+        flex-direction: row;
+        gap: 5px;
+    }
+
+    .app-nav a {
+        width: 58px;
+        min-height: 54px;
+        padding: 7px 5px;
+        font-size: 0.62rem;
+    }
+
+    .integration-pill,
+    .topbar-search {
+        display: none;
+    }
+
+    .profile-menu summary {
+        min-width: 46px;
+        padding: 5px;
+    }
+
+    .app-alerts {
+        top: 12px;
+    }
+
+    .app-main {
+        margin-left: 0;
+        padding: 14px 10px 28px;
+    }
+}
+
+/* Refinamiento premium del menu superior: compacto, centrado y con submenu de envios. */
+.app-header {
+    padding: 0;
+    background: rgba(255, 255, 255, 0.96);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.86);
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.055);
+}
+
+.app-header-inner {
+    width: min(1560px, 100%);
+    min-height: 82px;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.app-sidebar {
+    grid-template-columns: 190px minmax(0, 1fr);
+}
+
+.brand-main {
+    min-height: 82px;
+    padding-right: 24px;
+}
+
+.brand-fallback strong {
+    color: #0f172a;
+    font-size: 1.12rem;
+}
+
+.brand-fallback small {
+    color: #b68c35;
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+}
+
+.app-nav {
+    gap: 18px;
+}
+
+.app-nav a,
+.nav-menu > summary {
+    position: relative;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 74px;
+    min-height: 68px;
+    padding: 8px 4px;
+    color: #536072;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    font-size: 0.68rem;
+    font-weight: 800;
+    line-height: 1.1;
+    text-align: center;
+    white-space: normal;
+    cursor: pointer;
+    transition: color 0.16s ease, transform 0.16s ease;
+}
+
+.app-nav a svg,
+.nav-menu > summary svg {
+    width: 23px;
+    height: 23px;
+}
+
+.app-nav a.active,
+.nav-menu.active > summary,
+.app-nav a:hover,
+.nav-menu > summary:hover {
+    color: #0f172a;
+    background: transparent;
+    box-shadow: none;
+}
+
+.app-nav a.active::after,
+.nav-menu.active > summary::after {
+    content: "";
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    bottom: 0;
+    height: 3px;
+    background: #bd923b;
+    border-radius: 999px;
+}
+
+.nav-menu {
+    position: relative;
+}
+
+.nav-menu > summary {
+    list-style: none;
+}
+
+.nav-menu > summary::-webkit-details-marker {
+    display: none;
+}
+
+.nav-menu-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    z-index: 1060;
+    display: grid;
+    min-width: 210px;
+    padding: 8px;
+    background: #fff;
+    border: 1px solid #e3e8ef;
+    border-radius: 16px;
+    box-shadow: 0 20px 42px rgba(15, 23, 42, 0.14);
+    transform: translateX(-50%);
+}
+
+.nav-menu-panel a {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 10px;
+    width: 100%;
+    min-height: 42px;
+    padding: 10px;
+    border-radius: 12px;
+    font-size: 0.82rem;
+    text-align: left;
+}
+
+.nav-menu-panel a:hover {
+    background: #fff8ed;
+}
+
+.nav-menu-panel a::after {
+    display: none;
+}
+
+.nav-badge {
+    top: 5px;
+    right: 14px;
+}
+
+.app-topbar {
+    gap: 14px;
+}
+
+.topbar-search {
+    width: 42px;
+    height: 42px;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.topbar-icon-btn {
+    width: 42px;
+    height: 42px;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+}
+
+.profile-menu summary {
+    min-width: 190px;
+    min-height: 54px;
+    border-radius: 999px;
+}
+
+.app-main {
+    padding-top: 22px;
+}
+
+@media (max-width: 1260px) {
+    .app-nav {
+        gap: 8px;
+    }
+
+    .app-nav a,
+    .nav-menu > summary {
+        width: 64px;
+        font-size: 0.64rem;
+    }
+}
+
+@media (max-width: 980px) {
+    .app-header-inner {
+        border-radius: 0;
+    }
+
+    .app-nav {
+        justify-content: flex-start;
+    }
+}
+
+/* Ajuste fino del header inspirado en el boceto: menos peso visual, mas aire y logo sobrio. */
+.app-header {
+    background: rgba(255, 255, 255, 0.985);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.78);
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.045);
+}
+
+.app-header-inner {
+    width: min(1540px, 100%);
+    min-height: 74px;
+    padding: 0 22px;
+}
+
+.app-sidebar {
+    grid-template-columns: 168px minmax(0, 1fr);
+    gap: 20px;
+}
+
+.brand-main {
+    min-height: 74px;
+    padding: 0 24px 0 0;
+    border-right-color: rgba(226, 232, 240, 0.88);
+}
+
+.brand-fallback {
+    gap: 4px;
+}
+
+.brand-fallback strong {
+    color: #0f172a;
+    font-size: 1.36rem;
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    line-height: 0.9;
+}
+
+.brand-fallback small {
+    color: #bd923b;
+    font-size: 0.72rem;
+    font-weight: 850;
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+}
+
+.app-nav {
+    justify-content: center;
+    gap: 22px;
+}
+
+.app-nav a,
+.nav-menu > summary {
+    width: 58px;
+    min-height: 62px;
+    gap: 5px;
+    padding: 7px 2px;
+    color: #4d5a6b;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0;
+}
+
+.app-nav a span,
+.nav-menu > summary span {
+    max-width: 68px;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
+}
+
+.app-nav a svg,
+.nav-menu > summary svg {
+    width: 19px;
+    height: 19px;
+    stroke-width: 1.8;
+}
+
+.app-nav a.active,
+.nav-menu.active > summary {
+    color: #0f172a;
+}
+
+.app-nav a.active::after,
+.nav-menu.active > summary::after {
+    left: 8px;
+    right: 8px;
+    bottom: -1px;
+    height: 2px;
+    background: #bd923b;
+}
+
+.app-nav a:hover,
+.nav-menu > summary:hover {
+    color: #0f172a;
+    transform: translateY(-1px);
+}
+
+.nav-badge {
+    top: 2px;
+    right: 5px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    font-size: 0.58rem;
+    line-height: 14px;
+}
+
+.nav-menu-panel {
+    top: calc(100% + 6px);
+    min-width: 196px;
+    border-radius: 14px;
+}
+
+.nav-menu-panel a {
+    width: 100%;
+    min-height: 40px;
+    font-size: 0.8rem;
+}
+
+.app-topbar {
+    gap: 10px;
+}
+
+.topbar-search,
+.topbar-icon-btn {
+    width: 38px;
+    height: 38px;
+    color: #111827;
+}
+
+.topbar-search svg,
+.topbar-icon-btn svg {
+    width: 17px;
+    height: 17px;
+}
+
+.profile-menu summary {
+    min-width: 168px;
+    min-height: 48px;
+    padding: 5px 9px;
+    border-radius: 999px;
+}
+
+.profile-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 0.78rem;
+}
+
+.profile-copy strong {
+    font-size: 0.8rem;
+}
+
+.profile-copy small {
+    font-size: 0.68rem;
+}
+
+.app-main {
+    padding-top: 18px;
+}
+
+@media (max-width: 1260px) {
+    .app-header-inner {
+        padding: 0 14px;
+    }
+
+    .app-sidebar {
+        grid-template-columns: 146px minmax(0, 1fr);
+        gap: 12px;
+    }
+
+    .app-nav {
+        gap: 12px;
+    }
+
+    .app-nav a,
+    .nav-menu > summary {
+        width: 54px;
+        font-size: 0.58rem;
+    }
+
+    .brand-fallback strong {
+        font-size: 1.18rem;
+    }
+
+    .brand-fallback small {
+        font-size: 0.62rem;
     }
 }

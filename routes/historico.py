@@ -3,7 +3,7 @@ import logging
 from math import ceil
 
 import pandas as pd
-from flask import flash, redirect, render_template, request, send_file
+from flask import flash, redirect, render_template, request, send_file, session
 from sqlalchemy import func
 
 from config.settings import CLAVE_ELIMINACION_HISTORICO
@@ -14,6 +14,7 @@ from services.historico import (
     construir_url_historico,
     convertir_envios_a_dataframe,
     enviar_respaldo_eliminacion_historico,
+    enviar_respaldo_anulacion_historico,
     leer_filtros_historico,
     leer_paginacion_historico,
     limpiar_nombre_archivo,
@@ -21,10 +22,20 @@ from services.historico import (
     query_desde_filtros,
     url_desde_filtros,
 )
+from services.auditoria import registrar_accion
+from services.reportes import estado_reportes_por_envio
 from utils.fechas import ahora_chile, timestamp_archivo_chile
 
 
 logger = logging.getLogger(__name__)
+
+
+def _responsable_actual():
+    return (
+        session.get("usuario_display")
+        or session.get("usuario_nombre")
+        or "Usuario no identificado"
+    )
 
 
 def _leer_ids_seleccionados():
@@ -98,6 +109,7 @@ def registrar_rutas_historico(app):
             .limit(per_page)
             .all()
         )
+        reportes_por_envio = estado_reportes_por_envio(db, [envio.id for envio in envios])
         pagination = _pagination(filtros, total_registros, page, per_page, len(envios))
 
         registros_historicos = (
@@ -130,6 +142,7 @@ def registrar_rutas_historico(app):
             fecha_hasta=filtros["fecha_hasta"],
             estado_of=filtros["estado_of"],
             pagination=pagination,
+            reportes_por_envio=reportes_por_envio,
         )
 
     @app.route("/exportar_historico")
@@ -221,20 +234,53 @@ def registrar_rutas_historico(app):
             return redirect("/historico")
 
         fecha_anulacion = ahora_chile()
-        cantidad = 0
+        responsable = _responsable_actual()
+        anulados = []
         for envio in envios:
             if envio.e_anulado:
                 continue
             envio.e_anulado = True
             envio.e_fecha_anulacion = fecha_anulacion
             envio.e_motivo_anulacion = motivo[:500]
-            cantidad += 1
+            anulados.append(envio)
 
+        cantidad = len(anulados)
+        nombre_respaldo = None
+        destinatarios_respaldo = []
+
+        if cantidad:
+            try:
+                nombre_respaldo, destinatarios_respaldo = enviar_respaldo_anulacion_historico(
+                    anulados,
+                    motivo[:500],
+                    responsable,
+                )
+            except Exception:
+                db.rollback()
+                db.close()
+                logger.exception("No se pudo anular historico con respaldo por correo")
+                flash(
+                    "No se anularon los registros porque no se pudo enviar el respaldo por correo.",
+                    "danger",
+                )
+                return redirect("/historico")
+
+            registrar_accion(
+                db,
+                "anular_historico",
+                "envio",
+                ",".join(str(envio.id) for envio in anulados),
+                f"Cantidad: {cantidad}. Responsable: {responsable}. Motivo: {motivo[:500]}. Respaldo: {nombre_respaldo}",
+            )
         db.commit()
         db.close()
 
         if cantidad:
-            flash(f"Se marcaron {cantidad} registro(s) como anulados.", "success")
+            flash(
+                f"Se marcaron {cantidad} registro(s) como anulados. "
+                f"Respaldo '{nombre_respaldo}' enviado a {', '.join(destinatarios_respaldo)}.",
+                "success",
+            )
         else:
             flash("Los registros seleccionados ya estaban anulados.", "info")
         return redirect("/historico")
@@ -274,11 +320,19 @@ def registrar_rutas_historico(app):
             nombre_respaldo, destinatarios_respaldo = enviar_respaldo_eliminacion_historico(
                 envios_a_eliminar,
                 filtros,
+                _responsable_actual(),
             )
 
             for envio in envios_a_eliminar:
                 db.delete(envio)
 
+            registrar_accion(
+                db,
+                "eliminar_historico_seleccionados",
+                "envio",
+                ",".join(str(envio.id) for envio in envios_a_eliminar),
+                f"Cantidad: {cantidad}. Responsable: {_responsable_actual()}. Respaldo: {nombre_respaldo}",
+            )
             db.commit()
         except Exception:
             db.rollback()
@@ -331,11 +385,19 @@ def registrar_rutas_historico(app):
             nombre_respaldo, destinatarios_respaldo = enviar_respaldo_eliminacion_historico(
                 envios_a_eliminar,
                 filtros,
+                _responsable_actual(),
             )
 
             for envio in envios_a_eliminar:
                 db.delete(envio)
 
+            registrar_accion(
+                db,
+                "eliminar_historico_filtrado",
+                "envio",
+                "filtros",
+                f"Cantidad: {cantidad}. Responsable: {_responsable_actual()}. Respaldo: {nombre_respaldo}. Filtros: {filtros}",
+            )
             db.commit()
         except Exception:
             db.rollback()

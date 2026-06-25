@@ -182,10 +182,8 @@
     {% endif %}
 </div>
 
-<script>
-function toggleDetalle(id) {
-    const fila = document.getElementById(id);
-    fila.classList.toggle("d-none");
-}
-</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/en_proceso.js') }}"></script>
 {% endblock %}

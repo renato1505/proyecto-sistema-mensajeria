@@ -11,13 +11,15 @@ from utils.texto import (
 )
 from utils.validaciones import (
     email_valido,
-    normalizar_telefono_chile,
+    normalizar_telefono_operativo,
     rut_operativo_valido,
-    telefono_chile_valido,
+    separar_telefono_operativo,
+    telefono_operativo_valido,
 )
 
 
 def _leer_form_envio():
+    telefono_codigo_pais = request.form.get("telefono_codigo_pais", "56").strip()
     return {
         "remitente": normalizar_nombre_remitente(request.form.get("remitente", "").strip()),
         "correo_remitente": normalizar_correo_operativo(request.form.get("correo_remitente", "").strip()),
@@ -28,8 +30,10 @@ def _leer_form_envio():
         "direccion": normalizar_texto_operativo(request.form.get("direccion", "").strip()),
         "comuna": normalizar_texto_operativo(request.form.get("comuna", "").strip()),
         "region": normalizar_texto_operativo(request.form.get("region", "").strip()),
-        "telefono_destinatario": normalizar_telefono_chile(
-            request.form.get("telefono_destinatario", "").strip()
+        "telefono_codigo_pais": telefono_codigo_pais,
+        "telefono_destinatario": normalizar_telefono_operativo(
+            request.form.get("telefono_destinatario", "").strip(),
+            telefono_codigo_pais,
         ),
         "correo_destinatario": normalizar_correo_operativo(request.form.get("correo_destinatario", "").strip()),
         "observacion": normalizar_observacion_operativa(request.form.get("observacion", "").strip()),
@@ -66,8 +70,8 @@ def _validar_form_envio(data):
     if not rut_operativo_valido(data["rut_destinatario"]):
         return None, None, "Debes ingresar RUT del destinatario o 0 si no fue informado"
 
-    if not telefono_chile_valido(data["telefono_destinatario"]):
-        return None, None, "El telefono debe tener 8 o 9 digitos"
+    if not telefono_operativo_valido(data["telefono_destinatario"], data["telefono_codigo_pais"]):
+        return None, None, "El telefono debe tener 8 o 9 digitos, o codigo internacional completo"
 
     if data["correo_destinatario"] and not email_valido(data["correo_destinatario"]):
         return None, None, "El correo del destinatario no tiene un formato valido"
@@ -187,4 +191,10 @@ def registrar_rutas_envios(app):
             return redirect("/envios")
 
         db.close()
-        return render_template("editar_envio.html", envio=envio)
+        telefono_codigo_pais, telefono_numero = separar_telefono_operativo(envio.e_telefono_destinatario)
+        return render_template(
+            "editar_envio.html",
+            envio=envio,
+            telefono_codigo_pais=telefono_codigo_pais,
+            telefono_numero=telefono_numero,
+        )

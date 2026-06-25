@@ -23,6 +23,7 @@ def main():
 
     for ruta in [
         "/",
+        "/crear_envio",
         "/nuevo_envio",
         "/carga_masiva",
         "/catalogos",
@@ -30,6 +31,7 @@ def main():
         "/envios",
         "/en_proceso",
         "/historico",
+        "/reportes",
         "/of_correo",
     ]:
         response = client.get(ruta)

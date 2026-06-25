@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Administrador{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+{% include "admin/_header_tabs.html" %}
+{% include "admin/_usuarios.html" %}
+{% include "admin/_seguridad.html" %}
+{% include "admin/_auditoria.html" %}
+{% include "admin/_modals.html" %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}

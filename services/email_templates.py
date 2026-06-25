@@ -101,7 +101,7 @@ def correo_funcionario_html(lote, remitente, envios, fecha_texto):
     return email_shell_html("Tus envios fueron procesados", "L'Oreal Mensajeria", contenido)
 
 
-def correo_respaldo_mensajeria_html(lote, envios):
+def correo_respaldo_mensajeria_html(lote, envios, responsable="Usuario no identificado"):
     filas = "".join(
         "<tr>"
         f"<td style=\"padding:9px;border-bottom:1px solid #eef2f6;\">{html_escape(envio.e_remitente)}</td>"
@@ -126,6 +126,10 @@ def correo_respaldo_mensajeria_html(lote, envios):
             <div style="color:#667085;font-size:12px;font-weight:800;">Total</div>
             <div style="font-size:16px;font-weight:900;margin-top:4px;">{len(envios)} envio(s)</div>
           </div>
+        </div>
+        <div style="background:#f8fafb;border:1px solid #e8ebef;border-radius:8px;padding:14px;margin-bottom:18px;">
+          <div style="color:#667085;font-size:12px;font-weight:800;">Responsable de la gestion</div>
+          <div style="font-size:15px;font-weight:900;margin-top:4px;">{html_escape(responsable)}</div>
         </div>
         <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
           <thead>
@@ -172,7 +176,7 @@ def correo_destinatario_html(envio):
     return email_shell_html("Tienes un envio en curso", "Notificacion de entrega", contenido, "#0f5132")
 
 
-def correo_eliminacion_historico_html(total, detalle_filtros, fecha_respaldo):
+def correo_eliminacion_historico_html(total, detalle_filtros, fecha_respaldo, responsable="Usuario no identificado"):
     filtros_html = "".join(
         f"<li style=\"margin-bottom:6px;\">{html_escape(linea.replace('- ', '', 1))}</li>"
         for linea in detalle_filtros.splitlines()
@@ -202,6 +206,10 @@ def correo_eliminacion_historico_html(total, detalle_filtros, fecha_respaldo):
               <div style="font-size:15px;font-weight:900;margin-top:4px;">{html_escape(fecha_respaldo)}</div>
             </div>
           </div>
+          <div style="background:#fff1f2;border:1px solid #fecdd3;border-radius:8px;padding:14px;margin-bottom:18px;">
+            <div style="color:#991b1b;font-size:12px;font-weight:800;">Responsable de la eliminacion</div>
+            <div style="font-size:15px;font-weight:900;margin-top:4px;">{html_escape(responsable)}</div>
+          </div>
           <div style="background:#f8fafb;border:1px solid #e8ebef;border-radius:8px;padding:16px;">
             <div style="color:#667085;font-size:12px;font-weight:900;text-transform:uppercase;margin-bottom:8px;">Filtros aplicados</div>
             <ul style="margin:0;padding-left:18px;color:#344054;">{filtros_html}</ul>
@@ -215,3 +223,38 @@ def correo_eliminacion_historico_html(total, detalle_filtros, fecha_respaldo):
     </body>
     </html>
     """
+
+
+def correo_anulacion_historico_html(total, motivo, fecha_respaldo, responsable="Usuario no identificado"):
+    contenido = f"""
+        <p style="margin:0 0 16px;color:#344054;line-height:1.5;">
+          Se marcaron registros historicos como anulados en el Portal Operativo. Esta accion no elimina datos; conserva trazabilidad y deja respaldo adjunto.
+        </p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+          <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:14px;">
+            <div style="color:#9a3412;font-size:12px;font-weight:800;">Registros anulados</div>
+            <div style="font-size:22px;font-weight:900;margin-top:4px;">{total}</div>
+          </div>
+          <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:14px;">
+            <div style="color:#9a3412;font-size:12px;font-weight:800;">Fecha respaldo</div>
+            <div style="font-size:15px;font-weight:900;margin-top:4px;">{html_escape(fecha_respaldo)}</div>
+          </div>
+        </div>
+        <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:14px;margin-bottom:18px;">
+          <div style="color:#9a3412;font-size:12px;font-weight:800;">Responsable de la anulacion</div>
+          <div style="font-size:15px;font-weight:900;margin-top:4px;">{html_escape(responsable)}</div>
+        </div>
+        <div style="background:#f8fafb;border:1px solid #e8ebef;border-radius:8px;padding:16px;">
+          <div style="color:#667085;font-size:12px;font-weight:900;text-transform:uppercase;margin-bottom:8px;">Motivo de anulacion</div>
+          <p style="margin:0;color:#344054;line-height:1.5;">{html_escape(motivo)}</p>
+        </div>
+        <p style="margin:18px 0 0;color:#667085;font-size:13px;line-height:1.45;">
+          Se adjunta Excel con el detalle de los registros anulados.
+        </p>
+    """
+    return email_shell_html(
+        "Respaldo de anulacion historica",
+        "Control de trazabilidad",
+        contenido,
+        "#9a3412",
+    )

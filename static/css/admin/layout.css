@@ -1,0 +1,220 @@
+.admin-page {
+    display: grid;
+    gap: 16px;
+}
+
+.admin-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    min-height: 150px;
+    padding: 28px 30px;
+}
+
+.admin-kicker {
+    display: inline-flex;
+    margin-bottom: 7px;
+    color: var(--brand-gold);
+    font-size: 0.74rem;
+    font-weight: 950;
+    text-transform: uppercase;
+}
+
+.admin-hero h1,
+.admin-card-head h2,
+.admin-panel-head h2 {
+    margin: 0;
+    color: #111827;
+    font-weight: 950;
+    letter-spacing: 0;
+}
+
+.admin-hero h1 {
+    font-size: clamp(2rem, 3vw, 3rem);
+}
+
+.admin-hero p,
+.admin-card-head p,
+.admin-panel-head p {
+    margin: 6px 0 0;
+    color: #667085;
+}
+
+.admin-primary-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 46px;
+    padding: 0 18px;
+    color: #fff;
+    background: linear-gradient(180deg, #172033, #0f1724);
+    border: 0;
+    border-radius: 999px;
+    font-weight: 900;
+    box-shadow: 0 15px 28px rgba(15, 23, 42, 0.18);
+}
+
+.admin-primary-action svg,
+.icon-action svg {
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+}
+
+.admin-primary-action svg {
+    width: 20px;
+    height: 20px;
+    color: var(--brand-gold);
+}
+
+.admin-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.admin-tabs a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 74px;
+    padding: 14px 16px;
+    color: #475467;
+    text-decoration: none;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+}
+
+.admin-tabs a:hover,
+.admin-tabs a.active {
+    color: #111827;
+    background: linear-gradient(180deg, #fffdf8, #fff7ea);
+    border-color: #ead9b6;
+    box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
+}
+
+.admin-tabs svg {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    color: var(--brand-gold);
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+}
+
+.admin-tabs span,
+.admin-tabs small {
+    display: block;
+}
+
+.admin-tabs span {
+    color: #111827;
+    font-weight: 950;
+}
+
+.admin-tabs small {
+    margin-top: 2px;
+    color: #667085;
+    font-size: 0.76rem;
+    font-weight: 750;
+}
+
+.admin-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.admin-metrics article {
+    min-height: 104px;
+    padding: 18px;
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+}
+
+.admin-metrics span,
+.admin-metrics small {
+    display: block;
+    color: #667085;
+    font-size: 0.8rem;
+    font-weight: 800;
+}
+
+.admin-metrics strong {
+    display: block;
+    margin: 8px 0;
+    color: #111827;
+    font-size: 2rem;
+    line-height: 1;
+    font-weight: 950;
+}
+
+.admin-events-panel {
+    padding: 18px;
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.07);
+}
+
+.admin-events-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 10px;
+}
+
+.admin-event-row {
+    display: grid;
+    grid-template-columns: 12px minmax(0, 1fr);
+    gap: 10px;
+    min-height: 84px;
+    padding: 13px;
+    background: #fbfcfd;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+}
+
+.event-dot {
+    width: 10px;
+    height: 10px;
+    margin-top: 5px;
+    background: var(--brand-gold);
+    border-radius: 50%;
+}
+
+.event-usuario {
+    background: #175cd3;
+}
+
+.event-seguridad {
+    background: #dc2626;
+}
+
+.event-reporte {
+    background: #16a34a;
+}
+
+.admin-event-row strong,
+.admin-event-row small {
+    display: block;
+}
+
+.admin-event-row strong {
+    color: #111827;
+    font-size: 0.9rem;
+    font-weight: 950;
+}
+
+.admin-event-row small {
+    color: #667085;
+    font-size: 0.76rem;

@@ -131,7 +131,7 @@
                         >
                     </div>
 
-                    <div class="split-fields">
+                    <div class="split-fields phone-split-fields">
                         <div>
                             <label class="form-label">Centro de costo</label>
                             <input
@@ -204,38 +204,40 @@
                         <div class="list-group autocomplete-list"></div>
                     </div>
 
-                    <div class="split-fields">
-                        <div>
-                            <label class="form-label">RUT destinatario</label>
+                    <div>
+                        <label class="form-label">RUT destinatario</label>
+                        <input
+                            type="text"
+                            class="form-control form-control-sm"
+                            name="rut_destinatario"
+                            id="rut_destinatario"
+                            value="{{ envio.e_rut_destinatario or '' }}"
+                            maxlength="10"
+                            inputmode="text"
+                            placeholder="0 si no fue informado"
+                            required
+                        >
+                    </div>
+
+                    <div>
+                        <label class="form-label">Telefono</label>
+                        <div class="input-group input-group-sm phone-input-group">
+                            <select class="form-select country-code-select" name="telefono_codigo_pais" id="telefono_codigo_pais" aria-label="Codigo pais telefono">
+                                {% for codigo, etiqueta in [('56', '+56 CL'), ('54', '+54 AR'), ('51', '+51 PE'), ('57', '+57 CO'), ('52', '+52 MX'), ('1', '+1 US'), ('55', '+55 BR'), ('598', '+598 UY')] %}
+                                    <option value="{{ codigo }}" {% if telefono_codigo_pais == codigo %}selected{% endif %}>{{ etiqueta }}</option>
+                                {% endfor %}
+                            </select>
                             <input
                                 type="text"
-                                class="form-control form-control-sm"
-                                name="rut_destinatario"
-                                id="rut_destinatario"
-                                value="{{ envio.e_rut_destinatario or '' }}"
-                                maxlength="10"
-                                inputmode="text"
-                                placeholder="0 si no fue informado"
+                                class="form-control"
+                                name="telefono_destinatario"
+                                id="telefono_destinatario"
+                                value="{{ telefono_numero or '' }}"
+                                maxlength="20"
+                                inputmode="numeric"
+                                placeholder="999999999"
                                 required
                             >
-                        </div>
-
-                        <div>
-                            <label class="form-label">Telefono</label>
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text">+56</span>
-                                <input
-                                    type="text"
-                                    class="form-control"
-                                    name="telefono_destinatario"
-                                    id="telefono_destinatario"
-                                    value="{{ envio.e_telefono_destinatario or '' }}"
-                                    maxlength="20"
-                                    inputmode="numeric"
-                                    placeholder="999999999"
-                                    required
-                                >
-                            </div>
                         </div>
                     </div>
 

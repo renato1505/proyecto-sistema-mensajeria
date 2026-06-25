@@ -15,6 +15,10 @@ La prioridad actual no es agregar muchas funciones nuevas, sino consolidar estab
 - Correos diferenciados para funcionarios, destinatarios, respaldo interno y eliminacion.
 - Pantalla de exito post OF con rango de OF copiable.
 - Login interno sin registro publico.
+- Administracion de usuarios, areas, roles, bloqueos y recuperacion de clave.
+- Auditoria consultable/exportable para acciones sensibles.
+- Reportes de excepciones con movimientos, evidencias, PDF y respaldo por correo.
+- Permisos por rol para separar visita, usuario, supervisor y administrador.
 - CSRF global en formularios.
 - Hora centralizada en zona `America/Santiago`.
 - Documentacion operativa y tecnica existente.
@@ -24,13 +28,15 @@ La prioridad actual no es agregar muchas funciones nuevas, sino consolidar estab
 ### Alta prioridad
 
 - No hay migraciones formales versionadas. `database/schema.py` cubre columnas operativas, pero a futuro conviene Alembic.
-- No existe auditoria dedicada para acciones criticas como anular, eliminar, cancelar avisos o procesar OF.
 - El envio de correos depende de Gmail SMTP/IMAP. Funciona, pero en cloud puede ser menos robusto que un proveedor transaccional.
 - Falta decidir formalmente si la eliminacion de tildes sera una regla permanente del negocio o una normalizacion solo operativa.
+- Los intentos fallidos de login se mantienen en memoria del proceso; tras reinicio de Render se limpian.
+- Las areas base estan definidas, pero los modulos Recepcion y Seguridad aun no tienen flujos reales.
 
 ### Prioridad media
 
 - Algunas rutas concentran varias responsabilidades, especialmente `routes/starken_lotes.py` y `services/avisos.py`.
+- `routes/auth.py`, `static/css/global.css` e `static/css/index.css` son los archivos mas cargados y conviene seguir separandolos por responsabilidad.
 - La documentacion debe mantenerse sincronizada despues de cada cambio grande.
 - Falta cobertura unitaria de validaciones, generacion CSV y procesamiento OF.
 - El modulo Mensajeria ya esta maduro, pero la expansion a Recepcion/Seguridad requiere separar menus y permisos por modulo.
@@ -47,16 +53,12 @@ La prioridad actual no es agregar muchas funciones nuevas, sino consolidar estab
    - generacion CSV Starken;
    - agrupacion/envio de avisos;
    - filtros de historico.
-2. Agregar auditoria en base de datos:
-   - usuario;
-   - accion;
-   - lote/envio;
-   - fecha Chile;
-   - detalle.
+2. Persistir politicas/intentos de seguridad en base de datos si se requiere control permanente despues de reinicios.
 3. Revisar impacto funcional de la normalizacion automatica sobre nombres y catalogos historicos.
 4. Evaluar proveedor transaccional para correos si el volumen crece.
 5. Mantener `.env.example` sin secretos y documentar cada variable nueva.
 6. Antes de expandir a otros modulos, definir estructura de navegacion y permisos por area.
+7. Convertir novedades del portal en una seccion administrable cuando ya exista flujo formal de publicaciones.
 
 ## Criterio de calidad para futuros cambios
 
@@ -72,6 +74,7 @@ Ejecutar:
 
 ```powershell
 python -m compileall -q main.py config database routes services scripts tests
+python -m unittest discover -s tests -p "test_*.py"
 python tests\smoke_check.py
 ```
 
@@ -84,3 +87,6 @@ Luego probar manualmente:
 - enviar/cancelar avisos;
 - anular registro historico;
 - eliminar registro de prueba con respaldo por correo.
+- crear/anular/eliminar reporte de prueba;
+- probar usuario visita, usuario normal, supervisor y admin;
+- validar que respaldos sensibles muestran responsable.

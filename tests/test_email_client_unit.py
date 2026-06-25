@@ -10,7 +10,12 @@ from unittest.mock import MagicMock, patch
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_DIR))
 
-from routes.auth import _destino_login_seguro
+from routes.auth import (
+    UsuarioAcceso,
+    _destino_login_seguro,
+    obtener_usuarios_configurados,
+    verificar_clave_usuario,
+)
 from services import avisos, email_client
 from services.email_templates import correo_destinatario_html
 from utils.texto import (
@@ -21,7 +26,7 @@ from utils.texto import (
     normalizar_orden_flete,
     normalizar_texto_operativo,
 )
-from utils.validaciones import normalizar_telefono_chile
+from utils.validaciones import normalizar_telefono_chile, normalizar_telefono_operativo, telefono_operativo_valido
 
 
 class EmailClientTests(unittest.TestCase):
@@ -126,6 +131,43 @@ class EmailClientTests(unittest.TestCase):
                 email_client.enviar_mensaje(msg)
 
 
+class AuthTests(unittest.TestCase):
+    def test_login_acepta_hash_y_clave_legacy(self):
+        from werkzeug.security import generate_password_hash
+
+        hash_clave = generate_password_hash("clave-segura")
+
+        self.assertTrue(verificar_clave_usuario("clave-segura", hash_clave))
+        self.assertFalse(verificar_clave_usuario("otra", hash_clave))
+        self.assertTrue(verificar_clave_usuario("legacy", "legacy"))
+        self.assertFalse(verificar_clave_usuario("legacy", "otra"))
+
+    def test_app_users_soporta_area_y_formato_legacy(self):
+        with patch(
+            "routes.auth.APP_USERS",
+            "admin|admin|admin|clave0;fcespedes|mensajeria|clave1;recepcion:clave2",
+        ), patch("routes.auth.APP_ACCESS_PASSWORD", ""):
+            usuarios = obtener_usuarios_configurados()
+
+        self.assertEqual(usuarios["admin"].area, "admin")
+        self.assertEqual(usuarios["admin"].rol, "admin")
+        self.assertEqual(usuarios["admin"].clave, "clave0")
+        self.assertEqual(usuarios["fcespedes"].area, "mensajeria")
+        self.assertEqual(usuarios["fcespedes"].rol, "usuario")
+        self.assertEqual(usuarios["fcespedes"].clave, "clave1")
+        self.assertEqual(usuarios["recepcion"].area, "mensajeria")
+        self.assertEqual(usuarios["recepcion"].clave, "clave2")
+
+    def test_usuario_conserva_area_y_rol_configurados(self):
+        usuario = UsuarioAcceso(usuario="fcespedes", clave="x", area="mensajeria", rol="usuario")
+        admin = UsuarioAcceso(usuario="admin", clave="x", area="admin", rol="admin")
+
+        self.assertEqual(usuario.area, "mensajeria")
+        self.assertEqual(usuario.rol, "usuario")
+        self.assertEqual(admin.area, "admin")
+        self.assertEqual(admin.rol, "admin")
+
+
 class AvisosTests(unittest.TestCase):
     def test_enviar_correo_usa_emisor_configurado(self):
         mensajes = []
@@ -193,6 +235,13 @@ class ValidacionesTests(unittest.TestCase):
         self.assertEqual(normalizar_telefono_chile("56 9 8508 9918"), "985089918")
         self.assertEqual(normalizar_telefono_chile("56946554638"), "946554638")
 
+    def test_telefono_operativo_acepta_internacional_con_codigo(self):
+        self.assertEqual(normalizar_telefono_operativo("+54 9 11 1234 5678"), "5491112345678")
+        self.assertEqual(normalizar_telefono_operativo("+56 9 3190 5658"), "931905658")
+        self.assertTrue(telefono_operativo_valido("+54 9 11 1234 5678"))
+        self.assertTrue(telefono_operativo_valido("931905658"))
+        self.assertFalse(telefono_operativo_valido("1234"))
+
     def test_normalizar_texto_operativo_quita_tildes(self):
         self.assertEqual(normalizar_texto_operativo("Región Metropolitana de Santiago"), "Region Metropolitana de Santiago")
         self.assertEqual(normalizar_texto_operativo("Sofía Larrea"), "Sofia Larrea")
@@ -205,6 +254,7 @@ class ValidacionesTests(unittest.TestCase):
     def test_normalizar_nombre_remitente_usa_nombre_corto(self):
         self.assertEqual(normalizar_nombre_remitente("Carolina Alejandra Jeria Ramirez"), "Carolina Jeria")
         self.assertEqual(normalizar_nombre_remitente("Carolina Jeria"), "Carolina Jeria")
+        self.assertEqual(normalizar_nombre_remitente("Juan Carlos Perez"), "Juan Perez")
         self.assertEqual(normalizar_nombre_remitente("maria jose gonzalez soto"), "Maria Gonzalez")
 
     def test_normalizar_correo_operativo_deja_minusculas(self):

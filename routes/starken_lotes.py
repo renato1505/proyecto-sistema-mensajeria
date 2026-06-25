@@ -1,7 +1,7 @@
 import io
 import logging
 
-from flask import flash, redirect, render_template, request, send_file
+from flask import flash, redirect, render_template, request, send_file, session
 
 from database.conexion import SessionLocal
 from database.modelos import Envio
@@ -34,6 +34,14 @@ from utils.fechas import ahora_chile
 logger = logging.getLogger(__name__)
 
 
+def _responsable_actual():
+    return (
+        session.get("usuario_display")
+        or session.get("usuario_nombre")
+        or "Usuario no identificado"
+    )
+
+
 def _enviar_respaldo_post_of(db, lote, resultado):
     """Despues de procesar OF, activa avisos y envia respaldo interno a Mensajeria."""
     if resultado.get("total_ok", 0) <= 0:
@@ -51,7 +59,7 @@ def _enviar_respaldo_post_of(db, lote, resultado):
 
     envios = obtener_envios_lote(db, lote)
     try:
-        enviar_respaldo_mensajeria(lote, envios)
+        enviar_respaldo_mensajeria(lote, envios, _responsable_actual())
         flash("Respaldo completo del lote enviado a Mensajeria.", "success")
     except Exception as e:
         logger.exception("No se pudo enviar respaldo automatico del lote %s", lote)

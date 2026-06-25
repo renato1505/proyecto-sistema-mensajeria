@@ -96,8 +96,31 @@ function setValue(selector, value) {
     }
 }
 
-function normalizarTelefonoChileInput(valor) {
-    let telefono = String(valor || "").replace(/\D/g, "");
+const CODIGOS_TELEFONO_OPERATIVO = ["598", "56", "54", "51", "57", "52", "55", "1"];
+
+function normalizarTelefonoOperativoInput(valor, codigoPais = "56", selectCodigo = null) {
+    const texto = String(valor || "").trim();
+    let telefono = texto.replace(/\D/g, "");
+
+    if (texto.startsWith("+")) {
+        const codigoDetectado = CODIGOS_TELEFONO_OPERATIVO.find((codigo) => telefono.startsWith(codigo));
+        if (codigoDetectado) {
+            if (selectCodigo) selectCodigo.value = codigoDetectado;
+            codigoPais = codigoDetectado;
+            telefono = telefono.slice(codigoDetectado.length);
+        }
+    }
+
+    if (codigoPais !== "56") {
+        if (telefono.startsWith(codigoPais)) {
+            telefono = telefono.slice(codigoPais.length);
+        }
+        if (telefono.startsWith("0")) {
+            telefono = telefono.slice(1);
+        }
+        return telefono.slice(0, 15);
+    }
+
     if (telefono.startsWith("56") && telefono.length >= 10) {
         telefono = telefono.slice(2);
     }
@@ -109,9 +132,22 @@ function normalizarTelefonoChileInput(valor) {
 
 function inicializarTelefonosOperativos() {
     document.querySelectorAll("input[name$='telefono_destinatario']").forEach((input) => {
+        const group = input.closest(".input-group");
+        const selectCodigo = group ? group.querySelector("select[name='telefono_codigo_pais']") : null;
+
         input.addEventListener("input", function () {
-            this.value = normalizarTelefonoChileInput(this.value);
+            this.value = normalizarTelefonoOperativoInput(
+                this.value,
+                selectCodigo?.value || "56",
+                selectCodigo
+            );
         });
+
+        if (selectCodigo) {
+            selectCodigo.addEventListener("change", function () {
+                input.value = normalizarTelefonoOperativoInput(input.value, this.value, this);
+            });
+        }
     });
 }
 
@@ -152,7 +188,20 @@ function inicializarAutocompletadosOperativos() {
                 setValue(input.dataset.direccionTarget, destinatario.direccion);
                 setValue(input.dataset.comunaTarget, destinatario.comuna);
                 setValue(input.dataset.regionTarget, destinatario.region);
-                setValue(input.dataset.telefonoTarget, destinatario.telefono);
+                const telefonoInput = input.dataset.telefonoTarget
+                    ? document.querySelector(input.dataset.telefonoTarget)
+                    : null;
+                const telefonoGroup = telefonoInput ? telefonoInput.closest(".input-group") : null;
+                const selectCodigo = telefonoGroup
+                    ? telefonoGroup.querySelector("select[name='telefono_codigo_pais']")
+                    : null;
+                if (telefonoInput) {
+                    telefonoInput.value = normalizarTelefonoOperativoInput(
+                        destinatario.telefono,
+                        selectCodigo?.value || "56",
+                        selectCodigo
+                    );
+                }
                 setValue(input.dataset.correoTarget, destinatario.correo);
                 setValue(input.dataset.observacionTarget, destinatario.observacion);
             }

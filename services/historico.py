@@ -11,7 +11,7 @@ from sqlalchemy import func
 from config.settings import CORREO_EMISOR, CORREO_RESPALDO_MENSAJERIA
 from database.modelos import Envio
 from services.email_client import enviar_mensaje, proveedor_correo_configurado
-from services.email_templates import correo_eliminacion_historico_html
+from services.email_templates import correo_anulacion_historico_html, correo_eliminacion_historico_html
 from utils.fechas import fecha_hora_chile_texto, timestamp_archivo_chile
 
 
@@ -284,11 +284,95 @@ def destinatarios_respaldo_historico():
     return destinos
 
 
+def destinatarios_respaldo_anulacion(envios):
+    destinos = []
+
+    for correo in (CORREO_EMISOR,):
+        correo = (correo or "").strip()
+        if correo and correo.lower() not in {destino.lower() for destino in destinos}:
+            destinos.append(correo)
+
+    for envio in envios:
+        correo = (envio.e_correo_remitente or "").strip()
+        if correo and correo.lower() not in {destino.lower() for destino in destinos}:
+            destinos.append(correo)
+
+    return destinos
+
+
 def correo_respaldo_historico_configurado():
     return bool(destinatarios_respaldo_historico() and proveedor_correo_configurado())
 
 
-def enviar_respaldo_eliminacion_historico(envios, filtros=None):
+def correo_respaldo_anulacion_configurado(envios):
+    return bool(destinatarios_respaldo_anulacion(envios) and proveedor_correo_configurado())
+
+
+def enviar_respaldo_anulacion_historico(envios, motivo, responsable="Usuario no identificado"):
+    """Envia respaldo Excel al anular OF historicas."""
+    if not correo_respaldo_anulacion_configurado(envios):
+        raise RuntimeError("Faltan credenciales o destinatarios para respaldo de anulacion.")
+
+    timestamp = timestamp_archivo_chile()
+    nombre_archivo = f"respaldo_historico_anulado_{timestamp}.xlsx"
+    fecha_respaldo = fecha_hora_chile_texto()
+    destinatarios_enviados = []
+
+    def _enviar(destino, envios_destino, sufijo=""):
+        archivo = (
+            nombre_archivo
+            if not sufijo
+            else f"respaldo_historico_anulado_{sufijo}_{timestamp}.xlsx"
+        )
+        msg = EmailMessage()
+        msg["Subject"] = f"Respaldo anulacion historico - {len(envios_destino)} registro(s)"
+        msg["From"] = CORREO_EMISOR
+        msg["To"] = destino
+        msg.set_content(
+            "Se marcaron registros historicos como anulados en el Portal Operativo.\n\n"
+            f"Total de registros anulados: {len(envios_destino)}\n"
+            f"Fecha de respaldo: {fecha_respaldo}\n"
+            f"Responsable: {responsable}\n"
+            f"Motivo: {motivo}\n\n"
+            "Se adjunta respaldo Excel de los registros anulados.\n\n"
+            "Equipo de Mensajeria\n"
+        )
+        msg.add_alternative(
+            correo_anulacion_historico_html(
+                len(envios_destino),
+                motivo,
+                fecha_respaldo,
+                responsable,
+            ),
+            subtype="html",
+        )
+        msg.add_attachment(
+            generar_excel_historico_bytes(envios_destino),
+            maintype="application",
+            subtype="vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            filename=archivo,
+        )
+        enviar_mensaje(msg)
+        destinatarios_enviados.append(destino)
+
+    correo_sistema = (CORREO_EMISOR or "").strip()
+    if correo_sistema:
+        _enviar(correo_sistema, envios)
+
+    envios_por_remitente = {}
+    for envio in envios:
+        correo = (envio.e_correo_remitente or "").strip().lower()
+        if not correo or correo == correo_sistema.lower():
+            continue
+        envios_por_remitente.setdefault(correo, []).append(envio)
+
+    for indice, (correo, envios_remitente) in enumerate(envios_por_remitente.items(), start=1):
+        _enviar(correo, envios_remitente, f"remitente_{indice}")
+
+    return nombre_archivo, destinatarios_enviados
+
+
+def enviar_respaldo_eliminacion_historico(envios, filtros=None, responsable="Usuario no identificado"):
     """Envia respaldo Excel antes de borrar historico en entornos cloud."""
     if not correo_respaldo_historico_configurado():
         raise RuntimeError("Faltan credenciales o destinatarios para respaldo historico.")
@@ -317,6 +401,7 @@ def enviar_respaldo_eliminacion_historico(envios, filtros=None):
         "Se eliminaron registros del historico del Portal Operativo.\n\n"
         f"Total de registros eliminados: {len(envios)}\n"
         f"Fecha de respaldo: {fecha_hora_chile_texto()}\n\n"
+        f"Responsable: {responsable}\n\n"
         "Filtros aplicados:\n"
         f"{detalle_filtros}\n\n"
         "Se adjunta respaldo Excel de los registros eliminados.\n\n"
@@ -327,6 +412,7 @@ def enviar_respaldo_eliminacion_historico(envios, filtros=None):
             len(envios),
             detalle_filtros,
             fecha_hora_chile_texto(),
+            responsable,
         ),
         subtype="html",
     )

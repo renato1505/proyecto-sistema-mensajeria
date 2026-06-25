@@ -33,16 +33,51 @@ Este documento resume como esta organizado el Portal Operativo. Actualmente el m
 - `routes/catalogos.py`: pantalla administrativa de remitentes y destinatarios.
 - `routes/catalogos_ajax.py`: autocompletados y guardado rapido desde formularios operativos.
 - `routes/avisos.py`: pantallas y acciones para avisos a funcionarios/destinatarios y cancelacion de avisos.
+- `routes/auth.py`: login, sesion, vencimiento por inactividad, bloqueo temporal por intentos fallidos y carga de usuarios.
+- `routes/admin.py`: administracion de usuarios, areas, auditoria y seguridad de acceso.
 - `services/catalogos_operativos.py`: reglas compartidas de catalogos, validaciones y persistencia.
 - `services/historico.py`: filtros, queries, exportacion y respaldo del historico.
 - `services/starken.py`: formato CSV compatible con Starken.
 - `services/of_processor.py`: validacion y aplicacion de archivos OF.
 - `services/correo_of.py`: lectura asistida de correos con OF.
 - `services/avisos.py`: generacion de Excel y envio de avisos/respaldo.
+- `services/auditoria.py`: registro y consulta de acciones sensibles del portal.
+- `services/permisos.py`: matriz central de permisos por area/rol y proteccion de rutas.
 - `services/carga_masiva.py`: plantilla Excel, validacion y construccion de envios masivos.
 - `services/lotes.py`: reglas de cruce entre lotes, CSV y correos OF.
 - `services/normalizacion_operativa.py`: limpieza de datos operativos existentes al iniciar la app.
 - `utils/texto.py`: normalizacion de nombres, textos y ordenes de flete.
+
+## Separacion de pantallas grandes
+
+Para mejorar mantenibilidad, las pantallas con mas carga visual se separan en parciales.
+
+### Administracion
+
+- `templates/admin.html`: orquestador principal.
+- `templates/admin/_header_tabs.html`: hero y navegacion interna.
+- `templates/admin/_usuarios.html`: metricas, areas y tarjetas de usuarios.
+- `templates/admin/_seguridad.html`: bloqueos, recuperacion, accesos y permisos.
+- `templates/admin/_auditoria.html`: filtros, listado y exportacion.
+- `templates/admin/_modals.html`: modales de areas, usuarios, accesos y recuperacion.
+- `routes/admin.py`: panel principal y registro de submodulos.
+- `routes/admin_usuarios.py`: endpoints de usuarios y areas.
+- `routes/admin_seguridad.py`: endpoints de bloqueos, politica de acceso y recuperacion de clave.
+- `routes/admin_auditoria.py`: exportacion de auditoria.
+- `routes/admin_helpers.py`: validaciones compartidas de permisos admin y confirmacion de usuario.
+- `services/admin_context.py`: construye el contexto completo del panel para que `routes/admin.py` no concentre consultas visuales.
+- `static/css/admin.css`: indice de imports para estilos de Administracion.
+- `static/css/admin/*.css`: estilos separados por layout, usuarios, seguridad, auditoria y responsive.
+
+### Reportes
+
+- `templates/reportes.html`: orquestador principal.
+- `templates/reportes/_hero.html`: cabecera y metricas.
+- `templates/reportes/_lista.html`: grupos, casos, detalle, acciones y modales de caso.
+- `templates/reportes/_formulario.html`: creacion de nuevo reporte.
+- `static/js/reportes.js`: modales, autocompletados y apertura directa por hash.
+- `static/css/reportes.css`: indice de imports para estilos de Reportes.
+- `static/css/reportes/*.css`: estilos separados por layout, lista, formularios, modales y responsive.
 
 ## Estados relevantes
 
@@ -74,6 +109,11 @@ Este documento resume como esta organizado el Portal Operativo. Actualmente el m
 - Los avisos a funcionarios son manuales/asistidos para evitar correos prematuros.
 - Los avisos a destinatarios solo se envian si existe correo destinatario registrado.
 - La anulacion de OF no elimina datos; mantiene trazabilidad.
+- El login bloquea temporalmente una combinacion usuario/IP tras varios intentos fallidos.
+- El administrador puede ver y liberar bloqueos temporales desde `/admin`.
+- Las acciones sensibles quedan registradas en la tabla `auditoria`.
+- Los permisos de menu y rutas criticas se centralizan en `services/permisos.py`.
+- Los intentos de acceso sin permiso se registran como `permiso_denegado`.
 - `.env`, respaldos, logs y archivos Excel reales no deben subirse a Git.
 
 ## Pendientes de orden tecnico
@@ -81,4 +121,4 @@ Este documento resume como esta organizado el Portal Operativo. Actualmente el m
 - Agregar pruebas unitarias para `services/of_processor.py`, `services/avisos.py` y `services/starken.py`.
 - Evaluar migraciones formales con Alembic cuando la base quede instalada en otro equipo.
 - Revisar si conviene dividir `services/carga_masiva.py` en plantilla, lectura y validacion cuando crezcan las reglas.
-- Evaluar una estrategia de auditoria en base de datos para anular, eliminar y procesar lotes con trazabilidad formal.
+- Persistir bloqueos de login en base de datos si se requiere trazabilidad de seguridad posterior a reinicios.

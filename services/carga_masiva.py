@@ -21,9 +21,9 @@ from utils.texto import (
 )
 from utils.validaciones import (
     email_valido,
-    normalizar_telefono_chile,
+    normalizar_telefono_operativo,
     rut_operativo_valido,
-    telefono_chile_valido,
+    telefono_operativo_valido,
 )
 
 
@@ -107,7 +107,7 @@ def _texto(valor):
 
 
 def _telefono(valor):
-    return normalizar_telefono_chile(_texto(valor))
+    return normalizar_telefono_operativo(_texto(valor))
 
 
 def _remitente_desde_correo(db, nombre, correo):
@@ -452,8 +452,8 @@ def validar_registros_carga_masiva(registros, db):
         if data["rut_destinatario"] and not rut_operativo_valido(data["rut_destinatario"]):
             errores.append("rut_destinatario: ingresa RUT o 0")
 
-        if data["telefono_destinatario"] and not telefono_chile_valido(data["telefono_destinatario"]):
-            errores.append("telefono_destinatario: debe tener 8 o 9 digitos")
+        if data["telefono_destinatario"] and not telefono_operativo_valido(data["telefono_destinatario"]):
+            errores.append("telefono_destinatario: debe tener 8 o 9 digitos, o codigo internacional completo")
 
         if data["division"] and data["division"] not in DIVISIONES:
             errores.append("division: valor no permitido")

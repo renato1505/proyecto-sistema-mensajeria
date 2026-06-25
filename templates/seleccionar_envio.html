@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Envios{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/seleccionar_envio.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="shipment-hub">
+    <section class="shipment-hero">
+        <span>Operacion de envios</span>
+        <h1>Crear nuevo pedido</h1>
+        <p>Selecciona el flujo segun la cantidad de solicitudes que necesitas registrar.</p>
+    </section>
+
+    <section class="shipment-options" aria-label="Tipos de envio">
+        <a href="/nuevo_envio" class="shipment-option primary">
+            <div class="option-icon">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M22 2 11 13"></path><path d="m22 2-7 20-4-9-9-4Z"></path></svg>
+            </div>
+            <div>
+                <span>Envio manual</span>
+                <h2>Un pedido</h2>
+                <p>Registra una solicitud individual con remitente, destinatario, carga y observaciones.</p>
+            </div>
+            <strong>Ingresar</strong>
+        </a>
+
+        <a href="/carga_masiva" class="shipment-option">
+            <div class="option-icon">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m17 8-5-5-5 5"></path><path d="M12 3v12"></path></svg>
+            </div>
+            <div>
+                <span>Envio masivo</span>
+                <h2>Varios pedidos</h2>
+                <p>Carga una planilla estandarizada y revisa los registros antes de procesarlos.</p>
+            </div>
+            <strong>Cargar</strong>
+        </a>
+    </section>
+</div>
+{% endblock %}

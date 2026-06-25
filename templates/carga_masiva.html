@@ -276,13 +276,9 @@
     {% endif %}
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
 <script src="{{ url_for('static', filename='js/autocomplete_operativo.js') }}"></script>
-<script>
-function toggleDetalleCarga(id) {
-    const fila = document.getElementById(id);
-    if (fila) {
-        fila.classList.toggle("d-none");
-    }
-}
-</script>
+<script src="{{ url_for('static', filename='js/carga_masiva.js') }}"></script>
 {% endblock %}

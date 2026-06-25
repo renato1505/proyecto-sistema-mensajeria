@@ -1,0 +1,60 @@
+        <aside class="reports-sidebar">
+            {% if puede("reportes.gestionar") %}
+            <form class="report-card report-form" action="/reportes/crear" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="envio_id" value="{{ envio_preseleccionado.id if envio_preseleccionado else '' }}">
+
+                <div class="report-card-head">
+                    <div>
+                        <span class="section-kicker">Nuevo caso</span>
+                        <h2>Registrar excepcion</h2>
+                    </div>
+                </div>
+
+                {% if envio_preseleccionado %}
+                    <div class="selected-shipment">
+                        <strong>OF {{ envio_preseleccionado.e_orden_flete }}</strong>
+                        <span>{{ envio_preseleccionado.e_destinatario }} &middot; {{ envio_preseleccionado.e_comuna }}</span>
+                    </div>
+                {% else %}
+                    <label class="autocomplete-wrap">
+                        <span>Orden de flete</span>
+                        <input id="reporte_of" class="form-control" name="orden_flete" placeholder="Ej: 272472119" autocomplete="off">
+                        <div id="lista_reporte_of" class="list-group autocomplete-list"></div>
+                    </label>
+                {% endif %}
+
+                <label>
+                    <span>Tipo</span>
+                    <select class="form-select" name="tipo" required>
+                        <option value="">Seleccionar</option>
+                        {% for tipo in tipos %}
+                            <option value="{{ tipo }}">{{ tipo }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+
+                <label>
+                    <span>Detalle inicial</span>
+                    <textarea class="form-control" name="detalle" required placeholder="Que informo Starken o que problema detectamos"></textarea>
+                </label>
+
+                <label>
+                    <span>Indicacion inicial</span>
+                    <textarea class="form-control" name="indicacion" required placeholder="Ej: reintentar entrega, devolver a origen o cambiar direccion"></textarea>
+                </label>
+
+                <button type="submit" class="btn btn-success">Crear reporte</button>
+            </form>
+            {% else %}
+                <div class="report-card report-form">
+                    <div class="report-card-head">
+                        <div>
+                            <span class="section-kicker">Solo lectura</span>
+                            <h2>Reportes</h2>
+                        </div>
+                    </div>
+                    <p class="read-only-copy">Tu rol permite consultar reportes y descargar respaldos, pero no crear ni modificar casos.</p>
+                </div>
+            {% endif %}
+        </aside>

@@ -23,7 +23,7 @@ from utils.texto import (
     normalizar_observacion_operativa,
     normalizar_texto_operativo,
 )
-from utils.validaciones import normalizar_telefono_chile
+from utils.validaciones import normalizar_telefono_operativo
 
 
 logger = logging.getLogger(__name__)
@@ -59,14 +59,17 @@ def _leer_form_remitente():
 
 
 def _leer_form_destinatario():
+    telefono_codigo_pais = request.form.get("telefono_codigo_pais", "56").strip()
     return {
         "rut": request.form.get("rut_destinatario", "").strip(),
         "nombre": normalizar_nombre_operativo(request.form.get("destinatario", "").strip()),
         "direccion": normalizar_texto_operativo(request.form.get("direccion", "").strip()),
         "comuna": normalizar_texto_operativo(request.form.get("comuna", "").strip()),
         "region": normalizar_texto_operativo(request.form.get("region", "").strip()),
-        "telefono": normalizar_telefono_chile(
-            request.form.get("telefono_destinatario", "").strip()
+        "telefono_codigo_pais": telefono_codigo_pais,
+        "telefono": normalizar_telefono_operativo(
+            request.form.get("telefono_destinatario", "").strip(),
+            telefono_codigo_pais,
         ),
         "correo": normalizar_correo_operativo(request.form.get("correo_destinatario", "").strip()),
         "observacion": normalizar_observacion_operativa(request.form.get("observacion", "").strip()),

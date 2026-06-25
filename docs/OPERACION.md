@@ -4,10 +4,11 @@ Este documento resume el uso diario del modulo de Mensajeria dentro del Portal O
 
 ## 1. Registrar envio
 
-1. Entrar a `Nuevo envio`.
-2. Completar remitente, destinatario, direccion, comuna, telefono, tipo de envio, bultos y kilos.
-3. Usar RUT `0` cuando el destinatario no entregue RUT.
-4. Guardar el envio.
+1. Entrar a `Envios`.
+2. Elegir `Envio manual`.
+3. Completar remitente, destinatario, direccion, comuna, telefono, tipo de envio, bultos y kilos.
+4. Usar RUT `0` cuando el destinatario no entregue RUT.
+5. Guardar el envio.
 
 El envio queda en estado `pendiente` para revision.
 
@@ -16,6 +17,17 @@ El sistema normaliza automaticamente:
 - telefonos pegados con espacios, simbolos o `+56`;
 - nombres con mayusculas/minusculas inconsistentes;
 - acentos en nombres y datos operativos para evitar duplicados funcionales.
+
+## 1.1 Registrar carga masiva
+
+1. Entrar a `Envios`.
+2. Elegir `Envio masivo`.
+3. Descargar la plantilla si se requiere.
+4. Completar remitente comun y filas de destinatarios.
+5. Subir el archivo y revisar advertencias/errores.
+6. Confirmar la carga solo cuando todas las filas relevantes esten correctas.
+
+La carga masiva no modifica pendientes hasta confirmar la revision. Si hay datos faltantes o telefonos invalidos, se corrigen antes de guardar.
 
 ## 2. Revisar pendientes
 
@@ -93,9 +105,13 @@ Desde `Historico` se puede:
 - Eliminar registros seleccionados con clave de eliminacion.
 - Eliminar registros filtrados con clave de eliminacion.
 
-Cuando se elimina historico en cloud, primero se envia un respaldo Excel por correo a Mensajeria. Si el correo de respaldo falla, no se eliminan registros.
+Cuando se elimina historico en cloud, primero se envia un respaldo Excel por correo a Mensajeria. El respaldo indica fecha, filtros aplicados y responsable de la eliminacion. Si el correo de respaldo falla, no se eliminan registros.
 
-La anulacion no elimina el registro. Solo marca la OF como anulada y guarda motivo/fecha para mantener trazabilidad.
+La anulacion no elimina el registro. Marca la OF como anulada, guarda motivo/fecha/responsable y envia respaldo Excel antes de confirmar. El correo del sistema recibe el respaldo completo y cada remitente recibe solo sus propios registros anulados. Si el correo de respaldo falla, no se anulan registros.
+
+## 6.1 Reportes y excepciones
+
+Los reportes permiten documentar incidencias posteriores al despacho. Al eliminar un reporte, el sistema exige motivo, genera PDF de respaldo y envia correo antes de borrar el caso. El correo y la auditoria muestran el responsable que realizo la eliminacion.
 
 ## 7. Pruebas manuales
 

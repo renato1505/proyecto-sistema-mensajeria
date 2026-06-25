@@ -6,7 +6,7 @@ from utils.validaciones import (
     email_valido,
     nombre_persona_valido,
     rut_operativo_valido,
-    telefono_chile_valido,
+    telefono_operativo_valido,
 )
 
 
@@ -55,8 +55,8 @@ def validar_destinatario(data):
     if not rut_operativo_valido(data["rut"]):
         return "Debes ingresar RUT del destinatario o 0 si no fue informado"
 
-    if not telefono_chile_valido(data["telefono"]):
-        return "El telefono debe tener 8 o 9 digitos"
+    if not telefono_operativo_valido(data["telefono"], data.get("telefono_codigo_pais", "56")):
+        return "El telefono debe tener 8 o 9 digitos, o codigo internacional completo"
 
     if data.get("correo") and not email_valido(data["correo"]):
         return "El correo del destinatario no tiene un formato valido"

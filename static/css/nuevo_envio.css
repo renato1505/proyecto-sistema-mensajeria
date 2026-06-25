@@ -150,6 +150,17 @@
     gap: 10px;
 }
 
+.phone-input-group {
+    flex-wrap: nowrap;
+}
+
+.phone-input-group .country-code-select {
+    flex: 0 0 104px;
+    max-width: 104px;
+    padding-left: 8px;
+    padding-right: 24px;
+}
+
 .nuevo-page .form-label {
     color: #344054;
     font-size: 0.78rem;

@@ -1,0 +1,327 @@
+{% for area in areas %}
+<div class="modal fade" id="modalEditarArea{{ area.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST" action="/admin/areas/{{ area.id }}/editar">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5">Editar area</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body admin-form">
+                    <label>
+                        <span>Nombre del area</span>
+                        <input class="form-control" name="nombre" value="{{ area.ar_nombre }}" required>
+                    </label>
+                    <p class="admin-modal-note">El codigo interno se mantiene automatico para no romper usuarios asignados.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-dark" type="submit">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<div class="modal fade" id="modalAccesosRecientes" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <span class="admin-kicker">Bitacora</span>
+                    <h2 class="modal-title fs-5">Accesos recientes</h2>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="access-log-list">
+                    {% for acceso in accesos_recientes %}
+                        <article class="access-log-row {{ acceso.a_accion }}">
+                            <span class="access-log-dot"></span>
+                            <div>
+                                <strong>
+                                    {% if acceso.a_accion == "login_exitoso" %}
+                                        Acceso correcto
+                                    {% elif acceso.a_accion == "login_bloqueado" %}
+                                        Acceso bloqueado
+                                    {% else %}
+                                        Acceso fallido
+                                    {% endif %}
+                                </strong>
+                                <small>{{ acceso.a_usuario }} - {{ acceso.a_fecha.strftime("%d/%m/%Y %H:%M") if acceso.a_fecha else "-" }}</small>
+                                {% if acceso.a_detalle %}<p>{{ acceso.a_detalle }}</p>{% endif %}
+                            </div>
+                        </article>
+                    {% else %}
+                        <div class="admin-empty inline"><strong>Sin accesos registrados</strong><p>No hay eventos de acceso.</p></div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a class="btn btn-outline-dark" href="/admin?tab=auditoria&aud_accion=login">Abrir auditoria</a>
+                <button type="button" class="btn btn-dark" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalSolicitudesRecuperacion" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <span class="admin-kicker">Recuperacion</span>
+                    <h2 class="modal-title fs-5">Solicitudes de clave</h2>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="recovery-list modal-recovery-list">
+                    {% for solicitud in solicitudes_recuperacion %}
+                        <article class="recovery-row">
+                            <span class="recovery-icon">
+                                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 17h.01"></path><path d="M17 8a5 5 0 0 0-10 0v3H5v10h14V11h-2Z"></path></svg>
+                            </span>
+                            <div>
+                                <div class="recovery-title">
+                                    <strong>{{ solicitud.sr_usuario }}</strong>
+                                    <span class="recovery-status {{ solicitud.sr_estado }}">{{ solicitud.sr_estado|capitalize }}</span>
+                                </div>
+                                <small>{{ solicitud.sr_fecha_creacion.strftime("%d/%m/%Y %H:%M") if solicitud.sr_fecha_creacion else "-" }}</small>
+                                <p>RUT validado: {{ solicitud.sr_rut or "sin registro" }}{% if solicitud.sr_ip %}<br>IP: {{ solicitud.sr_ip }}{% endif %}</p>
+                                <div class="recovery-actions compact">
+                                    <form method="POST" action="/admin/recuperacion/{{ solicitud.id }}/generar_clave">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button class="btn btn-dark btn-sm" type="submit">Generar clave temporal</button>
+                                    </form>
+                                    <form method="POST" action="/admin/recuperacion/{{ solicitud.id }}/rechazar">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button class="btn btn-outline-danger btn-sm" type="submit">Rechazar</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </article>
+                    {% else %}
+                        <div class="admin-empty inline"><strong>Sin solicitudes</strong><p>No hay solicitudes de recuperacion registradas.</p></div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalCrearUsuario" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST" action="/admin/usuarios">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5">Crear usuario</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body admin-form">
+                    <div class="admin-form-row">
+                        <label><span>Usuario</span><input class="form-control" name="usuario" placeholder="fcespedes" required></label>
+                        <label><span>Nombre</span><input class="form-control" name="nombre" placeholder="Felipe Cespedes" required></label>
+                    </div>
+                    <label><span>RUT</span><input class="form-control" name="rut" placeholder="12345678-9" required></label>
+                    <div class="admin-form-row">
+                        <label>
+                            <span>Area</span>
+                            <select class="form-select" name="area" required>
+                                {% for area in areas %}
+                                    <option value="{{ area.ar_codigo }}">{{ area.ar_nombre }}</option>
+                                {% else %}
+                                    <option value="mensajeria">Mensajeria</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label>
+                            <span>Rol</span>
+                            <select class="form-select" name="rol">
+                                {% for rol_codigo, rol_nombre in roles_base.items() %}
+                                    <option value="{{ rol_codigo }}" {% if rol_codigo == "usuario" %}selected{% endif %}>{{ rol_nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                    </div>
+                    <label><span>Clave temporal</span><input class="form-control" type="password" name="clave" autocomplete="new-password" required></label>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-dark" type="submit">Crear usuario</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% for usuario in usuarios %}
+<div class="modal fade" id="modalActividadUsuario{{ usuario.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <span class="admin-kicker">Bitacora del usuario</span>
+                    <h2 class="modal-title fs-5">{{ usuario.u_nombre }}</h2>
+                    <small class="text-muted">@{{ usuario.u_usuario }} - {{ usuario.u_area|capitalize }}</small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="user-activity-list">
+                    {% for actividad in actividades_usuarios.get(usuario.id, []) %}
+                        <article class="user-activity-row">
+                            <time>{{ actividad.a_fecha.strftime("%d/%m/%Y %H:%M") if actividad.a_fecha else "-" }}</time>
+                            <div>
+                                <strong>{{ actividad.a_accion.replace("_", " ")|capitalize }}</strong>
+                                <small>{{ actividad.a_entidad }}{% if actividad.a_entidad_id %} #{{ actividad.a_entidad_id }}{% endif %}</small>
+                                {% if actividad.a_detalle %}
+                                    <p>{{ actividad.a_detalle }}</p>
+                                {% endif %}
+                            </div>
+                        </article>
+                    {% else %}
+                        <div class="admin-empty inline">
+                            <strong>Sin actividad registrada</strong>
+                            <p>Este usuario todavia no tiene eventos en auditoria.</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a class="btn btn-outline-dark" href="/admin?tab=auditoria&aud_usuario={{ usuario.u_usuario|urlencode }}">Ver auditoria completa</a>
+                <button type="button" class="btn btn-dark" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalEditarUsuario{{ usuario.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST" action="/admin/usuarios/{{ usuario.id }}/editar">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5">Editar {{ usuario.u_usuario }}</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body admin-form">
+                    <div class="admin-form-row">
+                        <label><span>Nombre</span><input class="form-control" name="nombre" value="{{ usuario.u_nombre }}" required></label>
+                        <label><span>RUT</span><input class="form-control" name="rut" value="{{ usuario.u_rut or '' }}" required></label>
+                    </div>
+                    <div class="admin-form-row">
+                        <label>
+                            <span>Area</span>
+                            <select class="form-select" name="area" required>
+                                {% for area in areas %}
+                                    <option value="{{ area.ar_codigo }}" {% if area.ar_codigo == usuario.u_area %}selected{% endif %}>{{ area.ar_nombre }}</option>
+                                {% else %}
+                                    <option value="{{ usuario.u_area }}">{{ usuario.u_area|capitalize }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label>
+                            <span>Rol</span>
+                            <select class="form-select" name="rol">
+                                {% for rol_codigo, rol_nombre in roles_base.items() %}
+                                    <option value="{{ rol_codigo }}" {% if usuario.u_rol == rol_codigo %}selected{% endif %}>{{ rol_nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                    </div>
+                    {% if usuario.u_rol == "admin" %}
+                        <label>
+                            <span>Confirmacion si quitas rol admin</span>
+                            <input class="form-control" name="confirmar_cambio_rol" placeholder="Escribe {{ usuario.u_usuario }}">
+                        </label>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-dark" type="submit">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalClaveUsuario{{ usuario.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST" action="/admin/usuarios/{{ usuario.id }}/clave">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5">Cambiar clave</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body admin-form">
+                    <p class="admin-modal-note">Define una clave temporal para <strong>{{ usuario.u_nombre }}</strong>. Al ingresar, debera reemplazarla por una propia.</p>
+                    <label><span>Nueva clave</span><input class="form-control" type="password" name="clave" autocomplete="new-password" minlength="6" required></label>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-dark" type="submit">Actualizar clave</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalEstadoUsuario{{ usuario.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST" action="/admin/usuarios/{{ usuario.id }}/estado">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5">Desactivar administrador</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body admin-form">
+                    <p class="admin-modal-note">Para desactivar a <strong>{{ usuario.u_nombre }}</strong>, escribe su usuario exacto.</p>
+                    <label>
+                        <span>Usuario a confirmar</span>
+                        <input class="form-control" name="confirmar_usuario" placeholder="{{ usuario.u_usuario }}" required>
+                    </label>
+                    <p class="admin-modal-warning">Si este es el ultimo administrador activo, el sistema bloqueara la accion.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-warning" type="submit">Desactivar admin</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalEliminarUsuario{{ usuario.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST" action="/admin/usuarios/{{ usuario.id }}/eliminar">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5">Eliminar usuario</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body admin-form">
+                    <p class="admin-modal-note">Esta accion eliminara el acceso de <strong>{{ usuario.u_nombre }}</strong>. Para pausas temporales conviene desactivar.</p>
+                    <label>
+                        <span>Confirmar usuario</span>
+                        <input class="form-control" name="confirmar_usuario" placeholder="Escribe {{ usuario.u_usuario }}" required>
+                    </label>
+                    {% if usuario.u_rol == "admin" and usuario.u_activo %}
+                        <p class="admin-modal-warning">Si este es el ultimo administrador activo, el sistema bloqueara la eliminacion automaticamente.</p>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-danger" type="submit">Eliminar usuario</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}

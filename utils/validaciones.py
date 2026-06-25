@@ -59,6 +59,71 @@ def telefono_chile_valido(telefono):
     return len(telefono) in {8, 9}
 
 
+CODIGOS_TELEFONO_PAIS = {"56", "54", "51", "57", "52", "1", "55", "598"}
+
+
+def normalizar_codigo_pais_telefono(codigo_pais):
+    codigo = re.sub(r"\D", "", str(codigo_pais or "56"))
+    return codigo if codigo in CODIGOS_TELEFONO_PAIS else "56"
+
+
+def normalizar_telefono_operativo(telefono, codigo_pais="56"):
+    if telefono is None:
+        return ""
+
+    texto_original = str(telefono or "").strip()
+    numero_original = re.sub(r"\D", "", texto_original)
+    codigo = normalizar_codigo_pais_telefono(codigo_pais)
+
+    if texto_original.startswith("+"):
+        for candidato in sorted(CODIGOS_TELEFONO_PAIS, key=len, reverse=True):
+            if numero_original.startswith(candidato):
+                codigo = candidato
+                break
+
+    if codigo == "56":
+        return normalizar_telefono_chile(telefono)
+
+    numero = numero_original
+    if numero.startswith(codigo):
+        numero = numero[len(codigo):]
+    if numero.startswith("0"):
+        numero = numero[1:]
+
+    return f"{codigo}{numero}"[:15]
+
+
+def telefono_operativo_valido(telefono, codigo_pais="56"):
+    texto_original = str(telefono or "").strip()
+    numero_original = re.sub(r"\D", "", texto_original)
+    codigo = normalizar_codigo_pais_telefono(codigo_pais)
+    if texto_original.startswith("+"):
+        for candidato in sorted(CODIGOS_TELEFONO_PAIS, key=len, reverse=True):
+            if numero_original.startswith(candidato):
+                codigo = candidato
+                break
+
+    telefono = normalizar_telefono_operativo(telefono, codigo)
+
+    if codigo == "56":
+        return len(telefono) in {8, 9}
+
+    return telefono.isdigit() and 10 <= len(telefono) <= 15
+
+
+def separar_telefono_operativo(telefono):
+    telefono = re.sub(r"\D", "", str(telefono or ""))
+
+    if len(telefono) in {8, 9}:
+        return "56", telefono
+
+    for codigo in sorted(CODIGOS_TELEFONO_PAIS - {"56"}, key=len, reverse=True):
+        if telefono.startswith(codigo):
+            return codigo, telefono[len(codigo):]
+
+    return "56", telefono
+
+
 def rut_operativo_valido(rut):
     rut = str(rut or "").strip()
 
@@ -66,3 +131,17 @@ def rut_operativo_valido(rut):
         return True
 
     return bool(rut)
+
+
+def normalizar_rut_usuario(rut):
+    rut = str(rut or "").strip().upper()
+    rut = re.sub(r"[^0-9K]", "", rut)
+    if not rut:
+        return ""
+    if len(rut) == 1:
+        return rut
+    return f"{rut[:-1]}-{rut[-1]}"
+
+
+def clave_rut_usuario(rut):
+    return re.sub(r"[^0-9K]", "", str(rut or "").upper())

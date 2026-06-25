@@ -1,4 +1,4 @@
-from flask import render_template
+from flask import redirect, render_template, session
 
 from database.conexion import SessionLocal
 from database.modelos import Envio
@@ -91,6 +91,9 @@ def _resumen_en_proceso(lotes):
 def registrar_rutas_paginas(app):
     @app.route("/")
     def inicio():
+        if session.get("usuario_rol") == "admin" and session.get("usuario_area") != "mensajeria":
+            return redirect("/admin")
+
         db = SessionLocal()
         try:
             dashboard = obtener_dashboard_mensajeria(db)
@@ -102,6 +105,10 @@ def registrar_rutas_paginas(app):
             dashboard=dashboard,
             novedades=obtener_novedades_portal(),
         )
+
+    @app.route("/crear_envio")
+    def seleccionar_tipo_envio():
+        return render_template("seleccionar_envio.html")
 
     @app.route("/envios")
     def ver_envio():

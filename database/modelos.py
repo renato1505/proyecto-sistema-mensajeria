@@ -37,6 +37,34 @@ class Comuna(Base):
     c_region = Column(String, nullable=False)
 
 
+class AreaOperativa(Base):
+    __tablename__ = "areas_operativas"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ar_codigo = Column(String(80), nullable=False, unique=True, index=True)
+    ar_nombre = Column(String(120), nullable=False)
+    ar_activa = Column(Boolean, default=True, nullable=False, index=True)
+    ar_fecha_creacion = Column(DateTime, default=ahora_chile, index=True)
+
+
+class UsuarioSistema(Base):
+    __tablename__ = "usuarios_sistema"
+
+    id = Column(Integer, primary_key=True, index=True)
+    u_usuario = Column(String(120), nullable=False, unique=True, index=True)
+    u_nombre = Column(String(160), nullable=False)
+    u_rut = Column(String(20), index=True)
+    u_clave_hash = Column(String(255), nullable=False)
+    u_area = Column(String(80), nullable=False, index=True)
+    u_rol = Column(String(40), default="usuario", nullable=False, index=True)
+    u_activo = Column(Boolean, default=True, nullable=False, index=True)
+    u_debe_cambiar_clave = Column(Boolean, default=False, nullable=False, index=True)
+    u_ultimo_acceso = Column(DateTime)
+    u_ultimo_ip = Column(String(80))
+    u_fecha_creacion = Column(DateTime, default=ahora_chile, index=True)
+    u_fecha_actualizacion = Column(DateTime, default=ahora_chile)
+
+
 class Envio(Base):
     __tablename__ = "envios"
 
@@ -89,3 +117,75 @@ class Envio(Base):
 
     # Fechas internas
     e_fecha_creacion = Column(DateTime, default=ahora_chile, index=True)
+
+
+class ExcepcionEnvio(Base):
+    __tablename__ = "excepciones_envio"
+
+    id = Column(Integer, primary_key=True, index=True)
+    envio_id = Column(Integer, nullable=False, index=True)
+    x_estado = Column(String(50), default="abierto", nullable=False, index=True)
+    x_tipo = Column(String(80), nullable=False, index=True)
+    x_prioridad = Column(String(30), default="normal", nullable=False)
+    x_contacto_starken = Column(String(120))
+    x_detalle = Column(String(1000))
+    x_indicacion = Column(String(1000))
+    x_respuesta = Column(String(1000))
+    x_resultado_final = Column(String(80))
+    x_resumen_cierre = Column(String(1500))
+    x_of_retorno = Column(String(80))
+    x_fecha_anulacion = Column(DateTime)
+    x_motivo_anulacion = Column(String(500))
+    x_fecha_creacion = Column(DateTime, default=ahora_chile, index=True)
+    x_fecha_actualizacion = Column(DateTime, default=ahora_chile)
+    x_fecha_cierre = Column(DateTime)
+
+
+class MovimientoExcepcion(Base):
+    __tablename__ = "movimientos_excepcion"
+
+    id = Column(Integer, primary_key=True, index=True)
+    reporte_id = Column(Integer, nullable=False, index=True)
+    m_tipo = Column(String(80), nullable=False)
+    m_detalle = Column(String(1500), nullable=False)
+    m_fecha = Column(DateTime, default=ahora_chile, index=True)
+
+
+class EvidenciaExcepcion(Base):
+    __tablename__ = "evidencias_excepcion"
+
+    id = Column(Integer, primary_key=True, index=True)
+    reporte_id = Column(Integer, nullable=False, index=True)
+    ev_nombre_original = Column(String(255), nullable=False)
+    ev_nombre_archivo = Column(String(255), nullable=False)
+    ev_descripcion = Column(String(500))
+    ev_fecha = Column(DateTime, default=ahora_chile, index=True)
+
+
+class RegistroAuditoria(Base):
+    __tablename__ = "auditoria"
+
+    id = Column(Integer, primary_key=True, index=True)
+    a_fecha = Column(DateTime, default=ahora_chile, index=True)
+    a_usuario = Column(String(120), nullable=False, index=True)
+    a_accion = Column(String(120), nullable=False, index=True)
+    a_entidad = Column(String(80), nullable=False, index=True)
+    a_entidad_id = Column(String(80))
+    a_detalle = Column(String(1500))
+
+
+class SolicitudRecuperacionClave(Base):
+    __tablename__ = "solicitudes_recuperacion_clave"
+
+    id = Column(Integer, primary_key=True, index=True)
+    sr_usuario = Column(String(120), nullable=False, index=True)
+    sr_correo = Column(String(255), nullable=False)
+    sr_correo_enmascarado = Column(String(255))
+    sr_rut = Column(String(20))
+    sr_ip = Column(String(80))
+    sr_estado = Column(String(40), default="pendiente", nullable=False, index=True)
+    sr_nota = Column(String(1000))
+    sr_clave_temporal_generada = Column(Boolean, default=False, nullable=False)
+    sr_fecha_creacion = Column(DateTime, default=ahora_chile, index=True)
+    sr_fecha_revision = Column(DateTime)
+    sr_revisado_por = Column(String(120))
