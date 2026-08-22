@@ -49,7 +49,7 @@ DATABASE_URL=postgresql+psycopg2://...
 SECRET_KEY=clave-larga-y-segura
 FLASK_DEBUG=0
 LOGIN_REQUIRED=1
-APP_USERS=mensajeria|mensajeria|clave-mensajeria;fcespedes|mensajeria|clave-temporal;recepcion|recepcion|clave-recepcion;seguridad|seguridad|clave-seguridad
+APP_USERS=admin|admin|admin|clave-admin-segura;fcespedes|mensajeria|usuario|clave-temporal
 SESSION_TIMEOUT_MINUTES=30
 
 CORREO_EMISOR=correo-del-sistema@gmail.com
@@ -154,13 +154,27 @@ Si ese correo no se puede enviar, la eliminacion se bloquea.
 No publicar la app sin:
 
 - `LOGIN_REQUIRED=1`.
-- `APP_USERS` con claves fuertes.
+- `APP_USERS` con al menos un usuario `admin` de respaldo y claves fuertes.
 - `SESSION_TIMEOUT_MINUTES` definido.
 - `SECRET_KEY` fuerte.
 - HTTPS activo.
 - `.env` fuera de Git.
 
 El sistema maneja datos personales como nombres, correos, telefonos, direcciones, RUT y ordenes de flete.
+
+Formato recomendado para `APP_USERS`:
+
+```text
+usuario|area|rol|clave
+```
+
+Ejemplo:
+
+```text
+admin|admin|admin|clave-admin-segura;fcespedes|mensajeria|usuario|clave-temporal
+```
+
+Los usuarios creados desde el panel Admin quedan en la base de datos y son la fuente principal de acceso. `APP_USERS` funciona como mecanismo de arranque o respaldo para no quedar fuera del sistema si aun no existen usuarios en BD.
 
 ## Flujo sugerido de despliegue
 
@@ -196,7 +210,7 @@ Despues de desplegar validar:
 
 - Definir estrategia de respaldo de base de datos.
 - Definir estrategia de respaldo de archivos Excel/CSV.
-- Crear usuario/clave de acceso robusta.
+- Mantener un usuario `admin` robusto y probado.
 - Evaluar dominio propio.
 - Evaluar almacenamiento persistente para respaldos.
 - Evaluar proveedor de correo transaccional si Gmail SMTP deja de ser estable.

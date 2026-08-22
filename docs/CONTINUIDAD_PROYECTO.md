@@ -2,6 +2,12 @@
 
 Este documento resume el contexto operativo y tecnico actual del Portal Operativo para que otro desarrollador pueda continuar sin perder el hilo.
 
+Para una migracion de PC o continuidad en otro chat, leer tambien:
+
+- `docs/TRASPASO_NUEVO_CHAT.md`: contexto completo de historia, estado actual, reglas, arquitectura y roadmap.
+- `docs/MIGRACION_PC.md`: pasos tecnicos para levantar el entorno en otro computador.
+- `docs/QA_CHECKLIST.md`: pruebas manuales y tecnicas antes de deploy.
+
 ## Contexto General
 
 El proyecto nacio como un sistema interno para automatizar el flujo de Mensajeria de L'Oreal. Antes se trabajaba con planillas manuales para Starken, copiando datos, generando CSV, esperando ordenes de flete, registrando OF y avisando manualmente a cada funcionario.

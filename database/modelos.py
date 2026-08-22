@@ -1,9 +1,10 @@
-from sqlalchemy import Boolean, Column, Integer, String, DateTime
+from sqlalchemy import Boolean, Column, DateTime, Integer, String
 from sqlalchemy.orm import declarative_base
 
 from utils.fechas import ahora_chile
 
 Base = declarative_base()
+
 
 class Remitente(Base):
     __tablename__ = "remitentes"
@@ -86,17 +87,17 @@ class Envio(Base):
     e_correo_destinatario = Column(String)
     e_observacion = Column(String)
 
-    # Datos del envío
+    # Datos del envio
     e_tipo_envio = Column(String, nullable=False)
     e_codigo_agencia = Column(String)
     e_bultos = Column(Integer, nullable=False)
     e_kilos = Column(Integer, nullable=False)
 
-    # Flujo del envío
+    # Flujo del envio
     e_estado = Column(String, default="pendiente", index=True)
     e_orden_flete = Column(String, index=True)
 
-    # Nuevos campos para proceso Starken
+    # Datos del lote y procesamiento Starken
     e_lote = Column(String, index=True)
     e_fila_excel = Column(Integer)
     e_resultado_of = Column(String)   # OK / ERROR

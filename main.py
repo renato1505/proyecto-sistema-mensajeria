@@ -1,29 +1,29 @@
 from datetime import timedelta
 
 from flask import Flask, session
+
 from config.logging_config import configurar_logging
 from config.settings import FLASK_DEBUG, SECRET_KEY, SESSION_TIMEOUT_MINUTES
-from database.conexion import engine
+from database.conexion import SessionLocal, engine
 from database.modelos import Base
+from database.modelos import Envio
 from database.schema import asegurar_columnas_operativas
-from database.conexion import SessionLocal
-from routes.paginas import registrar_rutas_paginas
-from routes.auth import etiqueta_area, registrar_rutas_auth, login_habilitado
-from routes.auth import usuario_es_admin, usuario_tiene_permiso
 from routes.admin import registrar_rutas_admin
-from routes.envios import registrar_rutas_envios
-from routes.catalogos import registrar_rutas_catalogos
-from routes.catalogos_ajax import registrar_rutas_catalogos_ajax
+from routes.auth import etiqueta_area, login_habilitado, registrar_rutas_auth
+from routes.auth import usuario_es_admin, usuario_tiene_permiso
 from routes.avisos import registrar_rutas_avisos
 from routes.carga_masiva import registrar_rutas_carga_masiva
+from routes.catalogos import registrar_rutas_catalogos
+from routes.catalogos_ajax import registrar_rutas_catalogos_ajax
+from routes.envios import registrar_rutas_envios
 from routes.historico import registrar_rutas_historico
 from routes.historico_ajax import registrar_rutas_historico_ajax
+from routes.paginas import registrar_rutas_paginas
 from routes.reportes import registrar_rutas_reportes
 from routes.starken_lotes import registrar_rutas_starken_lotes
 from services.avisos import contar_lotes_avisos_pendientes
 from services.normalizacion_operativa import normalizar_datos_operativos
 from services.reportes import contar_reportes_abiertos
-from database.modelos import Envio
 from utils.csrf import obtener_csrf_token, validar_csrf
 
 app = Flask(__name__)
@@ -44,6 +44,7 @@ def inyectar_csrf_token():
 
 @app.context_processor
 def inyectar_contador_avisos():
+    """Entrega contadores globales usados por badges del menu."""
     db = SessionLocal()
     try:
         return {
@@ -62,8 +63,10 @@ def inyectar_contador_avisos():
     finally:
         db.close()
 
+
 @app.context_processor
 def inyectar_estado_auth():
+    """Expone estado de sesion y permisos a todas las plantillas."""
     area_actual = session.get("usuario_area", "")
     admin_actual = usuario_es_admin()
     mensajeria_visible = (not login_habilitado()) or area_actual == "mensajeria"
@@ -78,6 +81,9 @@ def inyectar_estado_auth():
         "puede": usuario_tiene_permiso,
     }
 
+
+# Inicializacion liviana: crea tablas nuevas, asegura columnas agregadas y normaliza
+# datos operativos existentes antes de registrar rutas.
 Base.metadata.create_all(bind=engine)
 asegurar_columnas_operativas()
 normalizar_datos_operativos()

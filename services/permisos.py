@@ -64,6 +64,9 @@ PERMISOS_USUARIO_MENSAJERIA = PERMISOS_LECTURA | {
 
 
 RUTAS_PERMISOS = [
+    # Toda ruta nueva que muestre o modifique datos operativos debe quedar aca.
+    # Si se omite, el menu puede ocultar la accion, pero la URL directa no queda
+    # protegida por rol.
     ("/admin", "admin.panel"),
     ("/crear_envio", "envios.crear"),
     ("/nuevo_envio", "envios.crear"),
