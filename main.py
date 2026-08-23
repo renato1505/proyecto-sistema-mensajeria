@@ -19,11 +19,9 @@ from routes.envios import registrar_rutas_envios
 from routes.historico import registrar_rutas_historico
 from routes.historico_ajax import registrar_rutas_historico_ajax
 from routes.paginas import registrar_rutas_paginas
-from routes.reportes import registrar_rutas_reportes
 from routes.starken_lotes import registrar_rutas_starken_lotes
 from services.avisos import contar_lotes_avisos_pendientes
 from services.normalizacion_operativa import normalizar_datos_operativos
-from services.reportes import contar_reportes_abiertos
 from utils.csrf import obtener_csrf_token, validar_csrf
 
 app = Flask(__name__)
@@ -49,14 +47,12 @@ def inyectar_contador_avisos():
     try:
         return {
             "avisos_pendientes_count": contar_lotes_avisos_pendientes(db),
-            "reportes_abiertos_count": contar_reportes_abiertos(db),
             "pendientes_count": db.query(Envio).filter(Envio.e_estado == "pendiente").count(),
             "en_proceso_count": db.query(Envio).filter(Envio.e_estado == "en_proceso").count(),
         }
     except Exception:
         return {
             "avisos_pendientes_count": 0,
-            "reportes_abiertos_count": 0,
             "pendientes_count": 0,
             "en_proceso_count": 0,
         }
@@ -98,7 +94,6 @@ registrar_rutas_avisos(app)
 registrar_rutas_carga_masiva(app)
 registrar_rutas_historico(app)
 registrar_rutas_historico_ajax(app)
-registrar_rutas_reportes(app)
 registrar_rutas_starken_lotes(app)
 
 if __name__ == "__main__":

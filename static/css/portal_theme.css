@@ -42,7 +42,6 @@ body {
 .catalogos-hero,
 .avisos-hero,
 .of-hero,
-.reportes-hero,
 .admin-hero,
 .shipment-hero {
     position: relative;
@@ -65,7 +64,6 @@ body {
 .catalogos-hero::after,
 .avisos-hero::after,
 .of-hero::after,
-.reportes-hero::after,
 .admin-hero::after,
 .shipment-hero::after {
     content: "";
@@ -88,7 +86,6 @@ body {
 .catalogos-hero h1,
 .avisos-hero h1,
 .of-hero h1,
-.reportes-hero h1,
 .admin-hero h1,
 .shipment-hero h1 {
     color: var(--portal-ink) !important;
@@ -106,14 +103,12 @@ body {
 .catalogos-hero p,
 .avisos-hero p,
 .of-hero p,
-.reportes-hero p,
 .admin-hero p,
 .shipment-hero p {
     color: #475467 !important;
 }
 
 .section-kicker,
-.home-kicker,
 .shipment-hero span,
 .shipment-option span,
 .admin-kicker,
@@ -147,16 +142,11 @@ body {
 .avisos-panel,
 .of-panel,
 .cases-panel,
-.case-actions-card,
-.timeline-panel,
 .admin-card,
 .admin-grid > article,
 .admin-events-panel,
 .admin-tabs a,
 .shipment-option,
-.home-panel,
-.home-action,
-.home-security-card,
 .of-success-card {
     background: var(--portal-card) !important;
     border: 1px solid var(--portal-line) !important;
@@ -167,8 +157,6 @@ body {
 .nuevo-form-panel,
 .editar-form-panel,
 .catalogos-tabs,
-.reportes-layout > *,
-.reports-shell,
 .admin-panel,
 .admin-section,
 .security-panel,
@@ -185,9 +173,7 @@ body {
 .historico-metrics article,
 .catalogos-metrics article,
 .avisos-metrics article,
-.reportes-metrics article,
-.admin-metrics article,
-.home-kpis article {
+.admin-metrics article {
     background:
         linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(250, 252, 253, 0.94)) !important;
     border: 1px solid var(--portal-line) !important;
@@ -201,10 +187,8 @@ body {
 .historico-metrics span,
 .catalogos-metrics span,
 .avisos-metrics span,
-.reportes-metrics span,
 .admin-metrics span,
-.admin-metrics small,
-.home-kpis span {
+.admin-metrics small {
     color: #667085 !important;
     font-weight: 800 !important;
 }
@@ -215,9 +199,7 @@ body {
 .historico-metrics strong,
 .catalogos-metrics strong,
 .avisos-metrics strong,
-.reportes-metrics strong,
-.admin-metrics strong,
-.home-kpis strong {
+.admin-metrics strong {
     color: var(--portal-ink) !important;
     font-weight: 950 !important;
 }
@@ -260,14 +242,12 @@ body {
 .btn,
 button,
 .action-btn,
-.home-action,
 .historico-action-btn {
     transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease;
 }
 
 .btn:hover,
 .action-btn:hover,
-.home-action:hover,
 .historico-action-btn:hover {
     transform: translateY(-1px);
 }
@@ -539,7 +519,6 @@ button,
     .catalogos-hero,
     .avisos-hero,
     .of-hero,
-    .reportes-hero,
     .admin-hero {
         border-radius: 14px !important;
     }

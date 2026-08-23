@@ -480,48 +480,6 @@
     font-weight: 900;
 }
 
-.exception-badge {
-    display: inline-flex;
-    flex-direction: column;
-    gap: 1px;
-    max-width: 156px;
-    padding: 6px 9px;
-    text-decoration: none;
-    border-radius: 8px;
-    font-size: 0.72rem;
-    font-weight: 900;
-    line-height: 1.15;
-}
-
-.exception-badge small {
-    color: inherit;
-    font-size: 0.68rem;
-    font-weight: 800;
-    opacity: 0.82;
-}
-
-.exception-badge.open {
-    color: #92400e;
-    background: #fffbeb;
-    border: 1px solid #fcd34d;
-}
-
-.exception-badge.resolved {
-    color: #1d4ed8;
-    background: #eff6ff;
-    border: 1px solid #bfdbfe;
-}
-
-.exception-badge:hover {
-    color: #78350f;
-    background: #fef3c7;
-}
-
-.exception-badge.resolved:hover {
-    color: #1e40af;
-    background: #dbeafe;
-}
-
 .row-actions-stack {
     display: inline-flex;
     flex-direction: column;
@@ -529,8 +487,7 @@
     gap: 6px;
 }
 
-.download-row-btn,
-.report-row-btn {
+.download-row-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -547,27 +504,13 @@
     box-shadow: 0 8px 18px rgba(5, 150, 105, 0.18);
 }
 
-.report-row-btn {
-    color: #b4232f;
-    background: #fff7f7;
-    border-color: #fecdd3;
-    box-shadow: none;
-}
-
 .download-row-btn:hover {
     color: #fff;
     background: #047857;
     border-color: #047857;
 }
 
-.report-row-btn:hover {
-    color: #991b1b;
-    background: #ffe4e6;
-    border-color: #fda4af;
-}
-
-.download-row-btn svg,
-.report-row-btn svg {
+.download-row-btn svg {
     width: 15px;
     height: 15px;
     fill: none;
@@ -579,14 +522,6 @@
 
 .fila-anulada td {
     background: #fffafa;
-}
-
-.fila-reporte-abierto:not(.fila-anulada) td {
-    background: #fffdf5;
-}
-
-.fila-reporte-resuelto:not(.fila-anulada) td {
-    background: #f8fbff;
 }
 
 .fila-anulada td,

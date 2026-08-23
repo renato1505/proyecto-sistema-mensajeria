@@ -15,26 +15,16 @@ PERMISOS_MODULOS = {
         "historico.exportar": "Exportar o descargar historico",
         "historico.anular": "Anular ordenes de flete",
         "historico.eliminar": "Eliminar historico con respaldo",
-        "reportes.ver": "Ver reportes y excepciones",
-        "reportes.gestionar": "Gestionar reportes y excepciones",
         "avisos.ver": "Ver avisos por correo",
         "avisos.gestionar": "Gestionar avisos por correo",
         "catalogos.ver": "Ver catalogos operativos",
         "catalogos.gestionar": "Gestionar catalogos operativos",
-    },
-    "recepcion": {
-        "recepcion.panel": "Modulo Recepcion reservado",
-    },
-    "seguridad": {
-        "seguridad.panel": "Modulo Seguridad reservado",
     },
 }
 
 AREAS_BASE = {
     "administracion": "Administracion",
     "mensajeria": "Mensajeria",
-    "recepcion": "Recepcion",
-    "seguridad": "Seguridad",
 }
 
 ROLES_BASE = {
@@ -47,7 +37,6 @@ ROLES_BASE = {
 PERMISOS_LECTURA = {
     "mensajeria.inicio",
     "historico.ver",
-    "reportes.ver",
     "avisos.ver",
     "catalogos.ver",
 }
@@ -95,9 +84,6 @@ RUTAS_PERMISOS = [
     ("/eliminar_historico", "historico.eliminar"),
     ("/eliminar_historico_seleccionados", "historico.eliminar"),
     ("/eliminar_historico_filtrados", "historico.eliminar"),
-    ("/reportes/crear", "reportes.gestionar"),
-    ("/reportes", "reportes.ver"),
-    ("/buscar_reportes_sugerencias", "reportes.ver"),
     ("/avisos", "avisos.ver"),
     ("/avisos_lote", "avisos.gestionar"),
     ("/enviar_avisos_lote", "avisos.gestionar"),
@@ -139,11 +125,6 @@ def usuario_puede(area, rol, permiso):
 
 def permiso_para_ruta(path, metodo="GET"):
     metodo = (metodo or "GET").upper()
-
-    if path.startswith("/reportes/") and path != "/reportes":
-        if metodo == "GET" and path.endswith("/pdf"):
-            return "reportes.ver"
-        return "reportes.gestionar"
 
     if path.startswith("/catalogos/") and metodo != "GET":
         return "catalogos.gestionar"

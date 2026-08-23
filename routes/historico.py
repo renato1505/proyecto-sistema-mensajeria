@@ -23,7 +23,6 @@ from services.historico import (
     url_desde_filtros,
 )
 from services.auditoria import registrar_accion
-from services.reportes import estado_reportes_por_envio
 from utils.fechas import ahora_chile, timestamp_archivo_chile
 
 
@@ -109,7 +108,6 @@ def registrar_rutas_historico(app):
             .limit(per_page)
             .all()
         )
-        reportes_por_envio = estado_reportes_por_envio(db, [envio.id for envio in envios])
         pagination = _pagination(filtros, total_registros, page, per_page, len(envios))
 
         registros_historicos = (
@@ -142,7 +140,6 @@ def registrar_rutas_historico(app):
             fecha_hasta=filtros["fecha_hasta"],
             estado_of=filtros["estado_of"],
             pagination=pagination,
-            reportes_por_envio=reportes_por_envio,
         )
 
     @app.route("/exportar_historico")

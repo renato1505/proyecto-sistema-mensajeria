@@ -198,8 +198,7 @@
                     </thead>
                     <tbody>
                         {% for envio in envios %}
-                        {% set reporte_envio = reportes_por_envio.get(envio.id) if reportes_por_envio else none %}
-                        <tr class="fila-principal {% if envio.e_anulado %}fila-anulada{% endif %} {% if reporte_envio and reporte_envio.abierto %}fila-reporte-abierto{% elif reporte_envio %}fila-reporte-resuelto{% endif %}">
+                        <tr class="fila-principal {% if envio.e_anulado %}fila-anulada{% endif %}">
                             <td class="text-center">
                                 <input type="checkbox" name="envio_ids" value="{{ envio.id }}" class="check-envio">
                             </td>
@@ -276,19 +275,6 @@
                                         </span>
                                     {% endif %}
                                 </div>
-                                {% if reporte_envio %}
-                                    <a href="/reportes?envio_id={{ envio.id }}"
-                                       class="exception-badge {% if reporte_envio.abierto %}open{% else %}resolved{% endif %}">
-                                        {% if reporte_envio.abierto %}
-                                            Excepcion vigente
-                                        {% else %}
-                                            Excepcion resuelta
-                                        {% endif %}
-                                        {% if reporte_envio.of_retorno %}
-                                            <small>Retorno {{ reporte_envio.of_retorno }}</small>
-                                        {% endif %}
-                                    </a>
-                                {% endif %}
                                 </div>
                             </td>
                             <td class="text-center">
@@ -301,15 +287,6 @@
                                             <path d="M5 21h14"></path>
                                         </svg>
                                         <span>Descargar</span>
-                                    </a>
-                                    <a href="/reportes?envio_id={{ envio.id }}"
-                                       class="report-row-btn">
-                                        <svg aria-hidden="true" viewBox="0 0 24 24">
-                                            <path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z"></path>
-                                            <path d="M12 9v4"></path>
-                                            <path d="M12 17h.01"></path>
-                                        </svg>
-                                        <span>Reporte</span>
                                     </a>
                                 </div>
                             </td>
