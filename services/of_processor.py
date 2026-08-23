@@ -67,6 +67,26 @@ def procesar_archivo_of(db, lote, archivo, nombre_archivo):
     if len(filas_archivo) != len(set(filas_archivo)):
         raise OFProcessingError("El archivo OF tiene filas repetidas. No se proceso nada.")
 
+    filas_lote = {
+        envio.e_fila_excel
+        for envio in envios_lote
+        if envio.e_fila_excel is not None
+    }
+    conjunto_filas_archivo = set(filas_archivo)
+
+    if conjunto_filas_archivo != filas_lote:
+        faltantes = sorted(filas_lote - conjunto_filas_archivo)
+        sobrantes = sorted(conjunto_filas_archivo - filas_lote)
+        detalle = []
+        if faltantes:
+            detalle.append(f"faltan filas del lote: {', '.join(map(str, faltantes))}")
+        if sobrantes:
+            detalle.append(f"hay filas ajenas al lote: {', '.join(map(str, sobrantes))}")
+        raise OFProcessingError(
+            "Las filas del archivo OF no coinciden exactamente con las filas del lote"
+            f" ({'; '.join(detalle)}). No se proceso nada."
+        )
+
     ofs_archivo = []
     for _, fila in df_validas.iterrows():
         estado = str(fila.get("estado", "")).strip().upper()

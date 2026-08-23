@@ -48,6 +48,7 @@ def obtener_lotes_con_avisos(db):
             Envio.e_orden_flete.isnot(None),
             Envio.e_correo_remitente.isnot(None),
             Envio.e_aviso_funcionario_estado == "pendiente",
+            Envio.e_anulado.is_(False),
         )
         .order_by(Envio.e_fecha_exportacion.desc(), Envio.e_lote.desc())
         .all()
@@ -92,6 +93,7 @@ def contar_lotes_avisos_pendientes(db):
             Envio.e_orden_flete.isnot(None),
             Envio.e_correo_remitente.isnot(None),
             Envio.e_aviso_funcionario_estado == "pendiente",
+            Envio.e_anulado.is_(False),
         )
         .distinct()
         .all()
@@ -108,6 +110,7 @@ def marcar_avisos_pendientes_lote(db, lote):
             Envio.e_resultado_of == "OK",
             Envio.e_orden_flete.isnot(None),
             Envio.e_correo_remitente.isnot(None),
+            Envio.e_anulado.is_(False),
         )
         .all()
     )
@@ -170,8 +173,9 @@ def preparar_resumen_avisos(envios):
     grupos = defaultdict(list)
     total_ok = 0
     total_error = 0
+    envios_elegibles = [envio for envio in envios if not envio.e_anulado]
 
-    for envio in envios:
+    for envio in envios_elegibles:
         if (
             envio.e_resultado_of == "OK"
             and envio.e_orden_flete
@@ -195,7 +199,7 @@ def preparar_resumen_avisos(envios):
         })
 
     return {
-        "total_lote": len(envios),
+        "total_lote": len(envios_elegibles),
         "total_ok": total_ok,
         "total_error": total_error,
         "funcionarios": funcionarios,
