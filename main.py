@@ -9,8 +9,8 @@ from database.modelos import Base
 from database.modelos import Envio
 from database.schema import asegurar_columnas_operativas
 from routes.admin import registrar_rutas_admin
-from routes.auth import etiqueta_area, login_habilitado, registrar_rutas_auth
-from routes.auth import usuario_es_admin, usuario_tiene_permiso
+from routes.auth import login_habilitado, registrar_rutas_auth
+from routes.auth import usuario_autenticado
 from routes.avisos import registrar_rutas_avisos
 from routes.carga_masiva import registrar_rutas_carga_masiva
 from routes.catalogos import registrar_rutas_catalogos
@@ -62,19 +62,18 @@ def inyectar_contador_avisos():
 
 @app.context_processor
 def inyectar_estado_auth():
-    """Expone estado de sesion y permisos a todas las plantillas."""
-    area_actual = session.get("usuario_area", "")
-    admin_actual = usuario_es_admin()
-    mensajeria_visible = (not login_habilitado()) or area_actual == "mensajeria"
+    """Expone el contrato single-user y compatibilidad minima al frontend heredado."""
+    acceso_autenticado = usuario_autenticado()
     return {
         "login_habilitado": login_habilitado(),
         "usuario_actual": session.get("usuario_nombre", ""),
         "usuario_display": session.get("usuario_display", session.get("usuario_nombre", "")),
-        "usuario_area": area_actual,
-        "usuario_area_etiqueta": etiqueta_area(area_actual) if area_actual else "",
-        "usuario_es_admin": admin_actual,
-        "mostrar_menu_mensajeria": mensajeria_visible,
-        "puede": usuario_tiene_permiso,
+        # Variables heredadas conservadas temporalmente para base.html y Admin.
+        "usuario_area": "mensajeria" if acceso_autenticado else "",
+        "usuario_area_etiqueta": "Mensajeria" if acceso_autenticado else "",
+        "usuario_es_admin": acceso_autenticado,
+        "mostrar_menu_mensajeria": acceso_autenticado,
+        "puede": lambda _permiso: acceso_autenticado,
     }
 
 

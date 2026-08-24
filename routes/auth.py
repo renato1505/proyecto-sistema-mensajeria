@@ -15,7 +15,6 @@ from config.settings import (
 from database.conexion import SessionLocal
 from database.modelos import UsuarioSistema
 from services.auditoria import registrar_accion
-from services.permisos import permiso_para_ruta, usuario_puede
 from services.recuperacion import crear_solicitud_recuperacion
 from utils.fechas import ahora_chile
 from utils.validaciones import clave_rut_usuario, normalizar_rut_usuario
@@ -50,16 +49,13 @@ def usuario_autenticado():
 
 
 def usuario_es_admin():
-    if not LOGIN_REQUIRED:
-        return True
-
-    return session.get("usuario_rol") == "admin"
+    """Compatibilidad temporal para el Admin heredado en el contrato single-user."""
+    return usuario_autenticado()
 
 
-def usuario_tiene_permiso(permiso):
-    if not LOGIN_REQUIRED:
-        return True
-    return usuario_puede(session.get("usuario_area"), session.get("usuario_rol"), permiso)
+def usuario_tiene_permiso(_permiso):
+    """Compatibilidad temporal para plantillas heredadas; no aplica una matriz."""
+    return usuario_autenticado()
 
 
 def _usuarios_desde_bd():
@@ -414,14 +410,6 @@ def registrar_rutas_auth(app):
         if session.get("debe_cambiar_clave") and request.endpoint not in {"cambiar_clave_obligatoria", "logout"}:
             return redirect(url_for("cambiar_clave_obligatoria"))
 
-        permiso = permiso_para_ruta(request.path, request.method)
-        if permiso and not usuario_tiene_permiso(permiso):
-            _registrar_permiso_denegado(permiso)
-            flash("No tienes permisos para acceder a esa seccion.", "danger")
-            if usuario_es_admin():
-                return redirect("/admin")
-            return redirect("/")
-
     @app.route("/login", methods=["GET", "POST"])
     def login():
         if not LOGIN_REQUIRED:
@@ -498,6 +486,7 @@ def registrar_rutas_auth(app):
         usuario = session.get("usuario_nombre", "")
 
         if request.method == "POST":
+            clave_actual = request.form.get("clave_actual", "")
             clave = request.form.get("clave", "")
             confirmar = request.form.get("confirmar_clave", "")
 
@@ -512,8 +501,12 @@ def registrar_rutas_auth(app):
                     flash("No se encontro el usuario en la base de datos.", "danger")
                     return render_template("cambiar_clave.html")
 
+                if not verificar_clave_usuario(clave_actual, usuario_db.u_clave_hash):
+                    flash("La clave actual no es correcta.", "danger")
+                    return render_template("cambiar_clave.html")
+
                 if verificar_clave_usuario(clave, usuario_db.u_clave_hash):
-                    flash("La nueva clave debe ser distinta a la clave temporal.", "warning")
+                    flash("La nueva clave debe ser distinta a la clave actual.", "warning")
                     return render_template("cambiar_clave.html")
 
                 from services.usuarios import cambiar_clave_propia
