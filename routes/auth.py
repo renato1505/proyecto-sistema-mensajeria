@@ -48,16 +48,6 @@ def usuario_autenticado():
     return bool(session.get("usuario_autenticado"))
 
 
-def usuario_es_admin():
-    """Compatibilidad temporal para el Admin heredado en el contrato single-user."""
-    return usuario_autenticado()
-
-
-def usuario_tiene_permiso(_permiso):
-    """Compatibilidad temporal para plantillas heredadas; no aplica una matriz."""
-    return usuario_autenticado()
-
-
 def _usuarios_desde_bd():
     usuarios = {}
     db = SessionLocal()
@@ -131,17 +121,6 @@ def obtener_usuarios_configurados():
     return usuarios
 
 
-def etiqueta_area(area):
-    etiquetas = {
-        "mensajeria": "Mensajeria",
-        "recepcion": "Recepcion",
-        "seguridad": "Seguridad",
-        "administracion": "Administracion",
-        "admin": "Admin",
-    }
-    return etiquetas.get((area or "").strip().lower(), (area or AREA_POR_DEFECTO).title())
-
-
 def _clave_intentos_login(usuario):
     ip = _ip_cliente()
     return f"{ip}:{usuario}"
@@ -185,25 +164,6 @@ def _registrar_evento_login(usuario, accion, detalle):
     db = SessionLocal()
     try:
         registrar_accion(db, accion, "login", usuario or "sin_usuario", detalle, usuario=usuario or "sistema")
-        db.commit()
-    except Exception:
-        db.rollback()
-    finally:
-        db.close()
-
-
-def _registrar_permiso_denegado(permiso):
-    usuario = session.get("usuario_nombre") or "sistema"
-    db = SessionLocal()
-    try:
-        registrar_accion(
-            db,
-            "permiso_denegado",
-            "seguridad",
-            permiso,
-            f"Ruta: {request.path}. Metodo: {request.method}.",
-            usuario=usuario,
-        )
         db.commit()
     except Exception:
         db.rollback()
@@ -292,53 +252,6 @@ def listar_bloqueos_login():
         )
 
     return sorted(bloqueos, key=lambda item: (not item["bloqueado"], item["usuario"], item["ip"]))
-
-
-def bloqueos_por_usuario():
-    resumen = {}
-    for bloqueo in listar_bloqueos_login():
-        usuario = (bloqueo.get("usuario") or "").strip().lower()
-        if not usuario:
-            continue
-        resumen.setdefault(usuario, {"intentos": 0, "bloqueado": False})
-        resumen[usuario]["intentos"] = max(resumen[usuario]["intentos"], bloqueo.get("intentos", 0))
-        resumen[usuario]["bloqueado"] = resumen[usuario]["bloqueado"] or bool(bloqueo.get("bloqueado"))
-    return resumen
-
-
-def desbloquear_login(clave_intentos):
-    clave_intentos = (clave_intentos or "").strip()
-    if not clave_intentos:
-        return False
-    return INTENTOS_LOGIN.pop(clave_intentos, None) is not None
-
-
-def metricas_seguridad_login():
-    bloqueos = listar_bloqueos_login()
-    return {
-        "intentos": len(bloqueos),
-        "bloqueos": sum(1 for item in bloqueos if item["bloqueado"]),
-        "max_intentos": MAX_INTENTOS_LOGIN,
-        "bloqueo_minutos": max(1, BLOQUEO_LOGIN_SEGUNDOS // 60),
-    }
-
-
-def actualizar_politica_login(max_intentos, bloqueo_minutos):
-    global MAX_INTENTOS_LOGIN, BLOQUEO_LOGIN_SEGUNDOS
-
-    try:
-        max_intentos = int(max_intentos)
-        bloqueo_minutos = int(bloqueo_minutos)
-    except (TypeError, ValueError):
-        raise ValueError("La politica debe usar numeros validos.")
-
-    if max_intentos < 3 or max_intentos > 10:
-        raise ValueError("Los intentos deben estar entre 3 y 10.")
-    if bloqueo_minutos < 1 or bloqueo_minutos > 120:
-        raise ValueError("La duracion debe estar entre 1 y 120 minutos.")
-
-    MAX_INTENTOS_LOGIN = max_intentos
-    BLOQUEO_LOGIN_SEGUNDOS = bloqueo_minutos * 60
 
 
 def _clave_es_hash(valor):
@@ -440,9 +353,6 @@ def registrar_rutas_auth(app):
                 session.permanent = True
                 session["usuario_autenticado"] = True
                 session["usuario_nombre"] = usuario
-                session["usuario_area"] = usuario_configurado.area
-                session["usuario_area_base"] = usuario_configurado.area
-                session["usuario_rol"] = usuario_configurado.rol
                 session["usuario_display"] = usuario_configurado.nombre or usuario
                 session["debe_cambiar_clave"] = bool(usuario_configurado.debe_cambiar_clave)
                 session["ultima_actividad"] = time.time()

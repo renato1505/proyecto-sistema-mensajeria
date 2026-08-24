@@ -81,9 +81,6 @@ class AuthV2ContractTest(unittest.TestCase):
             "usuario_autenticado": True,
             "usuario_nombre": "operador",
             "usuario_display": "Operador Mensajeria",
-            "usuario_area": "recepcion",
-            "usuario_area_base": "recepcion",
-            "usuario_rol": "visita",
             "debe_cambiar_clave": False,
             "ultima_actividad": time.time(),
         }

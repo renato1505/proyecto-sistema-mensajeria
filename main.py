@@ -8,13 +8,12 @@ from database.conexion import SessionLocal, engine
 from database.modelos import Base
 from database.modelos import Envio
 from database.schema import asegurar_columnas_operativas
-from routes.admin import registrar_rutas_admin
 from routes.auth import login_habilitado, registrar_rutas_auth
-from routes.auth import usuario_autenticado
 from routes.avisos import registrar_rutas_avisos
 from routes.carga_masiva import registrar_rutas_carga_masiva
 from routes.catalogos import registrar_rutas_catalogos
 from routes.catalogos_ajax import registrar_rutas_catalogos_ajax
+from routes.configuracion import registrar_rutas_configuracion
 from routes.envios import registrar_rutas_envios
 from routes.historico import registrar_rutas_historico
 from routes.historico_ajax import registrar_rutas_historico_ajax
@@ -62,18 +61,11 @@ def inyectar_contador_avisos():
 
 @app.context_processor
 def inyectar_estado_auth():
-    """Expone el contrato single-user y compatibilidad minima al frontend heredado."""
-    acceso_autenticado = usuario_autenticado()
+    """Expone solamente los datos de sesion usados por la interfaz V2."""
     return {
         "login_habilitado": login_habilitado(),
         "usuario_actual": session.get("usuario_nombre", ""),
         "usuario_display": session.get("usuario_display", session.get("usuario_nombre", "")),
-        # Variables heredadas conservadas temporalmente para base.html y Admin.
-        "usuario_area": "mensajeria" if acceso_autenticado else "",
-        "usuario_area_etiqueta": "Mensajeria" if acceso_autenticado else "",
-        "usuario_es_admin": acceso_autenticado,
-        "mostrar_menu_mensajeria": acceso_autenticado,
-        "puede": lambda _permiso: acceso_autenticado,
     }
 
 
@@ -84,7 +76,7 @@ asegurar_columnas_operativas()
 normalizar_datos_operativos()
 
 registrar_rutas_auth(app)
-registrar_rutas_admin(app)
+registrar_rutas_configuracion(app)
 registrar_rutas_paginas(app)
 registrar_rutas_envios(app)
 registrar_rutas_catalogos(app)

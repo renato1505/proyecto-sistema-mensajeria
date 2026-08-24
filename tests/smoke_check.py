@@ -31,6 +31,7 @@ def main():
         "/en_proceso",
         "/historico",
         "/of_correo",
+        "/configuracion",
     ]:
         response = client.get(ruta)
         print(f"{ruta}: {response.status_code}")
@@ -39,11 +40,15 @@ def main():
 
     inicio = client.get("/", follow_redirects=False)
     reportes_retirado = client.get("/reportes")
+    admin_retirado = client.get("/admin")
     print(f"/: {inicio.status_code} -> {inicio.headers.get('Location')}")
     print(f"/reportes retirado: {reportes_retirado.status_code}")
+    print(f"/admin retirado: {admin_retirado.status_code}")
     if inicio.status_code != 302 or inicio.headers.get("Location") != "/envios":
         raise SystemExit(1)
     if reportes_retirado.status_code != 404:
+        raise SystemExit(1)
+    if admin_retirado.status_code != 404:
         raise SystemExit(1)
 
     sin_token = client.post("/descargar_historico_seleccionados")

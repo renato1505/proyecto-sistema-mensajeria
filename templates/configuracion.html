@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Configuracion{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <section class="card border-0 shadow-sm mx-auto" style="max-width: 760px;">
+        <div class="card-body p-4 p-lg-5">
+            <span class="text-uppercase text-muted small fw-semibold">Cuenta</span>
+            <h1 class="h3 mt-2 mb-2">Configuracion</h1>
+            <p class="text-muted mb-4">Datos de la cuenta que utiliza Mensajeria.</p>
+
+            <dl class="row gy-3 mb-4">
+                <dt class="col-sm-4 text-muted">Nombre de usuario</dt>
+                <dd class="col-sm-8 mb-0"><strong>{{ cuenta.usuario }}</strong></dd>
+
+                <dt class="col-sm-4 text-muted">Nombre visible</dt>
+                <dd class="col-sm-8 mb-0">{{ cuenta.nombre }}</dd>
+
+                <dt class="col-sm-4 text-muted">Ultimo acceso</dt>
+                <dd class="col-sm-8 mb-0">
+                    {{ cuenta.ultimo_acceso.strftime("%d/%m/%Y %H:%M") if cuenta.ultimo_acceso else "No disponible" }}
+                </dd>
+
+                <dt class="col-sm-4 text-muted">Ultima IP</dt>
+                <dd class="col-sm-8 mb-0">{{ cuenta.ultima_ip or "No disponible" }}</dd>
+            </dl>
+
+            <div class="d-flex flex-wrap gap-2 border-top pt-4">
+                <a class="btn btn-dark" href="/cambiar_clave">Cambiar contrasena</a>
+                <form method="POST" action="/logout" class="m-0">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-outline-secondary" type="submit">Cerrar sesion</button>
+                </form>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}

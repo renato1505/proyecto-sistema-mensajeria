@@ -14,7 +14,6 @@
             <h1>Catalogos operativos</h1>
             <p>Administra remitentes y destinatarios frecuentes para mantener el autocompletado limpio y confiable.</p>
         </div>
-        {% if puede("catalogos.gestionar") %}
         <div class="catalogos-actions">
             <button class="btn btn-success btn-sm" type="button" onclick="abrirRemitenteModal()">
                 Agregar remitente
@@ -23,7 +22,6 @@
                 Agregar destinatario
             </button>
         </div>
-        {% endif %}
     </section>
 
     <section class="catalogos-metrics">
@@ -105,11 +103,9 @@
                     <h2>Destinatarios</h2>
                     <p>Mostrando {{ pagination.pagina_inicio }}-{{ pagination.pagina_fin }} de {{ total_destinatarios }} registro(s).</p>
                 </div>
-                {% if puede("catalogos.gestionar") %}
-                    <button class="btn btn-primary btn-sm" type="button" onclick="abrirDestinatarioModal()">
-                        Agregar destinatario
-                    </button>
-                {% endif %}
+                <button class="btn btn-primary btn-sm" type="button" onclick="abrirDestinatarioModal()">
+                    Agregar destinatario
+                </button>
             </div>
 
             <div class="table-responsive">
@@ -122,7 +118,7 @@
                             <th>Contacto</th>
                             <th>Comuna</th>
                             <th>Region</th>
-                            {% if puede("catalogos.gestionar") %}<th class="text-end">Acciones</th>{% endif %}
+                            <th class="text-end">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -144,7 +140,6 @@
                                 </td>
                                 <td>{{ destinatario.d_comuna }}</td>
                                 <td>{{ destinatario.d_region }}</td>
-                                {% if puede("catalogos.gestionar") %}
                                 <td class="text-end catalogos-row-actions">
                                     <button
                                         class="btn btn-outline-secondary btn-sm"
@@ -172,11 +167,10 @@
                                         Eliminar
                                     </button>
                                 </td>
-                                {% endif %}
                             </tr>
                         {% else %}
                             <tr>
-                                <td colspan="{% if puede('catalogos.gestionar') %}7{% else %}6{% endif %}" class="catalogos-empty">No hay destinatarios con esos filtros.</td>
+                                <td colspan="7" class="catalogos-empty">No hay destinatarios con esos filtros.</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -236,11 +230,9 @@
                     <h2>Remitentes</h2>
                     <p>Mostrando {{ pagination.pagina_inicio }}-{{ pagination.pagina_fin }} de {{ total_remitentes }} registro(s).</p>
                 </div>
-                {% if puede("catalogos.gestionar") %}
-                    <button class="btn btn-success btn-sm" type="button" onclick="abrirRemitenteModal()">
-                        Agregar remitente
-                    </button>
-                {% endif %}
+                <button class="btn btn-success btn-sm" type="button" onclick="abrirRemitenteModal()">
+                    Agregar remitente
+                </button>
             </div>
 
             <div class="table-responsive">
@@ -251,7 +243,7 @@
                             <th>Correo</th>
                             <th>Division</th>
                             <th>Centro de costo</th>
-                            {% if puede("catalogos.gestionar") %}<th class="text-end">Acciones</th>{% endif %}
+                            <th class="text-end">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -261,7 +253,6 @@
                                 <td>{{ remitente.r_correo }}</td>
                                 <td><span class="division-badge">{{ remitente.r_division or '-' }}</span></td>
                                 <td>{{ remitente.r_centro_costo }}</td>
-                                {% if puede("catalogos.gestionar") %}
                                 <td class="text-end catalogos-row-actions">
                                     <button
                                         class="btn btn-outline-secondary btn-sm"
@@ -285,11 +276,10 @@
                                         Eliminar
                                     </button>
                                 </td>
-                                {% endif %}
                             </tr>
                         {% else %}
                             <tr>
-                                <td colspan="{% if puede('catalogos.gestionar') %}5{% else %}4{% endif %}" class="catalogos-empty">No hay remitentes con esos filtros.</td>
+                                <td colspan="5" class="catalogos-empty">No hay remitentes con esos filtros.</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -300,7 +290,6 @@
     {% endif %}
 </div>
 
-{% if puede("catalogos.gestionar") %}
 <div class="modal fade" id="remitenteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <form class="modal-content" method="POST" action="/catalogos/remitentes/guardar">
@@ -488,13 +477,11 @@
         </form>
     </div>
 </div>
-{% endif %}
 
 {% endblock %}
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/autocomplete_operativo.js') }}"></script>
-{% if puede("catalogos.gestionar") %}
 <script>
     const remitenteModal = new bootstrap.Modal(document.getElementById("remitenteModal"));
     const destinatarioModal = new bootstrap.Modal(document.getElementById("destinatarioModal"));
@@ -577,5 +564,4 @@
         eliminarCatalogoModal.show();
     }
 </script>
-{% endif %}
 {% endblock %}
