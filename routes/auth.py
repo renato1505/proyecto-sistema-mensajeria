@@ -1,4 +1,4 @@
-import hmac
+import logging
 import time
 from dataclasses import dataclass
 from urllib.parse import urlsplit
@@ -6,22 +6,14 @@ from urllib.parse import urlsplit
 from flask import flash, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash
 
-from config.settings import (
-    APP_ACCESS_PASSWORD,
-    APP_USERS,
-    LOGIN_REQUIRED,
-    SESSION_TIMEOUT_MINUTES,
-)
+from config.settings import LOGIN_REQUIRED, SESSION_TIMEOUT_MINUTES
 from database.conexion import SessionLocal
 from database.modelos import UsuarioSistema
 from services.auditoria import registrar_accion
-from services.recuperacion import crear_solicitud_recuperacion
 from utils.fechas import ahora_chile
-from utils.validaciones import clave_rut_usuario, normalizar_rut_usuario
 
 
-USUARIOS_POR_DEFECTO = ["mensajeria", "recepcion", "seguridad"]
-AREA_POR_DEFECTO = "mensajeria"
+logger = logging.getLogger(__name__)
 INTENTOS_LOGIN = {}
 MAX_INTENTOS_LOGIN = 5
 BLOQUEO_LOGIN_SEGUNDOS = 10 * 60
@@ -30,9 +22,7 @@ BLOQUEO_LOGIN_SEGUNDOS = 10 * 60
 @dataclass(frozen=True)
 class UsuarioAcceso:
     usuario: str
-    clave: str
-    area: str = AREA_POR_DEFECTO
-    rol: str = "usuario"
+    clave_hash: str
     nombre: str = ""
     debe_cambiar_clave: bool = False
 
@@ -59,16 +49,17 @@ def _usuarios_desde_bd():
             .all()
         )
         for fila in filas:
+            if not _clave_es_hash(fila.u_clave_hash):
+                logger.warning(
+                    "Usuario activo '%s' tiene una clave sin hash Werkzeug reconocido; requiere reset externo.",
+                    fila.u_usuario,
+                )
             usuarios[fila.u_usuario] = UsuarioAcceso(
                 usuario=fila.u_usuario,
-                clave=fila.u_clave_hash,
-                area=fila.u_area,
-                rol=fila.u_rol,
+                clave_hash=fila.u_clave_hash,
                 nombre=fila.u_nombre,
                 debe_cambiar_clave=bool(fila.u_debe_cambiar_clave),
             )
-    except Exception:
-        usuarios = {}
     finally:
         db.close()
 
@@ -76,49 +67,7 @@ def _usuarios_desde_bd():
 
 
 def obtener_usuarios_configurados():
-    usuarios = _usuarios_desde_bd()
-
-    for item in (APP_USERS or "").split(";"):
-        item = item.strip()
-        if not item:
-            continue
-
-        if "|" in item:
-            partes = item.split("|", 3)
-            if len(partes) == 4:
-                usuario, area, rol, clave = partes
-            elif len(partes) == 3:
-                usuario, area, clave = partes
-                rol = "usuario"
-            else:
-                continue
-        elif ":" in item:
-            usuario, clave = item.split(":", 1)
-            area = AREA_POR_DEFECTO
-            rol = "usuario"
-        else:
-            continue
-
-        usuario = usuario.strip().lower()
-        area = (area or AREA_POR_DEFECTO).strip().lower()
-        rol = (rol or "usuario").strip().lower()
-        if rol not in {"visita", "usuario", "supervisor", "admin"}:
-            rol = "usuario"
-        clave = clave.strip()
-
-        if usuario and clave and usuario not in usuarios:
-            usuarios[usuario] = UsuarioAcceso(usuario=usuario, clave=clave, area=area, rol=rol, nombre=usuario)
-
-    if not usuarios and APP_ACCESS_PASSWORD:
-        usuarios["mensajeria"] = UsuarioAcceso(
-            usuario="mensajeria",
-            clave=APP_ACCESS_PASSWORD,
-            area=AREA_POR_DEFECTO,
-            rol="usuario",
-            nombre="mensajeria",
-        )
-
-    return usuarios
+    return _usuarios_desde_bd()
 
 
 def _clave_intentos_login(usuario):
@@ -167,43 +116,6 @@ def _registrar_evento_login(usuario, accion, detalle):
         db.commit()
     except Exception:
         db.rollback()
-    finally:
-        db.close()
-
-
-def _registrar_solicitud_recuperacion(usuario, rut):
-    usuario = (usuario or "").strip().lower()
-    rut = normalizar_rut_usuario(rut)
-
-    db = SessionLocal()
-    try:
-        usuario_db = db.query(UsuarioSistema).filter(UsuarioSistema.u_usuario == usuario).first()
-        if not usuario_db or clave_rut_usuario(usuario_db.u_rut) != clave_rut_usuario(rut):
-            registrar_accion(
-                db,
-                "solicitud_recuperacion_rechazada",
-                "usuario",
-                usuario or "sin_usuario",
-                f"RUT no coincide o usuario inexistente. IP: {_ip_cliente()}.",
-                usuario=usuario or "sistema",
-            )
-            db.commit()
-            return False
-
-        crear_solicitud_recuperacion(db, usuario, "", _ip_cliente(), rut)
-        registrar_accion(
-            db,
-            "solicitud_recuperacion",
-            "usuario",
-            usuario or "sin_usuario",
-            f"Solicitud de cambio de clave validada con RUT. IP: {_ip_cliente()}.",
-            usuario=usuario or "sistema",
-        )
-        db.commit()
-        return True
-    except Exception:
-        db.rollback()
-        return False
     finally:
         db.close()
 
@@ -259,24 +171,13 @@ def _clave_es_hash(valor):
 
 
 def verificar_clave_usuario(clave_ingresada, clave_configurada):
-    if not clave_configurada:
+    if not clave_configurada or not _clave_es_hash(clave_configurada):
         return False
 
-    if _clave_es_hash(clave_configurada):
-        try:
-            return check_password_hash(clave_configurada, clave_ingresada)
-        except ValueError:
-            return False
-
-    return hmac.compare_digest(clave_ingresada, clave_configurada)
-
-
-def nombres_usuarios_login():
-    usuarios = obtener_usuarios_configurados()
-    if usuarios:
-        return list(usuarios.keys())
-
-    return USUARIOS_POR_DEFECTO
+    try:
+        return check_password_hash(clave_configurada, clave_ingresada)
+    except ValueError:
+        return False
 
 
 def _destino_login_seguro(destino):
@@ -306,7 +207,7 @@ def registrar_rutas_auth(app):
         if not LOGIN_REQUIRED:
             return
 
-        rutas_publicas = {"login", "solicitar_recuperacion", "static"}
+        rutas_publicas = {"login", "static"}
         if request.endpoint in rutas_publicas:
             return
 
@@ -328,13 +229,18 @@ def registrar_rutas_auth(app):
         if not LOGIN_REQUIRED:
             return redirect("/")
 
-        usuarios = obtener_usuarios_configurados()
+        try:
+            usuarios = obtener_usuarios_configurados()
+        except Exception:
+            logger.exception("No se pudo consultar usuarios_sistema durante el login.")
+            flash("El servicio de acceso no esta disponible temporalmente.", "danger")
+            return render_template("login.html"), 503
 
         if request.method == "POST":
             usuario = request.form.get("usuario", "").strip().lower()
             clave = request.form.get("clave", "")
             usuario_configurado = usuarios.get(usuario)
-            clave_esperada = usuario_configurado.clave if usuario_configurado else ""
+            clave_esperada = usuario_configurado.clave_hash if usuario_configurado else ""
             clave_intentos = _clave_intentos_login(usuario)
             bloqueo_restante = _segundos_bloqueo_restantes(clave_intentos)
 
@@ -346,7 +252,7 @@ def registrar_rutas_auth(app):
                     f"Intento bloqueado desde IP {_ip_cliente()}. Restan {minutos} minuto(s).",
                 )
                 flash(f"Acceso bloqueado temporalmente. Intenta nuevamente en {minutos} minuto(s).", "danger")
-                return render_template("login.html", usuarios_login=nombres_usuarios_login())
+                return render_template("login.html")
 
             if verificar_clave_usuario(clave, clave_esperada):
                 session.clear()
@@ -374,7 +280,7 @@ def registrar_rutas_auth(app):
                     f"Acceso bloqueado temporalmente por {max(1, BLOQUEO_LOGIN_SEGUNDOS // 60)} minuto(s).",
                     "danger",
                 )
-                return render_template("login.html", usuarios_login=nombres_usuarios_login())
+                return render_template("login.html")
 
             _registrar_evento_login(
                 usuario,
@@ -386,7 +292,7 @@ def registrar_rutas_auth(app):
         if not usuarios:
             flash("Los usuarios de acceso no estan configurados.", "danger")
 
-        return render_template("login.html", usuarios_login=nombres_usuarios_login())
+        return render_template("login.html")
 
     @app.route("/cambiar_clave", methods=["GET", "POST"])
     def cambiar_clave_obligatoria():
@@ -444,22 +350,6 @@ def registrar_rutas_auth(app):
                 db.close()
 
         return render_template("cambiar_clave.html")
-
-    @app.route("/login/recuperar", methods=["POST"])
-    def solicitar_recuperacion():
-        usuario = request.form.get("usuario_recuperacion", "").strip().lower()
-        rut = request.form.get("rut_recuperacion", "").strip()
-
-        if not usuario or not rut:
-            flash("Completa usuario y RUT para solicitar soporte.", "warning")
-            return redirect(url_for("login"))
-
-        if not _registrar_solicitud_recuperacion(usuario, rut):
-            flash("No se pudo validar la solicitud. Revisa usuario y RUT o contacta al administrador.", "danger")
-            return redirect(url_for("login"))
-
-        flash("Solicitud registrada. El administrador podra generar una clave temporal.", "info")
-        return redirect(url_for("login"))
 
     @app.route("/logout", methods=["POST"])
     def logout():

@@ -133,8 +133,8 @@ class AuthV2ContractTest(unittest.TestCase):
     def test_bloqueo_por_intentos_fallidos_continua_funcionando(self):
         token = self._csrf_login()
         with patch.object(auth, "obtener_usuarios_configurados", return_value={}), patch.object(
-            auth, "nombres_usuarios_login", return_value=[]
-        ), patch.object(auth, "_registrar_evento_login"):
+            auth, "_registrar_evento_login"
+        ):
             for _ in range(auth.MAX_INTENTOS_LOGIN):
                 self.client.post(
                     "/login",
@@ -148,7 +148,7 @@ class AuthV2ContractTest(unittest.TestCase):
         token = self._csrf_login()
         usuario = auth.UsuarioAcceso(
             usuario="operador",
-            clave=generate_password_hash("secreto-seguro"),
+            clave_hash=generate_password_hash("secreto-seguro"),
             nombre="Operador",
         )
         with patch.object(auth, "obtener_usuarios_configurados", return_value={"operador": usuario}), patch.object(
@@ -161,6 +161,31 @@ class AuthV2ContractTest(unittest.TestCase):
         self.assertEqual(respuesta.status_code, 302)
         with self.client.session_transaction() as sesion:
             self.assertTrue(sesion["usuario_autenticado"])
+
+    def test_login_rechaza_credencial_legacy_en_texto_plano(self):
+        token = self._csrf_login()
+        usuario = auth.UsuarioAcceso(usuario="operador", clave_hash="texto-plano", nombre="Operador")
+        with patch.object(auth, "obtener_usuarios_configurados", return_value={"operador": usuario}), patch.object(
+            auth, "_registrar_evento_login"
+        ):
+            respuesta = self.client.post(
+                "/login",
+                data={"csrf_token": token, "usuario": "operador", "clave": "texto-plano"},
+            )
+        self.assertEqual(respuesta.status_code, 200)
+        with self.client.session_transaction() as sesion:
+            self.assertNotIn("usuario_autenticado", sesion)
+
+    def test_login_falla_cerrado_si_bd_no_disponible(self):
+        with patch.object(auth, "obtener_usuarios_configurados", side_effect=RuntimeError("BD no disponible")), patch.object(
+            auth.logger, "exception"
+        ) as registrar_error:
+            respuesta = self.client.get("/login")
+        self.assertEqual(respuesta.status_code, 503)
+        registrar_error.assert_called_once()
+
+    def test_ruta_recuperacion_legacy_no_existe(self):
+        self.assertNotIn("/login/recuperar", {regla.rule for regla in self.app.url_map.iter_rules()})
 
     def test_cambio_de_clave_requiere_clave_actual(self):
         usuario = SimpleNamespace(

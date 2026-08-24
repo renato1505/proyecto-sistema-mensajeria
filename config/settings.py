@@ -26,13 +26,32 @@ def _load_env_file():
 _load_env_file()
 
 
+SECRET_KEY_DESARROLLO = "clave_local_solo_desarrollo"
+
+
+def _entorno_productivo():
+    entorno = (os.getenv("APP_ENV") or os.getenv("FLASK_ENV") or "").strip().lower()
+    en_render = os.getenv("RENDER", "").strip().lower() == "true"
+    return en_render or entorno in {"production", "produccion", "prod"}
+
+
+def validar_configuracion_seguridad(es_produccion, secret_key, login_required):
+    if not es_produccion:
+        return
+    if not secret_key or secret_key == SECRET_KEY_DESARROLLO:
+        raise RuntimeError("SECRET_KEY debe configurarse con un valor seguro en produccion.")
+    if not login_required:
+        raise RuntimeError("LOGIN_REQUIRED debe estar activado en produccion.")
+
+
 DATABASE_URL = os.getenv("DATABASE_URL", "")
-SECRET_KEY = os.getenv("SECRET_KEY", "clave_local_solo_desarrollo")
+ES_PRODUCCION = _entorno_productivo()
+SECRET_KEY = os.getenv("SECRET_KEY", "") or SECRET_KEY_DESARROLLO
 FLASK_DEBUG = os.getenv("FLASK_DEBUG", "0").strip() == "1"
 LOGIN_REQUIRED = os.getenv("LOGIN_REQUIRED", "0").strip() == "1"
-APP_ACCESS_PASSWORD = os.getenv("APP_ACCESS_PASSWORD", "")
-APP_USERS = os.getenv("APP_USERS", "")
 SESSION_TIMEOUT_MINUTES = int(os.getenv("SESSION_TIMEOUT_MINUTES", "30"))
+
+validar_configuracion_seguridad(ES_PRODUCCION, SECRET_KEY, LOGIN_REQUIRED)
 
 CORREO_EMISOR = os.getenv("CORREO_EMISOR", "")
 CORREO_CLAVE_APP = os.getenv("CORREO_CLAVE_APP", "")

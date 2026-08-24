@@ -37,7 +37,7 @@ Antes de desplegar:
 3. La app debe usar PostgreSQL.
 4. Debe existir una clave fuerte en `SECRET_KEY`.
 5. Debe activarse login con `LOGIN_REQUIRED=1`.
-6. Deben definirse los usuarios en `APP_USERS`.
+6. Debe existir un usuario activo con hash Werkzeug en `usuarios_sistema`.
 7. Debe definirse `SESSION_TIMEOUT_MINUTES` segun la politica de inactividad deseada.
 
 ## Variables de entorno obligatorias
@@ -49,7 +49,6 @@ DATABASE_URL=postgresql+psycopg2://...
 SECRET_KEY=clave-larga-y-segura
 FLASK_DEBUG=0
 LOGIN_REQUIRED=1
-APP_USERS=admin|admin|admin|clave-admin-segura;fcespedes|mensajeria|usuario|clave-temporal
 SESSION_TIMEOUT_MINUTES=30
 
 CORREO_EMISOR=correo-del-sistema@gmail.com
@@ -154,7 +153,7 @@ Si ese correo no se puede enviar, la eliminacion se bloquea.
 No publicar la app sin:
 
 - `LOGIN_REQUIRED=1`.
-- `APP_USERS` con al menos un usuario `admin` de respaldo y claves fuertes.
+- Al menos un usuario activo en `usuarios_sistema` con clave hasheada.
 - `SESSION_TIMEOUT_MINUTES` definido.
 - `SECRET_KEY` fuerte.
 - HTTPS activo.
@@ -162,19 +161,7 @@ No publicar la app sin:
 
 El sistema maneja datos personales como nombres, correos, telefonos, direcciones, RUT y ordenes de flete.
 
-Formato recomendado para `APP_USERS`:
-
-```text
-usuario|area|rol|clave
-```
-
-Ejemplo:
-
-```text
-admin|admin|admin|clave-admin-segura;fcespedes|mensajeria|usuario|clave-temporal
-```
-
-Los usuarios creados desde el panel Admin quedan en la base de datos y son la fuente principal de acceso. `APP_USERS` funciona como mecanismo de arranque o respaldo para no quedar fuera del sistema si aun no existen usuarios en BD.
+La unica fuente de autenticacion es `usuarios_sistema`. Para restablecer una clave desde una Shell administrativa o de Render, seguir `docs/AUTENTICACION_V2.md` y usar `scripts/reset_password.py`.
 
 ## Flujo sugerido de despliegue
 

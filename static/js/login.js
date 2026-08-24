@@ -25,23 +25,4 @@
         clave.type = clave.type === "password" ? "text" : "password";
     });
 
-    const recovery = document.getElementById("recoveryModal");
-    const recoveryForm = document.getElementById("recoveryForm");
-
-    document.getElementById("openRecovery")?.addEventListener("click", function () {
-        if (recovery) {
-            recovery.hidden = false;
-            recoveryForm?.querySelector("input[name='usuario_recuperacion']")?.focus();
-        }
-    });
-
-    function cerrarRecuperacion() {
-        if (recovery) recovery.hidden = true;
-    }
-
-    document.getElementById("closeRecovery")?.addEventListener("click", cerrarRecuperacion);
-    document.querySelector("[data-close-recovery]")?.addEventListener("click", cerrarRecuperacion);
-    document.addEventListener("keydown", function (event) {
-        if (event.key === "Escape") cerrarRecuperacion();
-    });
 })();

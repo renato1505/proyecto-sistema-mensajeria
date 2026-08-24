@@ -13,7 +13,6 @@ sys.path.insert(0, str(PROJECT_DIR))
 from routes.auth import (
     UsuarioAcceso,
     _destino_login_seguro,
-    obtener_usuarios_configurados,
     verificar_clave_usuario,
 )
 from services import avisos, email_client
@@ -131,41 +130,21 @@ class EmailClientTests(unittest.TestCase):
                 email_client.enviar_mensaje(msg)
 
 
-class AuthTests(unittest.TestCase):
-    def test_login_acepta_hash_y_clave_legacy(self):
+class AuthCredentialTests(unittest.TestCase):
+    def test_login_acepta_hash_y_rechaza_clave_legacy(self):
         from werkzeug.security import generate_password_hash
 
         hash_clave = generate_password_hash("clave-segura")
 
         self.assertTrue(verificar_clave_usuario("clave-segura", hash_clave))
         self.assertFalse(verificar_clave_usuario("otra", hash_clave))
-        self.assertTrue(verificar_clave_usuario("legacy", "legacy"))
+        self.assertFalse(verificar_clave_usuario("legacy", "legacy"))
         self.assertFalse(verificar_clave_usuario("legacy", "otra"))
 
-    def test_app_users_soporta_area_y_formato_legacy(self):
-        with patch(
-            "routes.auth.APP_USERS",
-            "admin|admin|admin|clave0;fcespedes|mensajeria|clave1;recepcion:clave2",
-        ), patch("routes.auth.APP_ACCESS_PASSWORD", ""):
-            usuarios = obtener_usuarios_configurados()
-
-        self.assertEqual(usuarios["admin"].area, "admin")
-        self.assertEqual(usuarios["admin"].rol, "admin")
-        self.assertEqual(usuarios["admin"].clave, "clave0")
-        self.assertEqual(usuarios["fcespedes"].area, "mensajeria")
-        self.assertEqual(usuarios["fcespedes"].rol, "usuario")
-        self.assertEqual(usuarios["fcespedes"].clave, "clave1")
-        self.assertEqual(usuarios["recepcion"].area, "mensajeria")
-        self.assertEqual(usuarios["recepcion"].clave, "clave2")
-
-    def test_usuario_conserva_area_y_rol_configurados(self):
-        usuario = UsuarioAcceso(usuario="fcespedes", clave="x", area="mensajeria", rol="usuario")
-        admin = UsuarioAcceso(usuario="admin", clave="x", area="admin", rol="admin")
-
-        self.assertEqual(usuario.area, "mensajeria")
-        self.assertEqual(usuario.rol, "usuario")
-        self.assertEqual(admin.area, "admin")
-        self.assertEqual(admin.rol, "admin")
+    def test_usuario_acceso_no_contiene_area_ni_rol(self):
+        usuario = UsuarioAcceso(usuario="operador", clave_hash="hash", nombre="Operador")
+        self.assertFalse(hasattr(usuario, "area"))
+        self.assertFalse(hasattr(usuario, "rol"))
 
 
 class AvisosTests(unittest.TestCase):

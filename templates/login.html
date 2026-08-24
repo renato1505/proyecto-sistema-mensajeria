@@ -35,17 +35,11 @@
                     class="form-control"
                     id="usuario"
                     name="usuario"
-                    list="usuarios-login"
                     autocomplete="username"
                     placeholder="Usuario"
                     autofocus
                     required
                 >
-                <datalist id="usuarios-login">
-                    {% for usuario in usuarios_login or [] %}
-                        <option value="{{ usuario }}"></option>
-                    {% endfor %}
-                </datalist>
             </div>
 
             <label for="clave">Clave de acceso</label>
@@ -70,7 +64,7 @@
                     <input type="checkbox" id="recordarUsuario">
                     <span>Recordar usuario</span>
                 </label>
-                <button type="button" class="login-link" id="openRecovery">Olvide mi clave</button>
+                <small class="text-muted">Si perdiste el acceso, contacta al responsable tecnico.</small>
             </div>
 
             <button class="login-submit" type="submit">
@@ -89,24 +83,6 @@
         </div>
 
     </section>
-
-    <div class="login-recovery-modal" id="recoveryModal" hidden>
-        <div class="login-recovery-backdrop" data-close-recovery></div>
-        <form method="POST" action="{{ url_for('solicitar_recuperacion') }}" class="login-recovery" id="recoveryForm">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="login-recovery-head">
-                <span>
-                    <small>Acceso privado</small>
-                    <strong>Recuperar clave</strong>
-                </span>
-                <button type="button" id="closeRecovery" aria-label="Cerrar solicitud">x</button>
-            </div>
-            <p>Ingresa tu usuario y RUT para validar la solicitud.</p>
-            <input class="form-control" name="usuario_recuperacion" placeholder="Usuario" autocomplete="username">
-            <input class="form-control" name="rut_recuperacion" placeholder="RUT registrado">
-            <button class="btn btn-dark w-100" type="submit">Solicitar cambio</button>
-        </form>
-    </div>
 </div>
 
 {% endblock %}
