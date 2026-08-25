@@ -1,7 +1,8 @@
-from flask import redirect, render_template
+from flask import render_template
 
 from database.conexion import SessionLocal
 from database.modelos import Envio
+from services.avisos import contar_lotes_avisos_pendientes
 
 
 def _resumen_pendientes(envios):
@@ -89,7 +90,23 @@ def _resumen_en_proceso(lotes):
 def registrar_rutas_paginas(app):
     @app.route("/")
     def inicio():
-        return redirect("/envios")
+        db = SessionLocal()
+        try:
+            metricas = _metricas_operacion(db)
+        finally:
+            db.close()
+
+        return render_template("inicio.html", metricas=metricas)
+
+    @app.route("/operacion")
+    def ver_operacion():
+        db = SessionLocal()
+        try:
+            metricas = _metricas_operacion(db)
+        finally:
+            db.close()
+
+        return render_template("operacion.html", metricas=metricas)
 
     @app.route("/crear_envio")
     def seleccionar_tipo_envio():
@@ -125,3 +142,25 @@ def registrar_rutas_paginas(app):
         resumen = _resumen_en_proceso(lotes)
 
         return render_template("en_proceso.html", lotes=lotes, resumen=resumen)
+
+
+def _metricas_operacion(db):
+    pendientes = db.query(Envio).filter(Envio.e_estado == "pendiente").count()
+    lotes_en_proceso = (
+        db.query(Envio.e_lote)
+        .filter(Envio.e_estado == "en_proceso", Envio.e_lote.isnot(None))
+        .distinct()
+        .count()
+    )
+    errores_of = (
+        db.query(Envio)
+        .filter(Envio.e_estado == "en_proceso", Envio.e_resultado_of == "ERROR")
+        .count()
+    )
+
+    return {
+        "pendientes": pendientes,
+        "lotes_en_proceso": lotes_en_proceso,
+        "avisos_pendientes": contar_lotes_avisos_pendientes(db),
+        "errores_of": errores_of,
+    }

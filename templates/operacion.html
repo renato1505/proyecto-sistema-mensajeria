@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Operacion | Mensajeria{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/operacion_v2.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="operation-page">
+    <section class="operation-hero">
+        <div>
+            <span class="operation-kicker">Flujo productivo</span>
+            <h1>Operacion</h1>
+            <p>Un punto central para preparar envios, gestionar lotes y completar avisos.</p>
+        </div>
+        <div class="operation-hero-actions">
+            <a class="btn btn-success" href="/nuevo_envio">Nuevo envio</a>
+            <a class="btn btn-outline-secondary" href="/carga_masiva">Carga masiva</a>
+        </div>
+    </section>
+
+    <section class="operation-stages">
+        <article class="operation-stage">
+            <span class="stage-number">01</span>
+            <h2>Preparacion</h2>
+            <p>Registra envios y revisa lo que esta listo para formar un lote.</p>
+            <div class="stage-links">
+                <a href="/nuevo_envio">Nuevo envio</a>
+                <a href="/carga_masiva">Carga masiva</a>
+                <a href="/envios">Pendientes <strong>{{ metricas.pendientes }}</strong></a>
+            </div>
+        </article>
+
+        <article class="operation-stage">
+            <span class="stage-number">02</span>
+            <h2>Lotes y OF</h2>
+            <p>Consulta lotes exportados y procesa los archivos de ordenes de flete.</p>
+            <div class="stage-links">
+                <a href="/en_proceso">En proceso <strong>{{ metricas.lotes_en_proceso }}</strong></a>
+                <a href="/of_correo">Buscar o cargar OF</a>
+                <a href="/en_proceso">Errores OF <strong>{{ metricas.errores_of }}</strong></a>
+            </div>
+        </article>
+
+        <article class="operation-stage">
+            <span class="stage-number">03</span>
+            <h2>Avisos</h2>
+            <p>Revisa y envia las comunicaciones pendientes con la logica actual.</p>
+            <div class="stage-links">
+                <a href="/avisos">Avisos actuales <strong>{{ metricas.avisos_pendientes }}</strong></a>
+            </div>
+        </article>
+    </section>
+
+    <p class="operation-note">Las rutas operativas existentes siguen disponibles y conservan su comportamiento productivo.</p>
+</div>
+{% endblock %}

@@ -5,8 +5,7 @@
 }
 
 .nuevo-hero,
-.section-panel,
-.preview-panel {
+.section-panel {
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: 8px;
@@ -22,8 +21,7 @@
 }
 
 .nuevo-kicker,
-.section-head span,
-.preview-head span {
+.section-head span {
     display: inline-flex;
     margin-bottom: 7px;
     color: var(--brand-gold);
@@ -33,8 +31,7 @@
 }
 
 .nuevo-hero h1,
-.section-head h2,
-.preview-head h2 {
+.section-head h2 {
     margin: 0;
     color: var(--text);
     font-weight: 800;
@@ -73,10 +70,7 @@
 }
 
 .nuevo-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
-    gap: 14px;
-    align-items: start;
+    display: block;
 }
 
 .form-workspace {
@@ -89,8 +83,7 @@
     padding: 17px;
 }
 
-.section-head,
-.preview-head {
+.section-head {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -102,8 +95,7 @@
     align-items: center;
 }
 
-.section-head h2,
-.preview-head h2 {
+.section-head h2 {
     font-size: 1.05rem;
 }
 
@@ -213,165 +205,10 @@
     border-radius: 8px;
 }
 
-.preview-panel {
-    position: sticky;
-    top: 90px;
-    padding: 17px;
-}
-
-.preview-head strong {
-    color: var(--brand-green-dark);
-    font-size: 1rem;
-}
-
-.starken-label {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    min-height: 520px;
-    padding: 16px;
-    color: #111;
-    background: #fff;
-    border: 2px solid #222;
-    border-radius: 8px;
-}
-
-.label-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 12px;
-    margin-bottom: 8px;
-}
-
-.label-logo {
-    color: var(--brand-green);
-    font-size: 2.25rem;
-    font-weight: 900;
-    line-height: 1;
-    text-transform: lowercase;
-}
-
-.label-barcode-wrap {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 3px;
-}
-
-.fake-barcode {
-    width: 150px;
-    height: 32px;
-    background: repeating-linear-gradient(
-        to right,
-        #000 0,
-        #000 2px,
-        #fff 2px,
-        #fff 4px,
-        #000 4px,
-        #000 5px,
-        #fff 5px,
-        #fff 8px
-    );
-}
-
-.barcode-number {
-    color: #111;
-    font-size: 0.68rem;
-    font-weight: 700;
-    line-height: 1;
-}
-
-.label-inline-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 8px 0;
-    border-top: 1px solid #7b7b7b;
-}
-
-.inline-block {
-    min-width: 0;
-}
-
-.label-section {
-    padding-top: 10px;
-    margin-top: 6px;
-    border-top: 1px solid #7b7b7b;
-}
-
-.compact-section {
-    padding-top: 9px;
-}
-
-.label-caption {
-    color: #444;
-    font-size: 0.66rem;
-    font-weight: 800;
-    line-height: 1.1;
-    text-transform: uppercase;
-}
-
-.label-value {
-    color: #111;
-    font-size: 0.88rem;
-    font-weight: 900;
-    line-height: 1.22;
-    overflow-wrap: anywhere;
-}
-
-.label-text {
-    color: #222;
-    font-size: 0.76rem;
-    line-height: 1.3;
-    margin-top: 3px;
-    overflow-wrap: anywhere;
-}
-
-.label-bottom {
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-    padding-top: 10px;
-    margin-top: 8px;
-    border-top: 1px solid #7b7b7b;
-}
-
-.compact-bottom {
-    margin-top: 6px;
-}
-
-.label-warning {
-    margin-top: 12px;
-    padding: 5px 8px;
-    color: #fff;
-    background: #000;
-    font-size: 0.72rem;
-    font-weight: 900;
-    line-height: 1.1;
-    text-align: center;
-}
-
-@media (max-width: 1200px) {
-    .nuevo-layout {
-        grid-template-columns: 1fr;
-    }
-
-    .preview-panel {
-        position: static;
-    }
-
-    .starken-label {
-        min-height: 430px;
-    }
-}
-
 @media (max-width: 900px) {
     .nuevo-hero,
     .section-head,
-    .section-head.compact,
-    .preview-head {
+    .section-head.compact {
         flex-direction: column;
     }
 
@@ -392,7 +229,6 @@
 
 @media (max-width: 576px) {
     .section-panel,
-    .preview-panel,
     .nuevo-hero {
         padding: 14px;
     }
@@ -409,17 +245,4 @@
         width: 100%;
     }
 
-    .label-top,
-    .label-bottom {
-        flex-direction: column;
-    }
-
-    .label-barcode-wrap {
-        align-items: flex-start;
-    }
-
-    .fake-barcode {
-        width: 100%;
-        max-width: 220px;
-    }
 }

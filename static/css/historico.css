@@ -228,6 +228,32 @@
     align-items: end;
 }
 
+.filter-grid-primary {
+    grid-template-columns: 1.2fr 1.6fr 1fr auto;
+}
+
+.filter-grid-primary .filter-submit .btn {
+    min-width: 120px;
+}
+
+.advanced-filters {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line-soft);
+}
+
+.advanced-filters summary {
+    width: fit-content;
+    color: var(--muted-strong);
+    cursor: pointer;
+    font-size: 0.86rem;
+    font-weight: 800;
+}
+
+.advanced-filters[open] summary {
+    margin-bottom: 12px;
+}
+
 .filter-field {
     position: relative;
 }
@@ -819,6 +845,7 @@
 
 @media (max-width: 1100px) {
     .filter-grid,
+    .filter-grid-primary,
     .detalle-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -871,6 +898,7 @@
 
 @media (max-width: 576px) {
     .filter-grid,
+    .filter-grid-primary,
     .detalle-grid,
     .historico-metrics {
         grid-template-columns: 1fr;

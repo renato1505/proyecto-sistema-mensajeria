@@ -84,26 +84,15 @@
     <section class="historico-filter-panel">
         <div class="filter-panel-head">
             <div>
-                <h2>Filtros</h2>
-                <p>La vista muestra todos los registros hasta que selecciones un criterio.</p>
+                <h2>Buscar envios</h2>
+                <p>Busca directamente por remitente, funcionario u orden de flete.</p>
             </div>
             <a href="/historico" class="btn btn-outline-secondary btn-sm">Limpiar filtros</a>
         </div>
 
         <form method="GET" action="/historico">
             <input type="hidden" name="page" value="1">
-            <div class="filter-grid">
-                <div class="filter-field">
-                    <label for="mes">Periodo</label>
-                    <select name="mes" id="mes" class="form-select">
-                        {% for item in meses_disponibles %}
-                            <option value="{{ item.valor }}" {% if item.valor == mes_seleccionado %}selected{% endif %}>
-                                {{ item.nombre }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
+            <div class="filter-grid filter-grid-primary">
                 <div class="filter-field autocomplete-wrap">
                     <label for="of">Orden de flete</label>
                     <input type="text" name="of" id="of" class="form-control" value="{{ filtro_of }}" placeholder="Ej: 123456" autocomplete="off">
@@ -111,14 +100,8 @@
                 </div>
 
                 <div class="filter-field autocomplete-wrap">
-                    <label for="destinatario">Destinatario</label>
-                    <input type="text" name="destinatario" id="destinatario" class="form-control" value="{{ filtro_destinatario }}" placeholder="Nombre destinatario" autocomplete="off">
-                    <div id="lista_destinatario_historico" class="list-group autocomplete-list"></div>
-                </div>
-
-                <div class="filter-field autocomplete-wrap">
-                    <label for="remitente">Remitente</label>
-                    <input type="text" name="remitente" id="remitente" class="form-control" value="{{ filtro_remitente }}" placeholder="Nombre remitente" autocomplete="off">
+                    <label for="remitente">Remitente / funcionario</label>
+                    <input type="text" name="remitente" id="remitente" class="form-control" value="{{ filtro_remitente }}" placeholder="Nombre del remitente" autocomplete="off">
                     <div id="lista_remitente_historico" class="list-group autocomplete-list"></div>
                 </div>
 
@@ -127,40 +110,58 @@
                     <input type="date" name="fecha" id="fecha" class="form-control" value="{{ filtro_fecha }}">
                 </div>
 
-                <div class="filter-field">
-                    <label for="fecha_desde">Desde</label>
-                    <input type="date" name="fecha_desde" id="fecha_desde" class="form-control" value="{{ fecha_desde }}">
-                </div>
-
-                <div class="filter-field">
-                    <label for="fecha_hasta">Hasta</label>
-                    <input type="date" name="fecha_hasta" id="fecha_hasta" class="form-control" value="{{ fecha_hasta }}">
-                </div>
-
-                <div class="filter-field">
-                    <label for="estado_of">Estado OF</label>
-                    <select name="estado_of" id="estado_of" class="form-select">
-                        <option value="todos" {% if estado_of == "todos" %}selected{% endif %}>Todos</option>
-                        <option value="vigentes" {% if estado_of == "vigentes" %}selected{% endif %}>Vigentes</option>
-                        <option value="anulados" {% if estado_of == "anulados" %}selected{% endif %}>Anulados</option>
-                    </select>
-                </div>
-
-                <div class="filter-field">
-                    <label for="per_page">Mostrar</label>
-                    <select name="per_page" id="per_page" class="form-select">
-                        {% for opcion in pagination.opciones_per_page %}
-                            <option value="{{ opcion }}" {% if opcion == pagination.per_page %}selected{% endif %}>
-                                {{ opcion }} por pagina
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
                 <div class="filter-field filter-submit">
-                    <button type="submit" class="btn btn-success">Aplicar filtros</button>
+                    <button type="submit" class="btn btn-success">Buscar</button>
                 </div>
             </div>
+
+            <details class="advanced-filters" {% if mes_seleccionado != "todos" or filtro_destinatario or fecha_desde or fecha_hasta or estado_of != "todos" %}open{% endif %}>
+                <summary>Filtros avanzados</summary>
+                <div class="filter-grid">
+                    <div class="filter-field">
+                        <label for="mes">Periodo</label>
+                        <select name="mes" id="mes" class="form-select">
+                            {% for item in meses_disponibles %}
+                                <option value="{{ item.valor }}" {% if item.valor == mes_seleccionado %}selected{% endif %}>{{ item.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="filter-field autocomplete-wrap">
+                        <label for="destinatario">Destinatario</label>
+                        <input type="text" name="destinatario" id="destinatario" class="form-control" value="{{ filtro_destinatario }}" placeholder="Nombre destinatario" autocomplete="off">
+                        <div id="lista_destinatario_historico" class="list-group autocomplete-list"></div>
+                    </div>
+
+                    <div class="filter-field">
+                        <label for="fecha_desde">Desde</label>
+                        <input type="date" name="fecha_desde" id="fecha_desde" class="form-control" value="{{ fecha_desde }}">
+                    </div>
+
+                    <div class="filter-field">
+                        <label for="fecha_hasta">Hasta</label>
+                        <input type="date" name="fecha_hasta" id="fecha_hasta" class="form-control" value="{{ fecha_hasta }}">
+                    </div>
+
+                    <div class="filter-field">
+                        <label for="estado_of">Estado OF</label>
+                        <select name="estado_of" id="estado_of" class="form-select">
+                            <option value="todos" {% if estado_of == "todos" %}selected{% endif %}>Todos</option>
+                            <option value="vigentes" {% if estado_of == "vigentes" %}selected{% endif %}>Vigentes</option>
+                            <option value="anulados" {% if estado_of == "anulados" %}selected{% endif %}>Anulados</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-field">
+                        <label for="per_page">Mostrar</label>
+                        <select name="per_page" id="per_page" class="form-select">
+                            {% for opcion in pagination.opciones_per_page %}
+                                <option value="{{ opcion }}" {% if opcion == pagination.per_page %}selected{% endif %}>{{ opcion }} por pagina</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </details>
         </form>
     </section>
 

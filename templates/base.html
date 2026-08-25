@@ -29,31 +29,13 @@
                             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m3 11 9-8 9 8"></path><path d="M5 10v10h14V10"></path></svg>
                             <span>Inicio</span>
                         </a>
-                        <a href="/crear_envio" class="{% if request.path.startswith('/crear_envio') or request.path.startswith('/nuevo_envio') or request.path.startswith('/carga_masiva') %}active{% endif %}">
+                        <a href="/operacion" class="{% if request.path.startswith('/operacion') or request.path.startswith('/crear_envio') or request.path.startswith('/nuevo_envio') or request.path.startswith('/carga_masiva') or request.path.startswith('/envios') or request.path.startswith('/editar_envio') or request.path.startswith('/en_proceso') or request.path.startswith('/of_correo') or request.path.startswith('/avisos') %}active{% endif %}">
                             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3 4 7.5l8 4.5 8-4.5L12 3Z"></path><path d="M4 7.5v9L12 21l8-4.5v-9"></path><path d="M12 12v9"></path></svg>
-                            <span>Env&iacute;os</span>
-                        </a>
-                        <a href="/envios" class="nav-with-badge {% if request.path.startswith('/envios') or request.path.startswith('/editar_envio') %}active{% endif %}">
-                            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8 2v4"></path><path d="M16 2v4"></path><path d="M3 10h18"></path><rect x="3" y="4" width="18" height="18" rx="2"></rect></svg>
-                            <span>Pendientes</span>
-                            {% if pendientes_count %}
-                                <span class="nav-badge">{{ pendientes_count }}</span>
-                            {% endif %}
-                        </a>
-                        <a href="/en_proceso" class="nav-with-badge {% if request.path.startswith('/en_proceso') or request.path.startswith('/of_correo') %}active{% endif %}">
-                            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"></path><path d="M21 3v6h-6"></path></svg>
-                            <span>Proceso</span>
-                            {% if en_proceso_count %}
-                                <span class="nav-badge">{{ en_proceso_count }}</span>
-                            {% endif %}
+                            <span>Operaci&oacute;n</span>
                         </a>
                         <a href="/historico" class="{% if request.path.startswith('/historico') %}active{% endif %}">
                             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v6h6"></path><path d="M12 7v5l3 2"></path></svg>
                             <span>Hist&oacute;rico</span>
-                        </a>
-                        <a href="/catalogos" class="{% if request.path.startswith('/catalogos') %}active{% endif %}">
-                            <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M8 4v16"></path><path d="M13 8h4"></path><path d="M13 12h4"></path></svg>
-                            <span>Cat&aacute;logos</span>
                         </a>
                     </nav>
 
@@ -69,13 +51,6 @@
                         <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
                         <span>Buscar env&iacute;os, etiquetas, solicitudes...</span>
                     </div>
-                    <a class="topbar-icon-btn" href="/avisos" title="Avisos por correo" aria-label="Avisos por correo">
-                        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"></path><path d="M13.7 21a2 2 0 0 1-3.4 0"></path></svg>
-                        {% set total_notificaciones = (avisos_pendientes_count or 0) + (pendientes_count or 0) %}
-                        {% if total_notificaciones %}
-                            <span>{{ total_notificaciones }}</span>
-                        {% endif %}
-                    </a>
                     {% if login_habilitado %}
                         <details class="profile-menu">
                             <summary>

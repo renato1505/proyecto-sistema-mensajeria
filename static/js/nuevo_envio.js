@@ -456,62 +456,8 @@ if (switchMantenerRemitente) {
 }
 
 function actualizarPreview() {
-    const get = (id) => document.getElementById(id)?.value?.trim() || "";
-
-    const tipo = get("tipo_envio") || "Domicilio";
-    const agencia = get("codigo_agencia");
-
-    document.getElementById("preview_tipo_envio").textContent = tipo.toUpperCase();
-    document.getElementById("preview_remitente").textContent = get("remitente") || "Nombre remitente";
-    document.getElementById("preview_centro_costo").textContent = get("centro_costo") || "-";
-    document.getElementById("preview_correo").textContent = get("correo_remitente") || "-";
-    document.getElementById("preview_division").textContent = get("division") || "-";
-
-    document.getElementById("preview_destinatario").textContent = get("destinatario") || "Nombre destinatario";
-    document.getElementById("preview_rut").textContent = get("rut_destinatario") || "-";
-    document.getElementById("preview_direccion").textContent = get("direccion") || "-";
-    document.getElementById("preview_comuna").textContent = get("comuna") || "-";
-    document.getElementById("preview_region").textContent = get("region") || "-";
-    document.getElementById("preview_telefono").textContent = get("telefono_destinatario") || "-";
-
-    document.getElementById("preview_bultos").textContent = get("bultos") || "0";
-    document.getElementById("preview_kilos").textContent = get("kilos") || "0";
-
-    const agenciaBox = document.getElementById("preview_agencia_box");
-    const agenciaTexto = document.getElementById("preview_codigo_agencia");
-
-    if (tipo === "Agencia") {
-        agenciaBox.style.display = "block";
-        agenciaTexto.textContent = agencia || "Codigo de Agencia";
-    } else {
-        agenciaBox.style.display = "none";
-        agenciaTexto.textContent = "-";
-    }
+    // Compatibilidad temporal: los validadores existentes aun invocan este callback.
 }
-
-[
-    "tipo_envio",
-    "codigo_agencia",
-    "remitente",
-    "correo_remitente",
-    "centro_costo",
-    "division",
-    "destinatario",
-    "rut_destinatario",
-    "direccion",
-    "comuna",
-    "region",
-    "telefono_codigo_pais",
-    "telefono_destinatario",
-    "bultos",
-    "kilos"
-].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
-        el.addEventListener("input", actualizarPreview);
-        el.addEventListener("change", actualizarPreview);
-    }
-});
 
 restaurarRemitenteDesdeStorage();
 actualizarPreview();
