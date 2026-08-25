@@ -34,6 +34,54 @@ from utils.fechas import ahora_chile
 logger = logging.getLogger(__name__)
 
 
+def _ids_envios_seleccionados(valores):
+    if not valores:
+        raise ValueError("Debes seleccionar al menos un envio para generar el lote.")
+
+    try:
+        ids = [int(valor) for valor in valores]
+    except (TypeError, ValueError) as exc:
+        raise ValueError("La seleccion contiene IDs de envio invalidos.") from exc
+
+    if any(envio_id <= 0 for envio_id in ids):
+        raise ValueError("La seleccion contiene IDs de envio invalidos.")
+    if len(ids) != len(set(ids)):
+        raise ValueError("La seleccion contiene IDs de envio duplicados.")
+
+    return ids
+
+
+def _obtener_envios_seleccionados_para_lote(db, valores):
+    ids = _ids_envios_seleccionados(valores)
+    envios = (
+        db.query(Envio)
+        .filter(Envio.id.in_(ids))
+        .order_by(Envio.id.asc())
+        .with_for_update()
+        .all()
+    )
+
+    encontrados = {envio.id for envio in envios}
+    inexistentes = sorted(set(ids) - encontrados)
+    if inexistentes:
+        raise ValueError(
+            "Uno o mas envios seleccionados no existen. Recarga Pendientes e intenta nuevamente."
+        )
+
+    no_disponibles = [
+        envio.id
+        for envio in envios
+        if envio.e_estado != "pendiente" or bool(envio.e_anulado)
+    ]
+    if no_disponibles:
+        raise ValueError(
+            "Uno o mas envios seleccionados ya no estan pendientes. "
+            "Recarga la pantalla antes de generar el lote."
+        )
+
+    return envios
+
+
 def _responsable_actual():
     return (
         session.get("usuario_display")
@@ -115,20 +163,19 @@ def registrar_rutas_starken_lotes(app):
 
     @app.route("/generar_excel", methods=["POST"])
     def generar_excel():
-        # Crea el lote operativo y guarda respaldo local antes de descargar o enviar.
+        # Bloquea y valida exclusivamente las filas elegidas antes de crear el lote.
         db = SessionLocal()
         accion = request.form.get("accion", "descargar").strip()
 
-        envios_pendientes = (
-            db.query(Envio)
-            .filter(Envio.e_estado == "pendiente")
-            .order_by(Envio.id.asc())
-            .all()
-        )
-
-        if not envios_pendientes:
+        try:
+            envios_pendientes = _obtener_envios_seleccionados_para_lote(
+                db,
+                request.form.getlist("envio_ids"),
+            )
+        except ValueError as exc:
+            db.rollback()
             db.close()
-            flash("No hay envios pendientes para generar y enviar", "warning")
+            flash(str(exc), "danger")
             return redirect("/envios")
 
         agencias_sin_codigo = [

@@ -17,8 +17,8 @@
 
         <div class="pendientes-actions">
             <a href="/nuevo_envio" class="btn btn-primary btn-sm">Nuevo envio</a>
-            <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalGenerarCsv" {% if not envios %}disabled{% endif %}>
-                Generar CSV Starken
+            <button type="button" class="btn btn-success btn-sm" id="abrirGenerarLote" data-bs-toggle="modal" data-bs-target="#modalGenerarCsv" disabled>
+                Generar lote
             </button>
         </div>
     </section>
@@ -51,8 +51,14 @@
     {% else %}
         <section class="pendientes-notice">
             <div>
-                <h2>Lote listo para revision</h2>
-                <p>El CSV se generara con {{ resumen.total }} envio(s). Revisa destinatario, direccion, comuna, tipo de entrega, bultos y kilos antes de continuar.</p>
+                <h2>Selecciona los envios del proximo lote</h2>
+                <p>Ningun envio viene seleccionado. Los registros que no elijas permaneceran pendientes.</p>
+            </div>
+            <div class="selection-summary" aria-live="polite">
+                <strong><span id="seleccionCantidad">0</span> envios seleccionados</strong>
+                <span><b id="seleccionBultos">0</b> bultos</span>
+                <span><b id="seleccionKilos">0</b> kg</span>
+                <button type="button" class="btn btn-link btn-sm" id="limpiarSeleccion" disabled>Limpiar seleccion</button>
             </div>
         </section>
 
@@ -69,6 +75,9 @@
                 <table class="table align-middle mb-0 pendientes-table">
                     <thead>
                         <tr>
+                            <th class="text-center select-cell">
+                                <input type="checkbox" id="seleccionarTodosVisibles" aria-label="Seleccionar todos los envios visibles">
+                            </th>
                             <th>ID</th>
                             <th>Remitente</th>
                             <th>Destinatario</th>
@@ -83,6 +92,18 @@
                     <tbody>
                         {% for envio in envios %}
                         <tr>
+                            <td class="text-center select-cell">
+                                <input
+                                    type="checkbox"
+                                    class="envio-selector"
+                                    name="envio_ids"
+                                    value="{{ envio.id }}"
+                                    form="formGenerarCsv"
+                                    data-bultos="{{ envio.e_bultos or 0 }}"
+                                    data-kilos="{{ envio.e_kilos or 0 }}"
+                                    aria-label="Seleccionar envio {{ envio.id }}"
+                                >
+                            </td>
                             <td class="id-cell">#{{ envio.id }}</td>
                             <td>
                                 <strong>{{ envio.e_remitente }}</strong>
@@ -144,7 +165,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="mb-2">El lote se creara con {{ resumen.total }} envio(s) pendiente(s).</p>
+                    <p class="mb-2">El lote se creara con <strong><span id="modalSeleccionCantidad">0</span> envio(s)</strong> seleccionados.</p>
                     <p class="text-muted mb-0">Elige si quieres descargar el archivo para subirlo manualmente a Starken o enviarlo por correo.</p>
                     <div id="estadoDescargaCsv" class="alert alert-success mt-3 mb-0 d-none" role="alert">
                         Descarga completada. Redirigiendo a En proceso...

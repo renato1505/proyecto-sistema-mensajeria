@@ -144,7 +144,8 @@ class GeneracionCSVTests(SQLiteTestCase):
             starken_lotes, "ahora_chile", return_value=fecha
         ), patch.object(starken_lotes, "guardar_respaldo_lote"):
             respuesta = app.test_client().post(
-                "/generar_excel", data={"accion": "descargar"}
+                "/generar_excel",
+                data={"accion": "descargar", "envio_ids": [str(primero.id), str(segundo.id)]},
             )
 
         self.assertEqual(respuesta.status_code, 200)

@@ -3,10 +3,68 @@ document.addEventListener("DOMContentLoaded", function () {
     const estado = document.getElementById("estadoDescargaCsv");
     const btnDescargar = document.getElementById("btnDescargarCsv");
     const btnEnviar = document.getElementById("btnEnviarCsv");
+    const selectores = Array.from(document.querySelectorAll(".envio-selector"));
+    const seleccionarTodos = document.getElementById("seleccionarTodosVisibles");
+    const limpiarSeleccion = document.getElementById("limpiarSeleccion");
+    const abrirGenerarLote = document.getElementById("abrirGenerarLote");
+    const seleccionCantidad = document.getElementById("seleccionCantidad");
+    const seleccionBultos = document.getElementById("seleccionBultos");
+    const seleccionKilos = document.getElementById("seleccionKilos");
+    const modalSeleccionCantidad = document.getElementById("modalSeleccionCantidad");
 
     if (!form) {
         return;
     }
+
+    function numeroSeguro(valor) {
+        const numero = Number.parseFloat(valor);
+        return Number.isFinite(numero) ? numero : 0;
+    }
+
+    function formatearNumero(numero) {
+        return new Intl.NumberFormat("es-CL", { maximumFractionDigits: 2 }).format(numero);
+    }
+
+    function actualizarSeleccion() {
+        const seleccionados = selectores.filter(selector => selector.checked);
+        const bultos = seleccionados.reduce((total, selector) => total + numeroSeguro(selector.dataset.bultos), 0);
+        const kilos = seleccionados.reduce((total, selector) => total + numeroSeguro(selector.dataset.kilos), 0);
+        const haySeleccion = seleccionados.length > 0;
+
+        seleccionCantidad.textContent = String(seleccionados.length);
+        seleccionBultos.textContent = formatearNumero(bultos);
+        seleccionKilos.textContent = formatearNumero(kilos);
+        modalSeleccionCantidad.textContent = String(seleccionados.length);
+        abrirGenerarLote.disabled = !haySeleccion;
+        limpiarSeleccion.disabled = !haySeleccion;
+
+        if (seleccionarTodos) {
+            seleccionarTodos.checked = selectores.length > 0 && seleccionados.length === selectores.length;
+            seleccionarTodos.indeterminate = seleccionados.length > 0 && seleccionados.length < selectores.length;
+        }
+    }
+
+    selectores.forEach(selector => selector.addEventListener("change", actualizarSeleccion));
+
+    if (seleccionarTodos) {
+        seleccionarTodos.addEventListener("change", function () {
+            selectores.forEach(selector => {
+                selector.checked = seleccionarTodos.checked;
+            });
+            actualizarSeleccion();
+        });
+    }
+
+    if (limpiarSeleccion) {
+        limpiarSeleccion.addEventListener("click", function () {
+            selectores.forEach(selector => {
+                selector.checked = false;
+            });
+            actualizarSeleccion();
+        });
+    }
+
+    actualizarSeleccion();
 
     form.addEventListener("submit", async function (event) {
         const accion = event.submitter ? event.submitter.value : "";

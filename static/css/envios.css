@@ -98,12 +98,37 @@
 }
 
 .pendientes-notice {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
     padding: 16px;
     border-left: 4px solid var(--brand-green);
 }
 
 .pendientes-notice p {
     margin: 5px 0 0;
+}
+
+.selection-summary {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 14px;
+    flex-wrap: wrap;
+    color: var(--muted-strong);
+    font-size: 0.86rem;
+}
+
+.selection-summary strong {
+    color: var(--text);
+}
+
+.selection-summary .btn-link {
+    padding: 0;
+    color: var(--brand-green-dark);
+    font-weight: 800;
+    text-decoration: none;
 }
 
 .pendientes-table-panel {
@@ -143,6 +168,22 @@
 
 .pendientes-table th {
     white-space: nowrap;
+}
+
+.select-cell {
+    width: 44px;
+}
+
+.envio-selector,
+#seleccionarTodosVisibles {
+    width: 17px;
+    height: 17px;
+    cursor: pointer;
+    accent-color: var(--brand-green-dark);
+}
+
+.pendientes-table tr:has(.envio-selector:checked) {
+    background: rgba(22, 155, 77, 0.055);
 }
 
 .pendientes-table td {
@@ -239,6 +280,7 @@
 
 @media (max-width: 768px) {
     .pendientes-hero,
+    .pendientes-notice,
     .table-panel-head {
         align-items: flex-start;
         flex-direction: column;
