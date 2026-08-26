@@ -4,6 +4,7 @@
     gap: 14px;
 }
 
+
 .historico-hero,
 .historico-filter-panel,
 .historico-table-panel,
@@ -13,6 +14,7 @@
     border-radius: 8px;
     box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
 }
+
 
 .historico-hero {
     display: flex;
@@ -50,6 +52,18 @@
     flex-wrap: wrap;
     justify-content: flex-end;
     padding-bottom: 24px;
+}
+
+.historico-action-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.historico-action-group.destructive {
+    margin-left: 4px;
+    padding-left: 12px;
+    border-left: 1px solid var(--line);
 }
 
 .historico-action-btn {
@@ -868,6 +882,9 @@
         margin-top: 8px;
     }
 }
+
+/* Historico V2 final. */
+.historico-hero{padding:8px 2px 18px;background:transparent;border:0;border-radius:0;box-shadow:none}.historico-hero h1{color:var(--navy-950);font-size:clamp(1.9rem,3vw,2.7rem);letter-spacing:-.04em}.historico-actions{padding-bottom:0;gap:8px}.historico-action-btn{width:40px;height:40px;border-radius:9px;box-shadow:var(--shadow-sm)}.historico-action-btn.export{background:var(--navy-900);border-color:var(--navy-900)}.historico-metrics{gap:0;overflow:hidden;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg)}.historico-metrics article{min-height:82px;border:0;border-left:1px solid var(--line);border-radius:0;box-shadow:none}.historico-metrics article:first-child{border-left:0}.historico-filter-panel,.historico-table-panel{border-radius:var(--radius-lg);box-shadow:var(--shadow-sm)}
 
 @media (max-width: 768px) {
     .historico-hero,

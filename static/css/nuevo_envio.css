@@ -4,6 +4,7 @@
     gap: 14px;
 }
 
+
 .nuevo-hero,
 .section-panel {
     background: var(--surface);
@@ -11,6 +12,7 @@
     border-radius: 8px;
     box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
 }
+
 
 .nuevo-hero {
     display: flex;
@@ -20,7 +22,6 @@
     padding: 20px;
 }
 
-.nuevo-kicker,
 .section-head span {
     display: inline-flex;
     margin-bottom: 7px;
@@ -44,29 +45,6 @@
 .nuevo-hero p {
     margin: 6px 0 0;
     color: var(--muted);
-}
-
-.hero-account {
-    min-width: 150px;
-    padding: 12px 14px;
-    text-align: right;
-    background: #fbfcfd;
-    border: 1px solid var(--line-soft);
-    border-radius: 8px;
-}
-
-.hero-account span {
-    display: block;
-    color: var(--muted);
-    font-size: 0.78rem;
-    font-weight: 700;
-}
-
-.hero-account strong {
-    display: block;
-    margin-top: 3px;
-    color: var(--text);
-    font-size: 1.25rem;
 }
 
 .nuevo-layout {
@@ -212,11 +190,6 @@
         flex-direction: column;
     }
 
-    .hero-account {
-        width: 100%;
-        text-align: left;
-    }
-
     .envio-grid,
     .people-grid {
         grid-template-columns: 1fr;
@@ -246,3 +219,7 @@
     }
 
 }
+
+/* Composicion V2 final sobre el mismo formulario y validaciones. */
+.nuevo-hero{padding:8px 2px 18px;background:transparent;border:0;border-radius:0;box-shadow:none}.nuevo-hero h1{color:var(--navy-950);font-size:clamp(1.9rem,3vw,2.7rem);letter-spacing:-.04em}.form-workspace{gap:18px}.section-panel{padding:24px;border-radius:var(--radius-lg);box-shadow:var(--shadow-sm)}.section-head{margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--line-soft)}.section-head span{color:var(--gold);font-size:.68rem;letter-spacing:.1em}.acciones-finales{position:sticky;bottom:12px;z-index:5;padding:13px 16px;border-radius:var(--radius-md);box-shadow:var(--shadow-md)}
+.account-field .form-control[readonly]{color:var(--navy-900);background:var(--gold-wash);border-color:var(--gold-light);font-weight:800;letter-spacing:.02em;cursor:default}

@@ -1,42 +1,22 @@
 {% extends "base.html" %}
-
 {% block title %}Inicio | Mensajeria{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/operacion_v2.css') }}">
-{% endblock %}
-
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/operacion_v2.css') }}">{% endblock %}
 {% block content %}
-<div class="operation-page">
-    <section class="operation-hero">
-        <div>
-            <span class="operation-kicker">Mensajeria V2</span>
-            <h1>Inicio operacional</h1>
-            <p>Accede a las tareas frecuentes y revisa el estado actual del flujo Starken.</p>
+<div class="operation-page home-workspace">
+    <header class="workspace-heading">
+        <div><span class="section-label">Mensajeria</span><h1>Gestion diaria de envios</h1><p>Prepara despachos y sigue el flujo operativo con Starken.</p></div>
+        <div class="workspace-actions"><a class="btn btn-primary" href="/nuevo_envio">+ Nuevo envio</a><a class="btn btn-outline-secondary" href="/carga_masiva">Carga masiva</a></div>
+    </header>
+    <section class="home-surface page-surface">
+        <div class="current-work">
+            <span class="section-label">Trabajo actual</span>
+            <div class="pending-focus"><strong>{{ metricas.pendientes }}</strong><div><h2>envios pendientes</h2><p>Listos para revisar y agrupar en el proximo lote.</p></div></div>
+            <a href="/envios" class="text-action">Revisar pendientes <span aria-hidden="true">&rarr;</span></a>
         </div>
-        <a class="btn btn-outline-secondary" href="/operacion">Ir a Operacion</a>
-    </section>
-
-    <section class="quick-actions" aria-label="Acciones rapidas">
-        <a class="quick-action primary" href="/nuevo_envio">
-            <strong>Nuevo envio</strong>
-            <span>Registrar un despacho individual</span>
-        </a>
-        <a class="quick-action" href="/carga_masiva">
-            <strong>Carga masiva</strong>
-            <span>Preparar varios envios desde archivo</span>
-        </a>
-        <a class="quick-action" href="/operacion">
-            <strong>Operacion</strong>
-            <span>Gestionar pendientes, lotes, OF y avisos</span>
-        </a>
-    </section>
-
-    <section class="operation-metrics" aria-label="Estado operacional">
-        <a href="/envios"><span>Envios pendientes</span><strong>{{ metricas.pendientes }}</strong></a>
-        <a href="/en_proceso"><span>Lotes en proceso</span><strong>{{ metricas.lotes_en_proceso }}</strong></a>
-        <a href="/avisos"><span>Avisos pendientes</span><strong>{{ metricas.avisos_pendientes }}</strong></a>
-        <a href="/en_proceso"><span>Errores OF</span><strong>{{ metricas.errores_of }}</strong></a>
+        <div class="operational-status">
+            <div class="surface-title"><span class="section-label">Estado</span><a href="/operacion">Ver operacion</a></div>
+            <dl class="status-list"><div><dt>Lotes en proceso</dt><dd>{{ metricas.lotes_en_proceso }}</dd></div><div><dt>Avisos pendientes</dt><dd>{{ metricas.avisos_pendientes }}</dd></div><div class="{% if metricas.errores_of %}attention{% endif %}"><dt>Errores OF</dt><dd>{{ metricas.errores_of }}</dd></div></dl>
+        </div>
     </section>
 </div>
 {% endblock %}

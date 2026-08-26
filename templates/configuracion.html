@@ -2,13 +2,13 @@
 
 {% block title %}Configuracion{% endblock %}
 
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/configuracion.css') }}">{% endblock %}
+
 {% block content %}
-<div class="container py-4">
-    <section class="card border-0 shadow-sm mx-auto" style="max-width: 760px;">
-        <div class="card-body p-4 p-lg-5">
-            <span class="text-uppercase text-muted small fw-semibold">Cuenta</span>
-            <h1 class="h3 mt-2 mb-2">Configuracion</h1>
-            <p class="text-muted mb-4">Datos de la cuenta que utiliza Mensajeria.</p>
+<div class="config-page">
+    <header class="config-heading"><span class="section-label">Cuenta</span><h1>Configuracion</h1><p>Datos y seguridad de la cuenta que utiliza Mensajeria.</p></header>
+    <section class="config-surface page-surface">
+        <div class="config-body">
 
             <dl class="row gy-3 mb-4">
                 <dt class="col-sm-4 text-muted">Nombre de usuario</dt>
@@ -26,7 +26,7 @@
                 <dd class="col-sm-8 mb-0">{{ cuenta.ultima_ip or "No disponible" }}</dd>
             </dl>
 
-            <div class="d-flex flex-wrap gap-2 border-top pt-4">
+            <div class="config-actions">
                 <a class="btn btn-dark" href="/cambiar_clave">Cambiar contrasena</a>
                 <form method="POST" action="/logout" class="m-0">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

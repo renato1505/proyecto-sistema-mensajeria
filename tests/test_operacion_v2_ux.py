@@ -1,6 +1,7 @@
 import os
 import time
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 
@@ -78,6 +79,29 @@ class OperacionV2UXTest(unittest.TestCase):
         self.assertNotIn('href="/catalogos"', navegacion)
         self.assertNotIn('href="/avisos"', navegacion)
 
+    def test_sidebar_y_menu_movil_tienen_estructura_accesible(self):
+        self._autenticar()
+        html = self.client.get("/").get_data(as_text=True)
+
+        self.assertIn('id="appSidebar"', html)
+        self.assertIn('aria-label="Navegacion principal"', html)
+        self.assertIn('id="sidebarToggle"', html)
+        self.assertIn('aria-controls="appSidebar"', html)
+        self.assertIn('aria-expanded="false"', html)
+        self.assertIn('id="sidebarBackdrop"', html)
+        self.assertIn('class="sidebar-config ', html)
+        self.assertIn('action="/logout"', html)
+
+    def test_pendientes_conserva_controles_de_lote_parcial(self):
+        html = (Path(__file__).resolve().parent.parent / "templates" / "envios.html").read_text(encoding="utf-8")
+
+        self.assertIn('id="abrirGenerarLote"', html)
+        self.assertIn('id="formGenerarCsv"', html)
+        self.assertIn('action="/generar_excel"', html)
+        self.assertIn('id="seleccionarTodosVisibles"', html)
+        self.assertIn('id="limpiarSeleccion"', html)
+        self.assertIn('id="seleccionCantidad"', html)
+
     def test_rutas_core_heredadas_continuan_disponibles(self):
         self._autenticar()
         for ruta in ("/crear_envio", "/nuevo_envio", "/carga_masiva", "/envios", "/en_proceso", "/of_correo", "/avisos", "/historico", "/catalogos"):
@@ -98,6 +122,37 @@ class OperacionV2UXTest(unittest.TestCase):
         self.assertNotIn("Etiqueta referencial", html)
         self.assertNotIn("PREVISUALIZACION DE LA ETIQUETA", html)
         self.assertNotIn("preview_tipo_envio", html)
+        self.assertNotIn("Registro operativo", html)
+        self.assertEqual(html.count("42315-7"), 1)
+        self.assertIn('class="account-field"', html)
+        self.assertIn('class="btn btn-primary btn-sm px-4">Guardar envio', html)
+
+    def test_lotes_presentan_resumen_compacto_y_selector_of_accesible(self):
+        html = (Path(__file__).resolve().parent.parent / "templates" / "en_proceso.html").read_text(encoding="utf-8")
+
+        self.assertIn('class="lote-summary"', html)
+        self.assertIn('class="of-summary"', html)
+        self.assertIn('class="summary-item"', html)
+        self.assertNotIn('&middot;', html)
+        self.assertIn('class="file-upload-control"', html)
+        self.assertIn('class="file-upload-trigger"', html)
+        self.assertIn('Ningún archivo seleccionado', html)
+        self.assertIn('class="file-upload-input"', html)
+        self.assertIn('aria-describedby="archivo-of-nombre-{{ loop.index }} archivo-of-ayuda-{{ loop.index }}"', html)
+        self.assertIn('name="archivo_of"', html)
+        self.assertIn('accept=".xlsx,.xls"', html)
+
+        javascript = (Path(__file__).resolve().parent.parent / "static" / "js" / "en_proceso.js").read_text(encoding="utf-8")
+        self.assertIn('input.files[0].name', javascript)
+
+    def test_historico_separa_acciones_y_conserva_etiquetas_accesibles(self):
+        html = (Path(__file__).resolve().parent.parent / "templates" / "historico.html").read_text(encoding="utf-8")
+
+        self.assertIn('class="historico-action-group" aria-label="Exportacion y consulta"', html)
+        self.assertIn('class="historico-action-group destructive" aria-label="Acciones destructivas"', html)
+        for etiqueta in ("Exportar Excel", "Descargar seleccionados", "Anular seleccionados", "Eliminar seleccionados", "Eliminar filtrados"):
+            with self.subTest(etiqueta=etiqueta):
+                self.assertIn(f'aria-label="{etiqueta}"', html)
 
 
 if __name__ == "__main__":

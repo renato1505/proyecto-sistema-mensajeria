@@ -17,7 +17,7 @@
         <a href="/of_correo" class="btn btn-outline-success">Buscar OF en correo</a>
     </section>
 
-    <section class="proceso-metrics">
+    {% if lotes %}<section class="proceso-metrics">
         <article>
             <span>Lotes activos</span>
             <strong>{{ resumen.lotes }}</strong>
@@ -34,7 +34,7 @@
             <span>Esperando OF</span>
             <strong>{{ resumen.esperando_of }}</strong>
         </article>
-    </section>
+    </section>{% endif %}
 
     {% if resumen.correo_error %}
         <section class="proceso-alert">
@@ -43,10 +43,11 @@
     {% endif %}
 
     {% if not lotes %}
-        <section class="proceso-empty">
-            <h2>Sin lotes en proceso</h2>
-            <p>No hay archivos Starken esperando respuesta OF. Cuando generes un CSV desde Pendientes, el lote aparecera aqui.</p>
-            <a href="/envios" class="btn btn-success">Ir a pendientes</a>
+        <section class="proceso-empty empty-state">
+            <span class="section-label">Todo al dia</span>
+            <h2>No hay lotes esperando respuesta OF</h2>
+            <p>Cuando generes un CSV desde Pendientes, el lote aparecera aqui.</p>
+            <a href="/envios" class="btn btn-primary">Ir a pendientes</a>
         </section>
     {% else %}
         <section class="lotes-stack">
@@ -84,22 +85,16 @@
                     </div>
 
                     <div class="lote-summary">
-                        <div>
-                            <span>Envios</span>
-                            <strong>{{ lote.cantidad_envios }}</strong>
-                        </div>
-                        <div>
-                            <span>Bultos</span>
-                            <strong>{{ lote.total_bultos }}</strong>
-                        </div>
-                        <div>
-                            <span>Kilos</span>
-                            <strong>{{ lote.total_kilos }}</strong>
-                        </div>
-                        <div>
-                            <span>OK / Error / Esperando</span>
-                            <strong>{{ lote.total_ok }} / {{ lote.total_error }} / {{ lote.total_esperando }}</strong>
-                        </div>
+                        <p>
+                            <span class="summary-item"><strong>{{ lote.cantidad_envios }}</strong> envios</span>
+                            <span class="summary-item"><strong>{{ lote.total_bultos }}</strong> bultos</span>
+                            <span class="summary-item"><strong>{{ lote.total_kilos }}</strong> kg</span>
+                        </p>
+                        <p class="of-summary">
+                            <span class="summary-item"><strong>OF:</strong> {{ lote.total_ok }} OK</span>
+                            <span class="summary-item">{{ lote.total_error }} error</span>
+                            <span class="summary-item">{{ lote.total_esperando }} esperando</span>
+                        </p>
                     </div>
 
                     <div class="lote-actions">
@@ -109,8 +104,14 @@
 
                         <form action="/cargar_of/{{ lote.lote }}" method="POST" enctype="multipart/form-data" class="form-cargar-of">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="file" name="archivo_of" class="form-control form-control-sm" accept=".xlsx,.xls" required>
-                            <button type="submit" class="btn btn-success btn-sm">
+                            <label class="visually-hidden" for="archivo-of-{{ loop.index }}">Seleccionar archivo OF</label>
+                            <div class="file-upload-control">
+                                <label class="file-upload-trigger" for="archivo-of-{{ loop.index }}">Seleccionar archivo</label>
+                                <span class="file-upload-name" id="archivo-of-nombre-{{ loop.index }}" aria-live="polite">Ningún archivo seleccionado</span>
+                            </div>
+                            <input id="archivo-of-{{ loop.index }}" type="file" name="archivo_of" class="file-upload-input" accept=".xlsx,.xls" aria-describedby="archivo-of-nombre-{{ loop.index }} archivo-of-ayuda-{{ loop.index }}" required>
+                            <span id="archivo-of-ayuda-{{ loop.index }}" class="visually-hidden">Archivo Excel en formato XLSX o XLS</span>
+                            <button type="submit" class="btn btn-primary btn-sm">
                                 Cargar OF
                             </button>
                         </form>

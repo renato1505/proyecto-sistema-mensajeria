@@ -10,55 +10,32 @@
 <div class="pendientes-page">
     <section class="pendientes-hero">
         <div>
-            <span class="pendientes-kicker">Revision previa</span>
             <h1>Envios pendientes</h1>
             <p>Valida la informacion antes de generar el lote CSV para Starken.</p>
         </div>
 
         <div class="pendientes-actions">
             <a href="/nuevo_envio" class="btn btn-primary btn-sm">Nuevo envio</a>
-            <button type="button" class="btn btn-success btn-sm" id="abrirGenerarLote" data-bs-toggle="modal" data-bs-target="#modalGenerarCsv" disabled>
-                Generar lote
-            </button>
         </div>
-    </section>
-
-    <section class="pendientes-metrics">
-        <article>
-            <span>Pendientes</span>
-            <strong>{{ resumen.total }}</strong>
-        </article>
-        <article>
-            <span>Bultos</span>
-            <strong>{{ resumen.bultos }}</strong>
-        </article>
-        <article>
-            <span>Kilos</span>
-            <strong>{{ resumen.kilos }}</strong>
-        </article>
-        <article>
-            <span>Domicilio / Agencia</span>
-            <strong>{{ resumen.domicilio }} / {{ resumen.agencia }}</strong>
-        </article>
     </section>
 
     {% if not envios %}
         <section class="pendientes-empty">
             <h2>Sin envios pendientes</h2>
             <p>No hay registros esperando revision. Cuando ingreses un nuevo envio aparecera en esta pantalla antes de generar el lote Starken.</p>
-            <a href="/nuevo_envio" class="btn btn-success">Registrar nuevo envio</a>
+            <a href="/nuevo_envio" class="btn btn-primary">Registrar nuevo envio</a>
         </section>
     {% else %}
         <section class="pendientes-notice">
             <div>
-                <h2>Selecciona los envios del proximo lote</h2>
-                <p>Ningun envio viene seleccionado. Los registros que no elijas permaneceran pendientes.</p>
+                <span class="selection-empty-copy">Selecciona los envios que quieres etiquetar ahora.</span>
             </div>
             <div class="selection-summary" aria-live="polite">
                 <strong><span id="seleccionCantidad">0</span> envios seleccionados</strong>
                 <span><b id="seleccionBultos">0</b> bultos</span>
                 <span><b id="seleccionKilos">0</b> kg</span>
                 <button type="button" class="btn btn-link btn-sm" id="limpiarSeleccion" disabled>Limpiar seleccion</button>
+                <button type="button" class="btn btn-primary btn-sm" id="abrirGenerarLote" data-bs-toggle="modal" data-bs-target="#modalGenerarCsv" disabled>Generar lote</button>
             </div>
         </section>
 
@@ -66,7 +43,7 @@
             <div class="table-panel-head">
                 <div>
                     <h2>Registros pendientes</h2>
-                    <span>{{ resumen.total }} envio(s) en espera</span>
+                    <span>{{ resumen.total }} envios &middot; {{ resumen.bultos }} bultos &middot; {{ resumen.kilos }} kg &middot; {{ resumen.domicilio }} domicilio / {{ resumen.agencia }} agencia</span>
                 </div>
                 <span class="table-status">Pendiente de Starken</span>
             </div>
@@ -176,7 +153,7 @@
                     <button type="submit" name="accion" value="descargar" class="btn btn-primary" id="btnDescargarCsv">
                         Descargar CSV
                     </button>
-                    <button type="submit" name="accion" value="enviar" class="btn btn-success" id="btnEnviarCsv">
+                    <button type="submit" name="accion" value="enviar" class="btn btn-primary" id="btnEnviarCsv">
                         Enviar por correo
                     </button>
                 </div>

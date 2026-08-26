@@ -10,13 +10,8 @@
 <div class="nuevo-page">
     <section class="nuevo-hero">
         <div>
-            <span class="nuevo-kicker">Registro operativo</span>
             <h1>Nuevo envio</h1>
             <p>Ingresa los datos para dejar el pedido en pendientes y preparar su posterior lote Starken.</p>
-        </div>
-        <div class="hero-account">
-            <span>Cuenta Starken</span>
-            <strong>42315-7</strong>
         </div>
     </section>
 
@@ -34,8 +29,8 @@
                 </div>
 
                 <div class="envio-grid">
-                    <div>
-                        <label class="form-label">Numero de cuenta</label>
+                    <div class="account-field">
+                        <label class="form-label">Cuenta Starken</label>
                         <input type="text" class="form-control form-control-sm" name="numero_cuenta" value="42315-7" readonly>
                     </div>
 
@@ -101,7 +96,7 @@
                                 <input class="form-check-input" type="checkbox" id="mantener_remitente">
                                 <span>Mantener</span>
                             </label>
-                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="guardarRemitente()">
+                            <button type="button" class="btn btn-secondary-action btn-sm" onclick="guardarRemitente()">
                                 Guardar
                             </button>
                         </div>
@@ -180,7 +175,7 @@
                             <span>Destino</span>
                             <h2>Destinatario</h2>
                         </div>
-                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="guardarDestinatario()">
+                        <button type="button" class="btn btn-secondary-action btn-sm" onclick="guardarDestinatario()">
                             Guardar
                         </button>
                     </div>
@@ -299,7 +294,7 @@
 
             <div class="acciones-finales">
                 <a href="/nuevo_envio" class="btn btn-outline-secondary btn-sm px-4">Limpiar</a>
-                <button class="btn btn-success btn-sm px-4">Guardar envio</button>
+                <button class="btn btn-primary btn-sm px-4">Guardar envio</button>
             </div>
         </section>
 

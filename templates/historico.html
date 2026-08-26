@@ -10,12 +10,12 @@
 <div class="historico-page">
     <section class="historico-hero">
         <div>
-            <span class="historico-kicker">Consulta operativa</span>
             <h1>Historico de envios</h1>
             <p>Busca, revisa, exporta y respalda los envios procesados por el sistema.</p>
         </div>
 
         <div class="historico-actions" aria-label="Acciones del historico">
+            <div class="historico-action-group" aria-label="Exportacion y consulta">
             <a
                 href="/exportar_historico?mes={{ mes_seleccionado|urlencode }}&of={{ filtro_of|urlencode }}&destinatario={{ filtro_destinatario|urlencode }}&remitente={{ filtro_remitente|urlencode }}&fecha={{ filtro_fecha|urlencode }}&fecha_desde={{ fecha_desde|urlencode }}&fecha_hasta={{ fecha_hasta|urlencode }}&estado_of={{ estado_of|urlencode }}"
                 class="historico-action-btn export"
@@ -37,6 +37,8 @@
                     <path d="M5 21h14"></path>
                 </svg>
             </button>
+            </div>
+            <div class="historico-action-group destructive" aria-label="Acciones destructivas">
             <button class="historico-action-btn annul" type="button" onclick="abrirModalAnularSeleccionados()" title="Anular seleccionados" aria-label="Anular seleccionados" data-label="Anular seleccionados">
                 <svg aria-hidden="true" viewBox="0 0 24 24">
                     <path d="M18 6 6 18"></path>
@@ -59,6 +61,7 @@
                     <path d="M10 19h4"></path>
                 </svg>
             </button>
+            </div>
         </div>
     </section>
 
@@ -111,7 +114,7 @@
                 </div>
 
                 <div class="filter-field filter-submit">
-                    <button type="submit" class="btn btn-success">Buscar</button>
+                    <button type="submit" class="btn btn-primary">Buscar</button>
                 </div>
             </div>
 
