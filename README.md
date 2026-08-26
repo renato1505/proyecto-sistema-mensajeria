@@ -43,6 +43,32 @@ La aplicacion queda disponible normalmente en:
 http://127.0.0.1:5000/
 ```
 
+## Demo local seguro en Windows
+
+Para revisar la aplicacion sin PostgreSQL ni correo real:
+
+```powershell
+.\scripts\run_demo.ps1
+```
+
+Credenciales locales: `demo` / `Demo1234!`. Base, logs y respaldos se guardan
+exclusivamente en `%TEMP%\mensajeria-v2-demo`.
+
+Para incluir datos ficticios:
+
+```powershell
+.\scripts\run_demo.ps1 -Seed
+```
+
+Para eliminar completamente el entorno demo despues de detener el servidor:
+
+```powershell
+.\scripts\run_demo.ps1 -Clean
+```
+
+El script aborta ante variables productivas o una `DATABASE_URL` PostgreSQL y
+deshabilita SMTP, Brevo e IMAP antes de importar la aplicacion.
+
 ## Checks de calidad
 
 Antes de subir cambios o probar una version nueva:
