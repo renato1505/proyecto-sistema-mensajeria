@@ -39,23 +39,10 @@
                 {% endfor %}
             </section>
         {% else %}
-            <section class="carga-metrics">
-                <article>
-                    <span>Filas detectadas</span>
-                    <strong>{{ resultado.resumen.total }}</strong>
-                </article>
-                <article>
-                    <span>Listas</span>
-                    <strong>{{ resultado.resumen.listos }}</strong>
-                </article>
-                <article>
-                    <span>Advertencias</span>
-                    <strong>{{ resultado.resumen.advertencias }}</strong>
-                </article>
-                <article>
-                    <span>Errores</span>
-                    <strong>{{ resultado.resumen.errores }}</strong>
-                </article>
+            <section class="carga-review-summary" aria-label="Resumen de revision">
+                <span><strong>{{ resultado.resumen.total }}</strong> registros totales</span>
+                <span class="complete"><strong>{{ resultado.resumen.listos }}</strong> completos</span>
+                <span class="review"><strong>{{ resultado.resumen.advertencias + resultado.resumen.errores }}</strong> requieren revision</span>
             </section>
 
             {% if resultado.resumen.errores %}
@@ -73,9 +60,11 @@
             {% endif %}
 
             <section class="revision-panel">
-                <form method="POST" action="/revalidar_carga_masiva">
+                <form method="POST" action="/revalidar_carga_masiva" id="revision-carga-form">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="total_filas" value="{{ resultado.filas|length }}">
+                    <input type="hidden" name="campo_masivo" id="campoMasivo">
+                    <input type="hidden" name="valor_masivo" id="valorMasivo">
 
                     <div class="revision-head">
                         <div>
@@ -96,10 +85,51 @@
                         </div>
                     </div>
 
+                    <div class="revision-tools">
+                        <div class="quick-filters" aria-label="Filtros rapidos">
+                            <button type="button" class="quick-filter active" data-review-filter="todos" aria-pressed="true">Todos</button>
+                            <button type="button" class="quick-filter" data-review-filter="revision" aria-pressed="false">Requieren revision</button>
+                            <button type="button" class="quick-filter" data-review-filter="rut" aria-pressed="false">Sin RUT</button>
+                            <button type="button" class="quick-filter" data-review-filter="tipo" aria-pressed="false">Sin tipo de envio</button>
+                            <button type="button" class="quick-filter" data-review-filter="kilos" aria-pressed="false">Sin kilos</button>
+                        </div>
+                        <div class="selection-shortcuts">
+                            <button type="button" class="btn btn-link btn-sm" id="seleccionarVisiblesCarga">Seleccionar visibles</button>
+                            <button type="button" class="btn btn-link btn-sm" id="seleccionarIncompletasCarga">Seleccionar incompletas</button>
+                            <button type="button" class="btn btn-link btn-sm" id="limpiarSeleccionCarga" disabled>Limpiar seleccion</button>
+                        </div>
+                    </div>
+
+                    <div class="bulk-bar" id="bulkBar" aria-label="Cambios masivos">
+                        <div class="bulk-selection-copy" aria-live="polite">
+                            <strong><span id="cantidadSeleccionCarga">0</span> seleccionados</strong>
+                            <span>Se modificaran <b id="cantidadModificarCarga">0</b> registros.</span>
+                        </div>
+                        <div class="bulk-actions">
+                            <button type="button" class="btn btn-secondary-action btn-sm bulk-action" data-bulk-field="rut_destinatario" data-bulk-value="0" disabled>Aplicar RUT 0</button>
+                            <div class="bulk-control">
+                                <label class="visually-hidden" for="tipoMasivo">Tipo de envio</label>
+                                <select class="form-select form-select-sm" id="tipoMasivo">
+                                    <option value="Domicilio">Domicilio</option>
+                                    <option value="Agencia">Agencia</option>
+                                </select>
+                                <button type="button" class="btn btn-secondary-action btn-sm bulk-action" data-bulk-field="tipo_envio" data-bulk-source="tipoMasivo" disabled>Aplicar tipo</button>
+                            </div>
+                            <div class="bulk-control">
+                                <label class="visually-hidden" for="kilosMasivos">Kilos</label>
+                                <input class="form-control form-control-sm" id="kilosMasivos" type="number" min="1" max="9999" step="1" placeholder="Kilos">
+                                <button type="button" class="btn btn-secondary-action btn-sm bulk-action" data-bulk-field="kilos" data-bulk-source="kilosMasivos" disabled>Aplicar kilos</button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="table-responsive">
                         <table class="table align-middle mb-0 revision-table">
                             <thead>
                                 <tr>
+                                    <th class="select-column">
+                                        <input class="form-check-input" type="checkbox" id="seleccionarTodasCarga" aria-label="Seleccionar todas las filas visibles">
+                                    </th>
                                     <th>Fila</th>
                                     <th>Destinatario</th>
                                     <th>Destino</th>
@@ -113,7 +143,15 @@
                             <tbody>
                                 {% for fila in resultado.filas %}
                                     {% set idx = loop.index0 %}
-                                    <tr class="{% if fila.estado == 'error' %}fila-con-error{% endif %}">
+                                    <tr class="carga-main-row {% if fila.estado == 'error' %}fila-con-error{% endif %}"
+                                        data-row-index="{{ idx }}"
+                                        data-review="{{ 'true' if fila.estado != 'listo' else 'false' }}"
+                                        data-missing-rut="{{ 'true' if not fila.data.rut_destinatario else 'false' }}"
+                                        data-missing-tipo="{{ 'true' if not fila.data.tipo_envio else 'false' }}"
+                                        data-missing-kilos="{{ 'true' if not fila.data.kilos else 'false' }}">
+                                        <td class="select-column">
+                                            <input class="form-check-input carga-row-check" type="checkbox" name="filas_seleccionadas" value="{{ idx }}" aria-label="Seleccionar fila {{ fila.numero }}">
+                                        </td>
                                         <td class="fila-numero">
                                             {{ fila.numero }}
                                             <input type="hidden" name="filas-{{ idx }}-numero" value="{{ fila.numero }}">
@@ -163,8 +201,8 @@
                                             </button>
                                         </td>
                                     </tr>
-                                    <tr id="detalle-carga-{{ idx }}" class="detalle-carga-row {% if fila.estado != 'error' %}d-none{% endif %}">
-                                        <td colspan="8">
+                                    <tr id="detalle-carga-{{ idx }}" data-detail-index="{{ idx }}" class="detalle-carga-row {% if fila.estado != 'error' %}d-none{% endif %}">
+                                        <td colspan="9">
                                             <div class="detalle-carga-grid">
                                                 <div>
                                                     <label class="form-label">Remitente</label>
@@ -239,6 +277,7 @@
                                                 <div>
                                                     <label class="form-label">Tipo envio</label>
                                                     <select class="form-select form-select-sm" name="filas-{{ idx }}-tipo_envio">
+                                                        <option value="">Seleccionar</option>
                                                         {% for tipo in ["Domicilio", "Agencia"] %}
                                                             <option value="{{ tipo }}" {% if fila.data.tipo_envio == tipo %}selected{% endif %}>{{ tipo }}</option>
                                                         {% endfor %}

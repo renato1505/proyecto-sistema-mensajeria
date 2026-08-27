@@ -36,6 +36,43 @@ CAMPOS_CARGA_MASIVA = [
     "observacion",
 ]
 
+CAMPOS_CAMBIO_MASIVO = {"rut_destinatario", "tipo_envio", "kilos"}
+
+
+def aplicar_cambio_masivo_carga(registros, indices, campo, valor):
+    if not registros:
+        raise ValueError("No hay filas disponibles")
+    if not indices:
+        raise ValueError("Selecciona al menos una fila")
+    if len(indices) != len(set(indices)):
+        raise ValueError("La seleccion contiene filas duplicadas")
+    if campo not in CAMPOS_CAMBIO_MASIVO:
+        raise ValueError("Campo de actualizacion no permitido")
+    if any(index < 0 or index >= len(registros) for index in indices):
+        raise ValueError("La seleccion contiene filas inexistentes")
+
+    if campo == "rut_destinatario":
+        if valor != "0":
+            raise ValueError("El unico RUT masivo permitido es 0")
+        valor_validado = "0"
+    elif campo == "tipo_envio":
+        if valor not in {"Domicilio", "Agencia"}:
+            raise ValueError("Tipo de envio no permitido")
+        valor_validado = valor
+    else:
+        try:
+            kilos = int(valor)
+        except (TypeError, ValueError):
+            raise ValueError("Kilos debe ser un numero entero") from None
+        if not 1 <= kilos <= 9999:
+            raise ValueError("Kilos debe estar entre 1 y 9999")
+        valor_validado = str(kilos)
+
+    actualizados = [dict(registro) for registro in registros]
+    for index in indices:
+        actualizados[index][campo] = valor_validado
+    return actualizados
+
 
 def _leer_registros_carga_masiva_desde_form():
     total = int(request.form.get("total_filas", "0") or 0)
@@ -134,4 +171,29 @@ def registrar_rutas_carga_masiva(app):
         finally:
             db.close()
 
+        return render_template("carga_masiva.html", resultado=resultado)
+
+    @app.route("/aplicar_cambio_masivo_carga", methods=["POST"])
+    def aplicar_cambio_masivo():
+        try:
+            registros = _leer_registros_carga_masiva_desde_form()
+            indices_texto = request.form.getlist("filas_seleccionadas")
+            indices = [int(indice) for indice in indices_texto]
+            registros = aplicar_cambio_masivo_carga(
+                registros,
+                indices,
+                request.form.get("campo_masivo", "").strip(),
+                request.form.get("valor_masivo", "").strip(),
+            )
+        except (TypeError, ValueError) as exc:
+            flash(str(exc), "danger")
+            return redirect("/carga_masiva")
+
+        db = SessionLocal()
+        try:
+            resultado = validar_registros_carga_masiva(registros, db)
+        finally:
+            db.close()
+
+        flash(f"Se modificaron {len(indices)} registros seleccionados", "success")
         return render_template("carga_masiva.html", resultado=resultado)
