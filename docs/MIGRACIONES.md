@@ -205,3 +205,17 @@ downgrade solo se utiliza cuando fue revisado y probado con datos equivalentes.
 - La primera versión de Retiro se concentrará en `MENSAJERIA_LOCAL`.
 - Academia quedará fuera de la cola y métricas del retiro local.
 - No se construirá un motor genérico de reglas.
+
+## Reglas confirmadas y deuda operacional
+
+- Los nuevos envíos persisten su punto de retiro. `ACM`, después de `trim` y
+  conversión a mayúsculas, clasifica exactamente como `ACADEMIA`; cualquier otro
+  valor usa `MENSAJERIA_LOCAL`. No se aplica substring ni se reclasifica el
+  histórico existente.
+- `e_fecha_of` registra la hora del procesamiento que produjo un resultado
+  realmente `OK`. No se deriva de exportación, correo ni nombre de archivo.
+- Una respuesta `ERROR ... servicio H2H` no garantiza ausencia de OF. Es deuda
+  funcional crítica diseñar el estado de verificación antes de permitir cualquier
+  regeneración automática futura.
+- La regla operacional confirmada es `e_kilos = e_bultos`, siempre con mínimo 1.
+  Su automatización en la interfaz queda para una fase funcional posterior.

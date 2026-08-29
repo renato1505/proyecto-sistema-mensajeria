@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, DateTime, Integer, String, false
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, false
 from sqlalchemy.orm import declarative_base
 
 from utils.fechas import ahora_chile
@@ -66,6 +66,18 @@ class UsuarioSistema(Base):
     u_fecha_actualizacion = Column(DateTime, default=ahora_chile)
 
 
+class PuntoRetiro(Base):
+    __tablename__ = "puntos_retiro"
+
+    id = Column(Integer, primary_key=True)
+    pr_codigo = Column(String(40), nullable=False, unique=True)
+    pr_nombre = Column(String(120), nullable=False)
+    pr_es_local = Column(Boolean, nullable=False)
+    pr_incluir_metricas_locales = Column(Boolean, nullable=False)
+    pr_activo = Column(Boolean, nullable=False)
+    pr_fecha_creacion = Column(DateTime, default=ahora_chile, nullable=False)
+
+
 class Envio(Base):
     __tablename__ = "envios"
 
@@ -103,6 +115,13 @@ class Envio(Base):
     e_resultado_of = Column(String)   # OK / ERROR
     e_detalle_of = Column(String)
     e_fecha_exportacion = Column(DateTime)
+    e_fecha_of = Column(DateTime, nullable=True, index=True)
+    e_punto_retiro_id = Column(
+        Integer,
+        ForeignKey("puntos_retiro.id", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
     
     e_nombre_archivo = Column(String(255), nullable=True)
     e_correo_destino = Column(String(255), nullable=True)

@@ -128,12 +128,32 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash
 
 from database.conexion import SessionLocal, engine
-from database.modelos import Base, Envio, UsuarioSistema
+from database.modelos import Base, Envio, PuntoRetiro, UsuarioSistema
+from services.puntos_retiro import (
+    PUNTO_ACADEMIA,
+    PUNTO_MENSAJERIA_LOCAL,
+    asignar_punto_retiro_nuevo_envio,
+)
 
 
 Base.metadata.create_all(bind=engine)
 db = SessionLocal()
 try:
+    puntos_demo = [
+        (PUNTO_MENSAJERIA_LOCAL, "Mensajeria local", True, True),
+        (PUNTO_ACADEMIA, "Academia", False, False),
+    ]
+    for codigo, nombre, es_local, incluir_metricas in puntos_demo:
+        if db.query(PuntoRetiro).filter(PuntoRetiro.pr_codigo == codigo).first() is None:
+            db.add(PuntoRetiro(
+                pr_codigo=codigo,
+                pr_nombre=nombre,
+                pr_es_local=es_local,
+                pr_incluir_metricas_locales=incluir_metricas,
+                pr_activo=True,
+            ))
+    db.flush()
+
     usuario = (
         db.query(UsuarioSistema)
         .filter(UsuarioSistema.u_usuario == "demo")
@@ -174,14 +194,17 @@ try:
                 "e_observacion": "Dato ficticio para revision local",
                 "e_anulado": False,
             }
-            db.add_all([
+            envios_demo = [
                 Envio(**base, e_destinatario="Destino Demo Uno", e_tipo_envio="Domicilio", e_bultos=1, e_kilos=2, e_estado="pendiente"),
                 Envio(**base, e_destinatario="Destino Demo Dos", e_tipo_envio="Domicilio", e_bultos=2, e_kilos=3, e_estado="pendiente"),
                 Envio(**base, e_destinatario="Agencia Demo Valida", e_tipo_envio="Agencia", e_codigo_agencia="12345", e_bultos=1, e_kilos=1, e_estado="pendiente"),
                 Envio(**base, e_destinatario="Agencia Demo Incompleta", e_tipo_envio="Agencia", e_codigo_agencia=None, e_bultos=1, e_kilos=1, e_estado="pendiente"),
                 Envio(**base, e_destinatario="Demo En Proceso", e_tipo_envio="Domicilio", e_bultos=1, e_kilos=2, e_estado="en_proceso", e_lote="LOTE-DEMO-PROCESO", e_fila_excel=2, e_fecha_exportacion=datetime.now(), e_nombre_archivo="starken_demo_proceso.csv", e_estado_correo="descargado"),
                 Envio(**base, e_destinatario="Demo Historico", e_tipo_envio="Domicilio", e_bultos=1, e_kilos=2, e_estado="historico", e_lote="LOTE-DEMO-HISTORICO", e_fila_excel=2, e_fecha_exportacion=datetime.now(), e_nombre_archivo="starken_demo_historico.csv", e_resultado_of="OK", e_orden_flete="OF-DEMO-001", e_aviso_funcionario_estado="cancelado"),
-            ])
+            ]
+            for envio in envios_demo:
+                asignar_punto_retiro_nuevo_envio(db, envio)
+            db.add_all(envios_demo)
 
     db.commit()
 finally:

@@ -2,6 +2,7 @@ import pandas as pd
 
 from database.modelos import Envio
 from utils.texto import normalizar_orden_flete
+from utils.fechas import ahora_chile
 
 
 class OFProcessingError(Exception):
@@ -120,6 +121,7 @@ def procesar_archivo_of(db, lote, archivo, nombre_archivo):
     total_ok = 0
     total_error = 0
     total_sin_match = 0
+    fecha_procesamiento = ahora_chile()
 
     for _, fila in df_validas.iterrows():
         estado = str(fila.get("estado", "")).strip().upper()
@@ -155,10 +157,12 @@ def procesar_archivo_of(db, lote, archivo, nombre_archivo):
         if estado == "OK":
             envio.e_orden_flete = orden_texto
             envio.e_estado = "historico"
+            envio.e_fecha_of = fecha_procesamiento
             total_ok += 1
         else:
             envio.e_orden_flete = None
             envio.e_estado = "en_proceso"
+            envio.e_fecha_of = None
             total_error += 1
 
     db.commit()

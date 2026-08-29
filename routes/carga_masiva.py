@@ -12,6 +12,7 @@ from services.carga_masiva import (
     validar_archivo_carga_masiva,
     validar_registros_carga_masiva,
 )
+from services.puntos_retiro import asignar_punto_retiro_nuevo_envio
 
 
 logger = logging.getLogger(__name__)
@@ -144,7 +145,9 @@ def registrar_rutas_carga_masiva(app):
         db = SessionLocal()
         try:
             for data in registros:
-                db.add(construir_envio_desde_carga(data))
+                envio = construir_envio_desde_carga(data)
+                asignar_punto_retiro_nuevo_envio(db, envio)
+                db.add(envio)
             db.commit()
             eliminar_carga_temporal(token)
             flash(f"Se cargaron {len(registros)} envios a pendientes", "success")

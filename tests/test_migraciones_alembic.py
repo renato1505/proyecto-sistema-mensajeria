@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from sqlalchemy import create_engine, inspect
+from sqlalchemy import create_engine, inspect, text
 
 
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
@@ -62,7 +62,7 @@ class AlembicBaselineTest(unittest.TestCase):
             engine.dispose()
 
         self.assertEqual(tablas, set(Base.metadata.tables) | {"alembic_version"})
-        self.assertNotIn("puntos_retiro", tablas)
+        self.assertIn("puntos_retiro", tablas)
         self.assertNotIn("retiros_starken", tablas)
         self.assertNotIn("retiro_envios", tablas)
 
@@ -72,9 +72,10 @@ class AlembicBaselineTest(unittest.TestCase):
         history = self._alembic("history").stdout
         auditoria = ejecutar_auditoria(self.database_url)
 
-        self.assertIn("20260828_02", current)
+        self.assertIn("20260828_03", current)
         self.assertIn("20260826_01", history)
         self.assertIn("20260828_02", history)
+        self.assertIn("20260828_03", history)
         self.assertEqual(auditoria["diferencias_metadata"], [])
         self.assertEqual(auditoria["resumen_diferencias"], {"criticas": 0, "relevantes": 0, "informativas": 0})
         self.assertEqual(auditoria["datos"]["total_envios"], [[0]])
@@ -95,6 +96,47 @@ class AlembicBaselineTest(unittest.TestCase):
         finally:
             engine.dispose()
         self.assertIn("ix_envios_e_anulado", indices_head)
+
+    def test_migracion_funcional_preserva_historico_y_crea_puntos(self):
+        self._alembic("upgrade", "20260828_02")
+        engine = create_engine(self.database_url)
+        try:
+            with engine.begin() as connection:
+                connection.execute(text(
+                    "INSERT INTO envios ("
+                    "e_remitente, e_destinatario, e_direccion, e_comuna, "
+                    "e_tipo_envio, e_bultos, e_kilos, e_estado, e_orden_flete, e_anulado"
+                    ") VALUES ("
+                    "'Historico', 'Destino', 'Direccion', 'Comuna', "
+                    "'Domicilio', 1, 1, 'historico', 'OF-LEGACY', 0"
+                    ")"
+                ))
+        finally:
+            engine.dispose()
+
+        self._alembic("upgrade", "head")
+        engine = create_engine(self.database_url)
+        try:
+            inspector = inspect(engine)
+            columnas = {item["name"] for item in inspector.get_columns("envios")}
+            with engine.connect() as connection:
+                puntos = connection.execute(text(
+                    "SELECT pr_codigo, pr_es_local, pr_incluir_metricas_locales, pr_activo "
+                    "FROM puntos_retiro ORDER BY pr_codigo"
+                )).all()
+                historico = connection.execute(text(
+                    "SELECT e_fecha_of, e_punto_retiro_id FROM envios WHERE e_orden_flete = 'OF-LEGACY'"
+                )).one()
+        finally:
+            engine.dispose()
+
+        self.assertIn("e_fecha_of", columnas)
+        self.assertIn("e_punto_retiro_id", columnas)
+        self.assertEqual(puntos, [
+            ("ACADEMIA", False, False, True),
+            ("MENSAJERIA_LOCAL", True, True, True),
+        ])
+        self.assertEqual(historico, (None, None))
 
     def test_secuencia_postgresql_de_pk_es_equivalente_al_autoincrement(self):
         columna = Base.metadata.tables["envios"].c.id

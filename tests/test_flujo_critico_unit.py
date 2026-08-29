@@ -194,6 +194,67 @@ class ProcesamientoOFTests(SQLiteTestCase):
         self.assertEqual(envio_3.e_resultado_of, "ERROR")
         self.assertIsNone(envio_3.e_orden_flete)
 
+    def test_of_ok_asigna_una_fecha_unica_y_error_permanece_sin_fecha(self):
+        envio_2, envio_3 = self._agregar_lote()
+        fecha_exportacion = datetime(2026, 8, 20, 10, 0, 0)
+        fecha_of = datetime(2026, 8, 28, 15, 30, 0)
+        envio_2.e_fecha_exportacion = fecha_exportacion
+        envio_3.e_fecha_exportacion = fecha_exportacion
+        self.db.commit()
+        archivo = excel_of_bytes([
+            {"Estado": "OK", "Fila": 2, "Orden Flete": "100", "Detalle": "OK"},
+            {"Estado": "ERROR", "Fila": 3, "Orden Flete": None, "Detalle": "Error"},
+        ])
+
+        with patch("services.of_processor.ahora_chile", return_value=fecha_of):
+            procesar_archivo_of(self.db, LOTE, archivo, "respuesta.xlsx")
+
+        self.db.refresh(envio_2)
+        self.db.refresh(envio_3)
+        self.assertEqual(envio_2.e_fecha_of, fecha_of)
+        self.assertNotEqual(envio_2.e_fecha_of, envio_2.e_fecha_exportacion)
+        self.assertIsNone(envio_3.e_fecha_of)
+
+    def test_todas_las_filas_ok_del_archivo_comparten_hora_de_procesamiento(self):
+        envio_2, envio_3 = self._agregar_lote()
+        fecha_of = datetime(2026, 8, 28, 16, 0, 0)
+        archivo = excel_of_bytes([
+            {"Estado": "OK", "Fila": 2, "Orden Flete": "100", "Detalle": "OK"},
+            {"Estado": "OK", "Fila": 3, "Orden Flete": "101", "Detalle": "OK"},
+        ])
+
+        with patch("services.of_processor.ahora_chile", return_value=fecha_of) as reloj:
+            procesar_archivo_of(self.db, LOTE, archivo, "respuesta.xlsx")
+
+        self.db.refresh(envio_2)
+        self.db.refresh(envio_3)
+        self.assertEqual(envio_2.e_fecha_of, fecha_of)
+        self.assertEqual(envio_3.e_fecha_of, fecha_of)
+        reloj.assert_called_once_with()
+
+    def test_of_error_y_reintento_posterior_ok_asigna_fecha_del_reintento(self):
+        envio_2, envio_3 = self._agregar_lote()
+        primer_archivo = excel_of_bytes([
+            {"Estado": "ERROR", "Fila": 2, "Orden Flete": None, "Detalle": "Temporal"},
+            {"Estado": "OK", "Fila": 3, "Orden Flete": "103", "Detalle": "OK"},
+        ])
+        primera_fecha = datetime(2026, 8, 28, 10, 0, 0)
+        with patch("services.of_processor.ahora_chile", return_value=primera_fecha):
+            procesar_archivo_of(self.db, LOTE, primer_archivo, "respuesta.xlsx")
+        self.db.refresh(envio_2)
+        self.assertIsNone(envio_2.e_fecha_of)
+
+        segundo_archivo = excel_of_bytes([
+            {"Estado": "OK", "Fila": 2, "Orden Flete": "102", "Detalle": "OK"},
+        ])
+        segunda_fecha = datetime(2026, 8, 28, 11, 0, 0)
+        with patch("services.of_processor.ahora_chile", return_value=segunda_fecha):
+            procesar_archivo_of(self.db, LOTE, segundo_archivo, "respuesta.xlsx")
+
+        self.db.refresh(envio_2)
+        self.assertEqual(envio_2.e_estado, "historico")
+        self.assertEqual(envio_2.e_fecha_of, segunda_fecha)
+
     def test_rechaza_cantidad_de_filas_distinta_al_lote(self):
         envios = self._agregar_lote()
         archivo = excel_of_bytes([

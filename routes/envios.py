@@ -2,6 +2,7 @@ from flask import flash, redirect, render_template, request
 
 from database.conexion import SessionLocal
 from database.modelos import Envio
+from services.puntos_retiro import asignar_punto_retiro_nuevo_envio
 from utils.texto import (
     normalizar_correo_operativo,
     normalizar_nombre_operativo,
@@ -144,6 +145,7 @@ def registrar_rutas_envios(app):
                 flash(error, "danger")
                 return redirect("/nuevo_envio")
 
+            asignar_punto_retiro_nuevo_envio(db, nuevo)
             db.add(nuevo)
             db.commit()
             db.close()
