@@ -1,6 +1,11 @@
 param(
     [switch]$Seed,
-    [switch]$Clean
+    [switch]$Clean,
+    [switch]$NoStart,
+    [ValidateSet("TODOS_OK", "UNO_ERROR", "MIXTO", "H2H_AMBIGUO")]
+    [string]$Scenario,
+    [ValidateRange(1, 50)]
+    [int]$Cantidad = 10
 )
 
 Set-StrictMode -Version Latest
@@ -12,6 +17,7 @@ $TempRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
 $DemoDatabase = Join-Path $DemoRoot "mensajeria_demo.sqlite3"
 $DemoLogs = Join-Path $DemoRoot "logs"
 $DemoBackups = Join-Path $DemoRoot "respaldos_lotes"
+$DemoStarken = Join-Path $DemoRoot "starken"
 $DemoUrl = "http://127.0.0.1:5000"
 
 function Test-ProductionEnvironment {
@@ -57,6 +63,7 @@ Set-Location -LiteralPath $ProjectRoot
 New-Item -ItemType Directory -Path $DemoRoot -Force | Out-Null
 New-Item -ItemType Directory -Path $DemoLogs -Force | Out-Null
 New-Item -ItemType Directory -Path $DemoBackups -Force | Out-Null
+New-Item -ItemType Directory -Path $DemoStarken -Force | Out-Null
 
 $SitePackages = Join-Path $ProjectRoot "venv\Lib\site-packages"
 if (Test-Path -LiteralPath $SitePackages) {
@@ -123,18 +130,35 @@ if ($env:DATABASE_URL -notmatch "^sqlite:///") {
 }
 
 $SetupDemo = @'
-from datetime import datetime
-
 from werkzeug.security import generate_password_hash
+from sqlalchemy import inspect
+from datetime import timedelta
 
 from database.conexion import SessionLocal, engine
 from database.modelos import Base, Envio, PuntoRetiro, UsuarioSistema
+from services.demo_starken import (
+    crear_lote_demo,
+    generar_envios_ficticios,
+    procesar_respuesta_of_demo,
+    raiz_demo_permitida,
+)
 from services.puntos_retiro import (
     PUNTO_ACADEMIA,
     PUNTO_MENSAJERIA_LOCAL,
     asignar_punto_retiro_nuevo_envio,
 )
+from utils.fechas import ahora_chile
 
+tablas_existentes = set(inspect(engine).get_table_names())
+if "envios" in tablas_existentes:
+    columnas_envios = {item["name"] for item in inspect(engine).get_columns("envios")}
+    requeridas = {"e_fecha_of", "e_punto_retiro_id"}
+    faltantes = sorted(requeridas - columnas_envios)
+    if faltantes:
+        raise RuntimeError(
+            "SQLite demo incompatible; faltan columnas "
+            f"{', '.join(faltantes)}. Ejecuta .\\scripts\\run_demo.ps1 -Clean"
+        )
 
 Base.metadata.create_all(bind=engine)
 db = SessionLocal()
@@ -176,35 +200,45 @@ try:
     if __import__("os").environ.get("DEMO_SEED") == "1":
         existe_seed = (
             db.query(Envio)
-            .filter(Envio.e_remitente == "Funcionario Demo")
+            .filter(Envio.e_destinatario == "Destinatario Ficticio 001")
             .first()
         )
         if existe_seed is None:
-            base = {
-                "e_remitente": "Funcionario Demo",
-                "e_correo_remitente": "funcionario@demo.invalid",
-                "e_division": "DPGP",
-                "e_centro_costo": "DEMO-100",
-                "e_rut_destinatario": "11111111-1",
-                "e_direccion": "Avenida Demo 123",
-                "e_comuna": "Santiago",
-                "e_region": "Metropolitana",
-                "e_telefono_destinatario": "56911111111",
-                "e_correo_destinatario": "destino@demo.invalid",
-                "e_observacion": "Dato ficticio para revision local",
-                "e_anulado": False,
-            }
-            envios_demo = [
-                Envio(**base, e_destinatario="Destino Demo Uno", e_tipo_envio="Domicilio", e_bultos=1, e_kilos=2, e_estado="pendiente"),
-                Envio(**base, e_destinatario="Destino Demo Dos", e_tipo_envio="Domicilio", e_bultos=2, e_kilos=3, e_estado="pendiente"),
-                Envio(**base, e_destinatario="Agencia Demo Valida", e_tipo_envio="Agencia", e_codigo_agencia="12345", e_bultos=1, e_kilos=1, e_estado="pendiente"),
-                Envio(**base, e_destinatario="Agencia Demo Incompleta", e_tipo_envio="Agencia", e_codigo_agencia=None, e_bultos=1, e_kilos=1, e_estado="pendiente"),
-                Envio(**base, e_destinatario="Demo En Proceso", e_tipo_envio="Domicilio", e_bultos=1, e_kilos=2, e_estado="en_proceso", e_lote="LOTE-DEMO-PROCESO", e_fila_excel=2, e_fecha_exportacion=datetime.now(), e_nombre_archivo="starken_demo_proceso.csv", e_estado_correo="descargado"),
-                Envio(**base, e_destinatario="Demo Historico", e_tipo_envio="Domicilio", e_bultos=1, e_kilos=2, e_estado="historico", e_lote="LOTE-DEMO-HISTORICO", e_fila_excel=2, e_fecha_exportacion=datetime.now(), e_nombre_archivo="starken_demo_historico.csv", e_resultado_of="OK", e_orden_flete="OF-DEMO-001", e_aviso_funcionario_estado="cancelado"),
-            ]
-            for envio in envios_demo:
-                asignar_punto_retiro_nuevo_envio(db, envio)
-            db.add_all(envios_demo)
+            envios_demo = generar_envios_ficticios(db, 10, incluir_academia=True)
+            incompleto = Envio(
+                e_remitente="Funcionario Demo QA Incompleto",
+                e_correo_remitente="funcionario@demo.invalid",
+                e_division="DPGP",
+                e_centro_costo="DEMO-QA",
+                e_destinatario="Agencia Ficticia Incompleta",
+                e_rut_destinatario="0",
+                e_direccion="Avenida Ficticia 999",
+                e_comuna="Santiago",
+                e_region="Metropolitana",
+                e_telefono_destinatario="56999999999",
+                e_correo_destinatario="incompleto@demo.invalid",
+                e_tipo_envio="Agencia",
+                e_codigo_agencia=None,
+                e_bultos=1,
+                e_kilos=1,
+                e_estado="pendiente",
+                e_anulado=False,
+            )
+            asignar_punto_retiro_nuevo_envio(db, incompleto)
+            db.add(incompleto)
+            db.commit()
+            lote_seed = crear_lote_demo(
+                db,
+                [envios_demo[0].id, envios_demo[1].id],
+                raiz_demo_permitida(),
+                fecha_actual=ahora_chile() - timedelta(minutes=1),
+            )
+            procesar_respuesta_of_demo(
+                db,
+                lote_seed["lote"],
+                "UNO_ERROR",
+                raiz_demo_permitida(),
+            )
 
     db.commit()
 finally:
@@ -215,7 +249,14 @@ $env:DEMO_SEED = if ($Seed) { "1" } else { "0" }
 $SetupDemoEncoded = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($SetupDemo))
 & $Python -c "import base64; exec(base64.b64decode('$SetupDemoEncoded'))"
 if ($LASTEXITCODE -ne 0) {
-    throw "No se pudo preparar la base SQLite demo."
+    throw "No se pudo preparar SQLite demo. Si esta desactualizada, ejecuta -Clean."
+}
+
+if ($Scenario) {
+    & $Python scripts/demo_operacion.py --cantidad $Cantidad --escenario $Scenario
+    if ($LASTEXITCODE -ne 0) {
+        throw "No se pudo ejecutar el escenario Starken demo."
+    }
 }
 
 Write-Host ""
@@ -228,6 +269,7 @@ Write-Host "Contrasena: Demo1234!"
 Write-Host "Base:       $DemoDatabase"
 Write-Host "Logs:       $DemoLogs"
 Write-Host "Respaldos:  $DemoBackups"
+Write-Host "Starken:    $DemoStarken"
 Write-Host "Correo:     DESHABILITADO"
 Write-Host "Python:     $Python"
 Write-Host ""
@@ -235,6 +277,11 @@ Write-Host "Detener servidor: Ctrl+C"
 Write-Host "Eliminar demo:    .\scripts\run_demo.ps1 -Clean"
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host ""
+
+if ($NoStart) {
+    Write-Host "Demo preparada sin iniciar servidor (-NoStart)." -ForegroundColor Green
+    exit 0
+}
 
 $BrowserCommand = @"
 for (`$intento = 0; `$intento -lt 30; `$intento++) {

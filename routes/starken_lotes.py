@@ -23,63 +23,17 @@ from services.correo_of import (
 )
 from services.lotes import (
     lote_coincide_con_archivo,
+    obtener_envios_seleccionados_para_lote,
     obtener_lotes_en_proceso,
+    preparar_lote_starken,
     preparar_correos_of_para_lotes,
 )
 from services.of_processor import OFProcessingError, procesar_archivo_of
-from services.starken import generar_csv_starken, guardar_respaldo_lote
+from services.starken import guardar_respaldo_lote
 from utils.fechas import ahora_chile
 
 
 logger = logging.getLogger(__name__)
-
-
-def _ids_envios_seleccionados(valores):
-    if not valores:
-        raise ValueError("Debes seleccionar al menos un envio para generar el lote.")
-
-    try:
-        ids = [int(valor) for valor in valores]
-    except (TypeError, ValueError) as exc:
-        raise ValueError("La seleccion contiene IDs de envio invalidos.") from exc
-
-    if any(envio_id <= 0 for envio_id in ids):
-        raise ValueError("La seleccion contiene IDs de envio invalidos.")
-    if len(ids) != len(set(ids)):
-        raise ValueError("La seleccion contiene IDs de envio duplicados.")
-
-    return ids
-
-
-def _obtener_envios_seleccionados_para_lote(db, valores):
-    ids = _ids_envios_seleccionados(valores)
-    envios = (
-        db.query(Envio)
-        .filter(Envio.id.in_(ids))
-        .order_by(Envio.id.asc())
-        .with_for_update()
-        .all()
-    )
-
-    encontrados = {envio.id for envio in envios}
-    inexistentes = sorted(set(ids) - encontrados)
-    if inexistentes:
-        raise ValueError(
-            "Uno o mas envios seleccionados no existen. Recarga Pendientes e intenta nuevamente."
-        )
-
-    no_disponibles = [
-        envio.id
-        for envio in envios
-        if envio.e_estado != "pendiente" or bool(envio.e_anulado)
-    ]
-    if no_disponibles:
-        raise ValueError(
-            "Uno o mas envios seleccionados ya no estan pendientes. "
-            "Recarga la pantalla antes de generar el lote."
-        )
-
-    return envios
 
 
 def _responsable_actual():
@@ -168,7 +122,7 @@ def registrar_rutas_starken_lotes(app):
         accion = request.form.get("accion", "descargar").strip()
 
         try:
-            envios_pendientes = _obtener_envios_seleccionados_para_lote(
+            envios_pendientes = obtener_envios_seleccionados_para_lote(
                 db,
                 request.form.getlist("envio_ids"),
             )
@@ -178,39 +132,21 @@ def registrar_rutas_starken_lotes(app):
             flash(str(exc), "danger")
             return redirect("/envios")
 
-        agencias_sin_codigo = [
-            envio for envio in envios_pendientes
-            if envio.e_tipo_envio == "Agencia" and not envio.e_codigo_agencia
-        ]
-
-        if agencias_sin_codigo:
-            db.close()
-            flash(
-                "Hay envios de agencia sin codigo. Editalos antes de generar el lote Starken.",
-                "danger",
-            )
-            return redirect("/envios")
-
         if accion == "enviar" and not correo_starken_configurado():
             db.close()
             flash("Faltan credenciales de correo en .env. No se genero ningun lote.", "danger")
             return redirect("/envios")
 
         fecha_actual = ahora_chile()
-        lote = fecha_actual.strftime("LOTE-%Y%m%d-%H%M%S")
-        nombre_archivo, contenido_bytes = generar_csv_starken(envios_pendientes, fecha_actual)
-
-        fila_excel = 2
-        for envio in envios_pendientes:
-            envio.e_estado = "en_proceso"
-            envio.e_lote = lote
-            envio.e_fila_excel = fila_excel
-            envio.e_fecha_exportacion = fecha_actual
-            envio.e_nombre_archivo = nombre_archivo
-            envio.e_correo_destino = obtener_correo_destino_starken()
-            envio.e_fecha_envio_correo = None
-            envio.e_estado_correo = "pendiente" if accion == "enviar" else "descargado"
-            fila_excel += 1
+        resultado_lote = preparar_lote_starken(
+            envios_pendientes,
+            fecha_actual,
+            correo_destino=obtener_correo_destino_starken(),
+            estado_correo="pendiente" if accion == "enviar" else "descargado",
+        )
+        lote = resultado_lote["lote"]
+        nombre_archivo = resultado_lote["nombre_archivo"]
+        contenido_bytes = resultado_lote["contenido_bytes"]
 
         try:
             guardar_respaldo_lote(nombre_archivo, contenido_bytes)

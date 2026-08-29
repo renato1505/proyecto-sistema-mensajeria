@@ -1,4 +1,5 @@
 import unittest
+import re
 from pathlib import Path
 
 
@@ -31,11 +32,25 @@ class RunDemoScriptTest(unittest.TestCase):
         self.assertIn('generate_password_hash("Demo1234!")', self.contenido)
         self.assertIn('environ.get("DEMO_SEED") == "1"', self.contenido)
         self.assertIn("$SetupDemoEncoded", self.contenido)
+        self.assertIn("generar_envios_ficticios", self.contenido)
+        self.assertNotIn("e_kilos=2", self.contenido)
 
     def test_demo_ofrece_limpieza_acotada_y_abre_navegador(self):
         self.assertIn('[switch]$Clean', self.contenido)
         self.assertIn('$DemoRoot.StartsWith($TempRoot', self.contenido)
         self.assertIn("Start-Process '$DemoUrl'", self.contenido)
+
+    def test_demo_detecta_esquema_antiguo_y_ofrece_escenarios(self):
+        self.assertIn('requeridas = {"e_fecha_of", "e_punto_retiro_id"}', self.contenido)
+        self.assertIn("SQLite demo incompatible", self.contenido)
+        self.assertIn('[string]$Scenario', self.contenido)
+        self.assertIn('[switch]$NoStart', self.contenido)
+        self.assertIn("scripts/demo_operacion.py", self.contenido)
+
+    def test_bloque_python_embebido_es_sintacticamente_valido(self):
+        bloque = re.search(r"\$SetupDemo = @'\r?\n(.*?)\r?\n'@", self.contenido, re.DOTALL)
+        self.assertIsNotNone(bloque)
+        compile(bloque.group(1), "run_demo_setup", "exec")
 
 
 if __name__ == "__main__":
