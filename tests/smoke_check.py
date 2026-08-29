@@ -33,6 +33,7 @@ def main():
         "/of_correo",
         "/configuracion",
         "/operacion",
+        "/operacion/retiros",
     ]:
         response = client.get(ruta)
         print(f"{ruta}: {response.status_code}")

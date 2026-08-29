@@ -23,6 +23,11 @@
             {% if metricas.avisos_pendientes %}<div class="stage-value small"><strong>{{ metricas.avisos_pendientes }}</strong><span>pendientes</span></div>{% else %}<div class="compact-empty">No hay avisos pendientes.</div>{% endif %}
             <nav class="stage-links"><a href="/avisos">Revisar avisos</a></nav>
         </article>
+        <article class="workflow-stage retiro-stage">
+            <div class="stage-heading"><span>04</span><div><h2>Retiro Starken</h2><p>Confirma los paquetes que Starken se llev&oacute; f&iacute;sicamente.</p></div></div>
+            <div class="compact-empty">Env&iacute;os con OF listos para su retiro efectivo.</div>
+            <nav class="stage-links"><a href="/operacion/retiros">Ver listos para retiro</a></nav>
+        </article>
     </section>
 </div>
 {% endblock %}

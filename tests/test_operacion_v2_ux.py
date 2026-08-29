@@ -59,7 +59,7 @@ class OperacionV2UXTest(unittest.TestCase):
         html = respuesta.get_data(as_text=True)
 
         self.assertEqual(respuesta.status_code, 200)
-        for ruta in ("/nuevo_envio", "/carga_masiva", "/envios", "/en_proceso", "/of_correo", "/avisos"):
+        for ruta in ("/nuevo_envio", "/carga_masiva", "/envios", "/en_proceso", "/of_correo", "/avisos", "/operacion/retiros"):
             with self.subTest(ruta=ruta):
                 self.assertIn(f'href="{ruta}"', html)
 
@@ -104,7 +104,7 @@ class OperacionV2UXTest(unittest.TestCase):
 
     def test_rutas_core_heredadas_continuan_disponibles(self):
         self._autenticar()
-        for ruta in ("/crear_envio", "/nuevo_envio", "/carga_masiva", "/envios", "/en_proceso", "/of_correo", "/avisos", "/historico", "/catalogos"):
+        for ruta in ("/crear_envio", "/nuevo_envio", "/carga_masiva", "/envios", "/en_proceso", "/of_correo", "/avisos", "/historico", "/catalogos", "/operacion/retiros"):
             with self.subTest(ruta=ruta):
                 self.assertEqual(self.client.get(ruta).status_code, 200)
 

@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Listos para retiro | Mensajer&iacute;a{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/retiros.css') }}">{% endblock %}
+{% block content %}
+<div class="retiros-page">
+    <header class="retiros-heading">
+        <div>
+            <a class="back-link" href="/operacion">&larr; Volver a Operaci&oacute;n</a>
+            <span class="section-label">Retiro Starken</span>
+            <h1>Listos para retiro</h1>
+            <p><strong>{{ total_filtrados }} env&iacute;o{% if total_filtrados != 1 %}s{% endif %} &middot; {{ total_bultos }} bulto{% if total_bultos != 1 %}s{% endif %}</strong> pendientes de retiro.</p>
+            <p class="retiros-explanation">Estos env&iacute;os ya tienen OF, pero todav&iacute;a no han sido retirados f&iacute;sicamente. Confirma solo cuando Starken se haya llevado los paquetes.</p>
+        </div>
+    </header>
+
+    <section class="retiros-toolbar page-surface" aria-label="B&uacute;squeda y selecci&oacute;n">
+        <form class="retiros-search" method="GET" action="/operacion/retiros" data-skip-loading="true">
+            <label for="retiroBusqueda">Buscar por OF, remitente o destinatario</label>
+            <div class="search-controls">
+                <input id="retiroBusqueda" class="form-control" type="search" name="q" value="{{ busqueda }}" placeholder="Ej. 900000001 o nombre">
+                <button class="btn btn-primary" type="submit">Buscar</button>
+                {% if busqueda %}<a class="btn btn-outline-secondary" href="/operacion/retiros">Limpiar filtro</a>{% endif %}
+            </div>
+        </form>
+        {% if total_filtrados %}
+        <div class="selection-actions">
+            <button id="seleccionarResultados" class="btn btn-outline-primary btn-sm" type="button">Seleccionar todos los {{ total_filtrados }} resultados</button>
+            <button id="limpiarSeleccion" class="btn btn-outline-secondary btn-sm" type="button">Limpiar selecci&oacute;n</button>
+        </div>
+        {% endif %}
+    </section>
+
+    {% if envios %}
+    <section class="retiros-table-surface page-surface" aria-label="Env&iacute;os listos para retiro">
+        <div class="table-responsive">
+            <table class="table retiros-table align-middle">
+                <thead>
+                    <tr>
+                        <th class="selection-column" scope="col"><span class="visually-hidden">Seleccionar</span></th>
+                        <th scope="col">OF</th>
+                        <th scope="col">Remitente</th>
+                        <th scope="col">Destinatario</th>
+                        <th class="numeric-column" scope="col">Bultos</th>
+                        <th scope="col">Fecha OF</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for envio in envios %}
+                    <tr>
+                        <td class="selection-column">
+                            <input class="form-check-input retiro-checkbox" type="checkbox" value="{{ envio.envio_id }}" data-envio-id="{{ envio.envio_id }}" data-bultos="{{ envio.bultos }}" aria-label="Seleccionar OF {{ envio.orden_flete }}">
+                        </td>
+                        <td class="of-cell"><strong>{{ envio.orden_flete }}</strong><small>{{ envio.punto_nombre }}</small></td>
+                        <td>{{ envio.remitente }}</td>
+                        <td>{{ envio.destinatario }}</td>
+                        <td class="numeric-column"><strong>{{ envio.bultos }}</strong></td>
+                        <td class="date-cell"><time datetime="{{ envio.fecha_of.isoformat() }}">{{ envio.fecha_of.strftime('%d/%m/%Y') }}<small>{{ envio.fecha_of.strftime('%H:%M') }}</small></time></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if total_paginas > 1 %}
+        <nav class="retiros-pagination" aria-label="Paginaci&oacute;n de listos para retiro">
+            <span>P&aacute;gina {{ pagina }} de {{ total_paginas }} &middot; 25 filas por p&aacute;gina</span>
+            <div>
+                {% if pagina > 1 %}<a class="btn btn-outline-secondary btn-sm" href="{{ url_for('ver_retiros_listos', q=busqueda, pagina=pagina-1) }}">Anterior</a>{% endif %}
+                {% if pagina < total_paginas %}<a class="btn btn-outline-secondary btn-sm" href="{{ url_for('ver_retiros_listos', q=busqueda, pagina=pagina+1) }}">Siguiente</a>{% endif %}
+            </div>
+        </nav>
+        {% endif %}
+    </section>
+    {% else %}
+    <section class="empty-state page-surface retiros-empty">
+        {% if busqueda %}
+            <h2>No hay resultados para &ldquo;{{ busqueda }}&rdquo;.</h2>
+            <p>Prueba con otra OF, remitente o destinatario.</p>
+            <a class="btn btn-outline-primary" href="/operacion/retiros">Ver todos los elegibles</a>
+        {% else %}
+            <h2>No hay env&iacute;os listos para retiro.</h2>
+            <p>Los env&iacute;os aparecer&aacute;n aqu&iacute; una vez que tengan una OF procesada correctamente.</p>
+        {% endif %}
+    </section>
+    {% endif %}
+
+    <aside class="retiro-selection-bar" aria-live="polite" aria-label="Resumen de selecci&oacute;n">
+        <div><span>Seleccionados</span><strong><span id="seleccionCantidad">0</span> env&iacute;os &middot; <span id="seleccionBultos">0</span> bultos</strong></div>
+        <button id="abrirConfirmacionRetiro" class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#confirmarRetiroModal" disabled>Confirmar retiro</button>
+    </aside>
+</div>
+
+<div class="modal fade" id="confirmarRetiroModal" tabindex="-1" aria-labelledby="confirmarRetiroTitulo" aria-describedby="confirmarRetiroAyuda">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content retiro-modal">
+            <form id="formConfirmarRetiro" method="POST" action="/operacion/retiros/confirmar" data-loading-title="Registrando retiro" data-loading-text="Se est&aacute; validando y registrando el retiro completo.">
+                <div class="modal-header">
+                    <div><span class="section-label">Confirmaci&oacute;n efectiva</span><h2 class="modal-title" id="confirmarRetiroTitulo">Confirmar retiro Starken</h2></div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="modal-selection"><strong><span id="modalSeleccionCantidad">0</span> env&iacute;os</strong><span><span id="modalSeleccionBultos">0</span> bultos</span></p>
+                    <div id="retiroIdsSeleccionados"></div>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <label class="form-label" for="fechaRetiro">Fecha y hora efectiva</label>
+                        <input class="form-control" id="fechaRetiro" type="datetime-local" name="fecha_retiro" value="{{ fecha_retiro_default }}" required>
+                        <div class="form-text">Puede corregirse; el servicio no acepta m&aacute;s de 15 minutos futuros.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="responsableRetiro">Responsable</label>
+                        <input class="form-control" id="responsableRetiro" type="text" value="{{ responsable or 'No identificado' }}" readonly aria-describedby="responsableRetiroAyuda">
+                        <div class="form-text" id="responsableRetiroAyuda">Se obtiene de la sesi&oacute;n autenticada y no se conf&iacute;a al navegador.</div>
+                    </div>
+                    <div>
+                        <label class="form-label" for="observacionRetiro">Observaci&oacute;n <span>(opcional)</span></label>
+                        <textarea class="form-control" id="observacionRetiro" name="observacion" rows="3" maxlength="1000"></textarea>
+                    </div>
+                    <p class="retiro-confirm-question" id="confirmarRetiroAyuda">&iquest;Confirmas que estos paquetes fueron efectivamente retirados por Starken?</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-primary" id="confirmarRetiroSubmit" type="submit">Confirmar retiro</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script id="retirosTodosData" type="application/json">{{ todos_elegibles|tojson }}</script>
+<script id="retirosFiltradosData" type="application/json">{{ elegibles_filtrados|tojson }}</script>
+{% endblock %}
+{% block extra_js %}<script src="{{ url_for('static', filename='js/retiros.js') }}"></script>{% endblock %}

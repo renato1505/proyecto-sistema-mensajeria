@@ -17,6 +17,7 @@ from routes.envios import registrar_rutas_envios
 from routes.historico import registrar_rutas_historico
 from routes.historico_ajax import registrar_rutas_historico_ajax
 from routes.paginas import registrar_rutas_paginas
+from routes.retiros import registrar_rutas_retiros
 from routes.starken_lotes import registrar_rutas_starken_lotes
 from services.normalizacion_operativa import normalizar_datos_operativos
 from utils.csrf import obtener_csrf_token, validar_csrf
@@ -56,6 +57,7 @@ normalizar_datos_operativos()
 registrar_rutas_auth(app)
 registrar_rutas_configuracion(app)
 registrar_rutas_paginas(app)
+registrar_rutas_retiros(app)
 registrar_rutas_envios(app)
 registrar_rutas_catalogos(app)
 registrar_rutas_catalogos_ajax(app)
