@@ -6,7 +6,9 @@ copia restaurada. El script no crea tablas ni importa ``main``.
 import argparse
 import json
 import os
+import re
 import sys
+from collections import Counter
 from pathlib import Path
 
 import sqlalchemy as sa
@@ -32,6 +34,38 @@ def normalizar_url(url):
 
 def _tipo_normalizado(tipo, dialecto):
     return " ".join(str(tipo.compile(dialect=dialecto)).lower().split())
+
+
+def _es_varchar(tipo):
+    return re.fullmatch(r"(?:character varying|varchar)(?:\(\d+\))?", tipo) is not None
+
+
+def _es_secuencia_pk_equivalente(columna, default_bd):
+    """Reconoce el default que PostgreSQL crea para una PK autoincremental."""
+    if not columna.primary_key or columna.server_default is not None or not default_bd:
+        return False
+    return re.fullmatch(r"nextval\('(?:[^']|'')+'::regclass\)", default_bd, re.IGNORECASE) is not None
+
+
+def _defaults_equivalentes(columna, default_modelo, default_bd):
+    if default_modelo == default_bd:
+        return True
+    if isinstance(columna.type, sa.Boolean):
+        valores_false = {"false", "0", "'false'", "(false)", "(0)"}
+        valores_true = {"true", "1", "'true'", "(true)", "(1)"}
+        modelo = str(default_modelo).strip().lower() if default_modelo is not None else None
+        real = str(default_bd).strip().lower() if default_bd is not None else None
+        return (modelo in valores_false and real in valores_false) or (modelo in valores_true and real in valores_true)
+    return False
+
+
+def resumir_diferencias(diferencias):
+    conteo = Counter(diferencia["nivel"] for diferencia in diferencias)
+    return {
+        "criticas": conteo["critico"],
+        "relevantes": conteo["relevante"],
+        "informativas": conteo["informativo"],
+    }
 
 
 def describir_esquema(engine):
@@ -81,8 +115,9 @@ def comparar_metadata(engine, esquema):
             real = columnas_bd[columna]
             tipo_modelo = _tipo_normalizado(modelo.type, engine.dialect)
             if tipo_modelo != real["tipo"]:
+                nivel = "relevante" if _es_varchar(tipo_modelo) and _es_varchar(real["tipo"]) else "critico"
                 diferencias.append({
-                    "nivel": "critico",
+                    "nivel": nivel,
                     "objeto": f"{nombre}.{columna}",
                     "detalle": f"tipo ORM={tipo_modelo}, BD={real['tipo']}",
                 })
@@ -94,12 +129,19 @@ def comparar_metadata(engine, esquema):
                 })
             default_modelo = str(modelo.server_default.arg) if modelo.server_default is not None else None
             default_bd = real["default"]
-            if default_modelo != default_bd:
-                diferencias.append({
-                    "nivel": "critico",
-                    "objeto": f"{nombre}.{columna}",
-                    "detalle": f"server_default ORM={default_modelo}, BD={default_bd}",
-                })
+            if not _defaults_equivalentes(modelo, default_modelo, default_bd):
+                if _es_secuencia_pk_equivalente(modelo, default_bd):
+                    diferencias.append({
+                        "nivel": "informativo",
+                        "objeto": f"{nombre}.{columna}",
+                        "detalle": "secuencia PK PostgreSQL equivalente al autoincrement ORM",
+                    })
+                else:
+                    diferencias.append({
+                        "nivel": "relevante",
+                        "objeto": f"{nombre}.{columna}",
+                        "detalle": f"server_default ORM={default_modelo}, BD={default_bd}",
+                    })
 
         pk_modelo = {columna.name for columna in tabla.primary_key.columns}
         pk_bd = set(esquema[nombre]["pk"].get("constrained_columns") or [])
@@ -115,12 +157,12 @@ def comparar_metadata(engine, esquema):
             for indice in esquema[nombre]["indices"]
         }
         for indice in sorted(indices_modelo.keys() - indices_bd.keys()):
-            diferencias.append({"nivel": "critico", "objeto": f"{nombre}.{indice}", "detalle": "indice ORM ausente en BD"})
+            diferencias.append({"nivel": "relevante", "objeto": f"{nombre}.{indice}", "detalle": "indice ORM ausente en BD"})
         for indice in sorted(indices_bd.keys() - indices_modelo.keys()):
             diferencias.append({"nivel": "informativo", "objeto": f"{nombre}.{indice}", "detalle": "indice BD no representado en ORM"})
         for indice in sorted(indices_modelo.keys() & indices_bd.keys()):
             if indices_modelo[indice] != indices_bd[indice]:
-                diferencias.append({"nivel": "critico", "objeto": f"{nombre}.{indice}", "detalle": f"indice ORM={indices_modelo[indice]}, BD={indices_bd[indice]}"})
+                diferencias.append({"nivel": "relevante", "objeto": f"{nombre}.{indice}", "detalle": f"indice ORM={indices_modelo[indice]}, BD={indices_bd[indice]}"})
 
         fk_modelo = sorted(
             (fk.parent.name, fk.target_fullname)
@@ -155,10 +197,20 @@ def consultas_auditoria_envios(columnas):
         "total_envios": "SELECT COUNT(*) FROM envios",
         "estados": "SELECT e_estado, COUNT(*) FROM envios GROUP BY e_estado ORDER BY e_estado",
         "of_null_no_null": "SELECT COUNT(*) FILTER (WHERE e_orden_flete IS NULL), COUNT(*) FILTER (WHERE e_orden_flete IS NOT NULL) FROM envios",
-        "of_duplicadas": "SELECT e_orden_flete, COUNT(*) FROM envios WHERE e_orden_flete IS NOT NULL GROUP BY e_orden_flete HAVING COUNT(*) > 1 ORDER BY COUNT(*) DESC, e_orden_flete",
+        "of_resumen": "SELECT COUNT(e_orden_flete), COUNT(DISTINCT e_orden_flete) FROM envios",
+        "of_duplicadas": "SELECT MIN(id), COUNT(*) FROM envios WHERE e_orden_flete IS NOT NULL GROUP BY e_orden_flete HAVING COUNT(*) > 1 ORDER BY COUNT(*) DESC, MIN(id)",
         "anulados": "SELECT COUNT(*) FROM envios WHERE e_anulado IS TRUE",
         "bultos": "SELECT e_bultos, COUNT(*) FROM envios GROUP BY e_bultos ORDER BY e_bultos",
     }
+    if "e_codigo_agencia" in columnas:
+        consultas["codigo_agencia_distribucion"] = (
+            "SELECT "
+            "COUNT(*) FILTER (WHERE e_codigo_agencia IS NULL), "
+            "COUNT(*) FILTER (WHERE e_codigo_agencia IS NOT NULL AND LENGTH(e_codigo_agencia) = 0), "
+            "COUNT(*) FILTER (WHERE e_codigo_agencia IS NOT NULL AND LENGTH(e_codigo_agencia) > 0 AND LENGTH(TRIM(e_codigo_agencia)) = 0), "
+            "COUNT(*) FILTER (WHERE e_codigo_agencia IS NOT NULL AND LENGTH(TRIM(e_codigo_agencia)) > 0) "
+            "FROM envios"
+        )
     for columna in sorted(columnas):
         consultas[f"nulos_{columna}"] = f"SELECT COUNT(*) FROM envios WHERE {columna} IS NULL"
     return consultas
@@ -187,10 +239,12 @@ def ejecutar_auditoria(database_url):
                 datos = auditar_datos(connection, esquema)
             finally:
                 transaccion.rollback()
+        diferencias = comparar_metadata(engine, esquema)
         return {
             "dialecto": engine.dialect.name,
             "esquema": esquema,
-            "diferencias_metadata": comparar_metadata(engine, esquema),
+            "diferencias_metadata": diferencias,
+            "resumen_diferencias": resumir_diferencias(diferencias),
             "datos": datos,
         }
     finally:
@@ -212,6 +266,7 @@ def main():
     print(f"Tablas: {', '.join(sorted(resultado['esquema'])) or 'ninguna'}")
     diferencias = resultado["diferencias_metadata"]
     print(f"Diferencias metadata/BD: {len(diferencias)}")
+    print(f"Clasificacion: {resultado['resumen_diferencias']}")
     for diferencia in diferencias:
         print(f"- [{diferencia['nivel']}] {diferencia['objeto']}: {diferencia['detalle']}")
     print("Datos relevantes:")

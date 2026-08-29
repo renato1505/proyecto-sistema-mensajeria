@@ -11,7 +11,11 @@ from sqlalchemy import create_engine, inspect
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 
 from database.modelos import Base
-from scripts.auditar_esquema import consultas_auditoria_envios, ejecutar_auditoria
+from scripts.auditar_esquema import (
+    _es_secuencia_pk_equivalente,
+    consultas_auditoria_envios,
+    ejecutar_auditoria,
+)
 
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
@@ -68,10 +72,34 @@ class AlembicBaselineTest(unittest.TestCase):
         history = self._alembic("history").stdout
         auditoria = ejecutar_auditoria(self.database_url)
 
-        self.assertIn("20260826_01", current)
+        self.assertIn("20260828_02", current)
         self.assertIn("20260826_01", history)
+        self.assertIn("20260828_02", history)
         self.assertEqual(auditoria["diferencias_metadata"], [])
+        self.assertEqual(auditoria["resumen_diferencias"], {"criticas": 0, "relevantes": 0, "informativas": 0})
         self.assertEqual(auditoria["datos"]["total_envios"], [[0]])
+
+    def test_reconciliacion_agrega_indice_solo_despues_del_baseline(self):
+        self._alembic("upgrade", "20260826_01")
+        engine = create_engine(self.database_url)
+        try:
+            indices_baseline = {item["name"] for item in inspect(engine).get_indexes("envios")}
+        finally:
+            engine.dispose()
+        self.assertNotIn("ix_envios_e_anulado", indices_baseline)
+
+        self._alembic("upgrade", "head")
+        engine = create_engine(self.database_url)
+        try:
+            indices_head = {item["name"] for item in inspect(engine).get_indexes("envios")}
+        finally:
+            engine.dispose()
+        self.assertIn("ix_envios_e_anulado", indices_head)
+
+    def test_secuencia_postgresql_de_pk_es_equivalente_al_autoincrement(self):
+        columna = Base.metadata.tables["envios"].c.id
+        self.assertTrue(_es_secuencia_pk_equivalente(columna, "nextval('envios_id_seq'::regclass)"))
+        self.assertFalse(_es_secuencia_pk_equivalente(columna, "false"))
 
     def test_baseline_y_configuracion_no_contienen_credenciales(self):
         ini = (PROJECT_DIR / "alembic.ini").read_text(encoding="utf-8")
@@ -85,7 +113,9 @@ class AlembicBaselineTest(unittest.TestCase):
             self.assertNotIn(elemento_futuro, baseline)
 
     def test_consultas_de_auditoria_son_read_only(self):
-        consultas = consultas_auditoria_envios({"id", "e_estado", "e_orden_flete"})
+        consultas = consultas_auditoria_envios({"id", "e_estado", "e_orden_flete", "e_codigo_agencia"})
+        self.assertIn("codigo_agencia_distribucion", consultas)
+        self.assertNotIn("e_orden_flete, COUNT", consultas["of_duplicadas"])
         self.assertTrue(consultas)
         for nombre, consulta in consultas.items():
             with self.subTest(nombre=nombre):

@@ -10,6 +10,7 @@ respaldos_historico/
 respaldos_migracion/
 logs/
 *.log
+auditoria_*.json
 *.xlsx
 ~$*.xlsx
 *.tmp

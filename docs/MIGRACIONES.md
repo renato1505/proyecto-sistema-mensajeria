@@ -38,8 +38,8 @@ las bases estén auditadas y marcadas con el baseline, deben retirarse por fases
 
 ## Baseline
 
-La revisión `20260826_01` representa el esquema que el ORM considera actual
-antes de Retiro Starken. Incluye:
+La revisión `20260826_01` representa el esquema PostgreSQL legacy observado en
+la copia restaurada, antes de Retiro Starken. Incluye:
 
 - `areas_operativas`
 - `auditoria`
@@ -56,8 +56,20 @@ antes de Retiro Starken. Incluye:
 No crea puntos de retiro, retiros, fecha OF ni clasificación Academia. Tampoco
 añade FKs, UNIQUE o CHECK deseables que no están representados hoy por el ORM.
 
-Los defaults actuales son mayoritariamente funciones Python, no defaults de
-servidor. Por eso el baseline no inventa `server_default`.
+Los defaults actuales son mayoritariamente funciones Python. La excepción
+formalizada es `envios.e_anulado`, que en PostgreSQL existe como `BOOLEAN NOT
+NULL DEFAULT FALSE`; el ORM conserva el default Python y además declara el
+`server_default` equivalente.
+
+Las secuencias `nextval('<tabla>_id_seq'::regclass)` de las PK son la
+representación normal de PostgreSQL para el autoincremento declarado por el ORM,
+no drift de esquema. El auditor las clasifica como equivalencias informativas.
+
+El índice `ix_envios_e_anulado` es deseable en el ORM, pero no existe en el
+esquema restaurado. Por eso no se afirma falsamente que pertenece al baseline:
+la revisión `20260828_02` lo crea de forma explícita después de adoptar la base
+legacy. Una base existente debe marcarse primero en `20260826_01` y luego probar
+`upgrade` a la revisión de reconciliación en un entorno aislado.
 
 ## Crear una base vacía
 
@@ -115,9 +127,10 @@ python scripts/auditar_esquema.py --json
 ```
 
 El script informa esquema, diferencias contra `Base.metadata`, estados de
-envíos, OF nulas/no nulas y duplicadas, anulados, distribución de bultos y
-nulos por columna de `envios`. No importa `main`, no ejecuta helpers de startup,
-no contiene escrituras y en PostgreSQL usa `SET TRANSACTION READ ONLY`.
+envíos, total y cardinalidad de OF, duplicados sin exponer el valor de la OF,
+anulados, distribución de bultos, distribución de códigos de agencia y nulos por
+columna de `envios`. No importa `main`, no ejecuta helpers de startup, no
+contiene escrituras y en PostgreSQL usa `SET TRANSACTION READ ONLY`.
 
 Usar idealmente un rol que solo tenga `CONNECT`, `USAGE` y `SELECT`. La
 protección por permisos es más fuerte que depender solamente del script.

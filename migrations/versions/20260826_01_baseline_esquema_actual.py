@@ -78,8 +78,8 @@ def upgrade() -> None:
         sa.Column("d_comuna", sa.String(), nullable=True),
         sa.Column("d_region", sa.String(), nullable=True),
         sa.Column("d_telefono", sa.String(), nullable=True),
-        sa.Column("d_correo", sa.String(), nullable=True),
-        sa.Column("d_observacion", sa.String(), nullable=True),
+        sa.Column("d_correo", sa.String(255), nullable=True),
+        sa.Column("d_observacion", sa.String(500), nullable=True),
     )
     _crear_indices("destinatarios", [
         ("ix_destinatarios_id", ["id"], False),
@@ -99,8 +99,8 @@ def upgrade() -> None:
         sa.Column("e_comuna", sa.String(), nullable=False),
         sa.Column("e_region", sa.String(), nullable=True),
         sa.Column("e_telefono_destinatario", sa.String(), nullable=True),
-        sa.Column("e_correo_destinatario", sa.String(), nullable=True),
-        sa.Column("e_observacion", sa.String(), nullable=True),
+        sa.Column("e_correo_destinatario", sa.String(255), nullable=True),
+        sa.Column("e_observacion", sa.String(500), nullable=True),
         sa.Column("e_tipo_envio", sa.String(), nullable=False),
         sa.Column("e_codigo_agencia", sa.String(), nullable=True),
         sa.Column("e_bultos", sa.Integer(), nullable=False),
@@ -118,7 +118,7 @@ def upgrade() -> None:
         sa.Column("e_estado_correo", sa.String(50), nullable=True),
         sa.Column("e_aviso_funcionario_estado", sa.String(50), nullable=True),
         sa.Column("e_fecha_aviso_funcionario", sa.DateTime(), nullable=True),
-        sa.Column("e_anulado", sa.Boolean(), nullable=False),
+        sa.Column("e_anulado", sa.Boolean(), server_default=sa.false(), nullable=False),
         sa.Column("e_fecha_anulacion", sa.DateTime(), nullable=True),
         sa.Column("e_motivo_anulacion", sa.String(500), nullable=True),
         sa.Column("e_fecha_creacion", sa.DateTime(), nullable=True),
@@ -129,7 +129,6 @@ def upgrade() -> None:
         ("ix_envios_e_orden_flete", ["e_orden_flete"], False),
         ("ix_envios_e_lote", ["e_lote"], False),
         ("ix_envios_e_aviso_funcionario_estado", ["e_aviso_funcionario_estado"], False),
-        ("ix_envios_e_anulado", ["e_anulado"], False),
         ("ix_envios_e_fecha_creacion", ["e_fecha_creacion"], False),
     ])
 
