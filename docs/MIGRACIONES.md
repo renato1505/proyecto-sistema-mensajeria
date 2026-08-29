@@ -229,3 +229,20 @@ downgrade solo se utiliza cuando fue revisado y probado con datos equivalentes.
   un retiro, marcar sus asociaciones como no vigentes. Estas reglas cruzan tablas
   y no se implementan como `CHECK`; tampoco se introducen triggers implícitos en
   esta migración de persistencia.
+
+## Servicio de dominio de retiros
+
+- La elegibilidad se deriva de OF, fecha OF, punto local activo, anulación y
+  ausencia de asociación vigente. `e_estado` no es la fuente de verdad.
+- La confirmación bloquea los envíos con `SELECT ... FOR UPDATE` en PostgreSQL y
+  conserva el índice parcial como barrera final de concurrencia. Toda la operación
+  se confirma o revierte como una unidad.
+- El código visible tiene formato `RET-YYYYMMDD-NNNNNN`: usa la fecha efectiva
+  y el ID autogenerado de `RetiroStarken`. Durante el primer `flush` se utiliza
+  un token UUID interno, que se sustituye antes del commit y nunca se presenta.
+  No depende de azar visible, `COUNT` ni `MAX`; el `UNIQUE` permanece como defensa.
+- `rs_fecha_confirmacion` usa la hora real del sistema. La fecha efectiva permite
+  registros retrospectivos y solo rechaza valores con más de 15 minutos hacia el
+  futuro, tolerando diferencias menores de reloj o digitación.
+- Anular un retiro no borra registros: marca el retiro como anulado y todas sus
+  asociaciones vigentes como inactivas dentro de la misma transacción.
