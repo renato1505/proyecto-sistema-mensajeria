@@ -1,5 +1,16 @@
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, false
-from sqlalchemy.orm import declarative_base
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    false,
+    true,
+)
+from sqlalchemy.orm import declarative_base, relationship
 
 from utils.fechas import ahora_chile
 
@@ -76,6 +87,7 @@ class PuntoRetiro(Base):
     pr_incluir_metricas_locales = Column(Boolean, nullable=False)
     pr_activo = Column(Boolean, nullable=False)
     pr_fecha_creacion = Column(DateTime, default=ahora_chile, nullable=False)
+    retiros = relationship("RetiroStarken", back_populates="punto_retiro", passive_deletes=True)
 
 
 class Envio(Base):
@@ -137,6 +149,65 @@ class Envio(Base):
 
     # Fechas internas
     e_fecha_creacion = Column(DateTime, default=ahora_chile, index=True)
+    retiro_asociaciones = relationship("RetiroEnvio", back_populates="envio", passive_deletes=True)
+
+
+class RetiroStarken(Base):
+    __tablename__ = "retiros_starken"
+
+    id = Column(Integer, primary_key=True)
+    rs_codigo = Column(String(40), nullable=False, unique=True)
+    punto_retiro_id = Column(
+        Integer,
+        ForeignKey("puntos_retiro.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    rs_fecha_retiro = Column(DateTime, nullable=False, index=True)
+    rs_fecha_confirmacion = Column(DateTime, default=ahora_chile, nullable=False)
+    rs_responsable = Column(String(160), nullable=True)
+    rs_observacion = Column(String(1000), nullable=True)
+    rs_anulado = Column(Boolean, default=False, server_default=false(), nullable=False, index=True)
+    rs_fecha_anulacion = Column(DateTime, nullable=True)
+    rs_motivo_anulacion = Column(String(500), nullable=True)
+
+    punto_retiro = relationship("PuntoRetiro", back_populates="retiros")
+    asociaciones = relationship("RetiroEnvio", back_populates="retiro", passive_deletes=True)
+
+
+class RetiroEnvio(Base):
+    __tablename__ = "retiro_envios"
+    __table_args__ = (
+        CheckConstraint("re_bultos_snapshot >= 1", name="ck_retiro_envios_bultos_snapshot_positivo"),
+    )
+
+    id = Column(Integer, primary_key=True)
+    retiro_id = Column(
+        Integer,
+        ForeignKey("retiros_starken.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    envio_id = Column(
+        Integer,
+        ForeignKey("envios.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    re_bultos_snapshot = Column(Integer, nullable=False)
+    re_fecha_asociacion = Column(DateTime, default=ahora_chile, nullable=False)
+    re_vigente = Column(Boolean, default=True, server_default=true(), nullable=False)
+
+    retiro = relationship("RetiroStarken", back_populates="asociaciones")
+    envio = relationship("Envio", back_populates="retiro_asociaciones")
+
+
+Index(
+    "uq_retiro_envios_envio_vigente",
+    RetiroEnvio.envio_id,
+    unique=True,
+    postgresql_where=RetiroEnvio.re_vigente.is_(True),
+    sqlite_where=RetiroEnvio.re_vigente.is_(True),
+)
 
 
 class ExcepcionEnvio(Base):

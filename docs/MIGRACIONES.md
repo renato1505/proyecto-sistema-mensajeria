@@ -219,3 +219,13 @@ downgrade solo se utiliza cuando fue revisado y probado con datos equivalentes.
   regeneración automática futura.
 - La regla operacional confirmada es `e_kilos = e_bultos`, siempre con mínimo 1.
   Su automatización en la interfaz queda para una fase funcional posterior.
+- Un retiro físico se representa mediante un `RetiroStarken` y una asociación
+  `RetiroEnvio` por envío/OF, nunca por bulto. `re_bultos_snapshot` conserva los
+  bultos existentes al confirmar el retiro.
+- La BD impide dos asociaciones vigentes para un mismo envío mediante el índice
+  parcial `uq_retiro_envios_envio_vigente`. Una asociación no vigente permanece
+  como historia y permite una asociación posterior.
+- La futura capa de servicio debe rechazar envíos o retiros anulados y, al anular
+  un retiro, marcar sus asociaciones como no vigentes. Estas reglas cruzan tablas
+  y no se implementan como `CHECK`; tampoco se introducen triggers implícitos en
+  esta migración de persistencia.

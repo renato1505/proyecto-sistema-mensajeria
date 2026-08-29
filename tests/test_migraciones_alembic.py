@@ -63,8 +63,8 @@ class AlembicBaselineTest(unittest.TestCase):
 
         self.assertEqual(tablas, set(Base.metadata.tables) | {"alembic_version"})
         self.assertIn("puntos_retiro", tablas)
-        self.assertNotIn("retiros_starken", tablas)
-        self.assertNotIn("retiro_envios", tablas)
+        self.assertIn("retiros_starken", tablas)
+        self.assertIn("retiro_envios", tablas)
 
     def test_current_history_y_auditoria_coinciden_con_metadata(self):
         self._alembic("upgrade", "head")
@@ -72,10 +72,11 @@ class AlembicBaselineTest(unittest.TestCase):
         history = self._alembic("history").stdout
         auditoria = ejecutar_auditoria(self.database_url)
 
-        self.assertIn("20260828_03", current)
+        self.assertIn("20260829_04", current)
         self.assertIn("20260826_01", history)
         self.assertIn("20260828_02", history)
         self.assertIn("20260828_03", history)
+        self.assertIn("20260829_04", history)
         self.assertEqual(auditoria["diferencias_metadata"], [])
         self.assertEqual(auditoria["resumen_diferencias"], {"criticas": 0, "relevantes": 0, "informativas": 0})
         self.assertEqual(auditoria["datos"]["total_envios"], [[0]])
@@ -137,6 +138,87 @@ class AlembicBaselineTest(unittest.TestCase):
             ("MENSAJERIA_LOCAL", True, True, True),
         ])
         self.assertEqual(historico, (None, None))
+
+    def test_migracion_retiro_desde_03_preserva_envios_y_crea_integridad(self):
+        self._alembic("upgrade", "20260828_03")
+        engine = create_engine(self.database_url)
+        try:
+            with engine.begin() as connection:
+                connection.execute(text(
+                    "INSERT INTO envios ("
+                    "e_remitente, e_destinatario, e_direccion, e_comuna, "
+                    "e_tipo_envio, e_bultos, e_kilos, e_estado, e_orden_flete, e_anulado"
+                    ") VALUES ("
+                    "'Historico retiro', 'Destino', 'Direccion', 'Comuna', "
+                    "'Domicilio', 3, 3, 'historico', 'OF-RETIRO-LEGACY', 0"
+                    ")"
+                ))
+        finally:
+            engine.dispose()
+
+        self._alembic("upgrade", "head")
+        engine = create_engine(self.database_url)
+        try:
+            inspector = inspect(engine)
+            tablas = set(inspector.get_table_names())
+            fk_retiros = inspector.get_foreign_keys("retiros_starken")
+            fk_asociaciones = inspector.get_foreign_keys("retiro_envios")
+            checks = inspector.get_check_constraints("retiro_envios")
+            indices = {item["name"]: item for item in inspector.get_indexes("retiro_envios")}
+            columnas_retiro = {item["name"]: item for item in inspector.get_columns("retiros_starken")}
+            columnas_asociacion = {item["name"]: item for item in inspector.get_columns("retiro_envios")}
+            with engine.connect() as connection:
+                conteos = connection.execute(text(
+                    "SELECT (SELECT COUNT(*) FROM retiros_starken), "
+                    "(SELECT COUNT(*) FROM retiro_envios)"
+                )).one()
+                historico = connection.execute(text(
+                    "SELECT e_estado, e_bultos FROM envios WHERE e_orden_flete = 'OF-RETIRO-LEGACY'"
+                )).one()
+        finally:
+            engine.dispose()
+
+        self.assertIn("retiros_starken", tablas)
+        self.assertIn("retiro_envios", tablas)
+        self.assertEqual(conteos, (0, 0))
+        self.assertEqual(historico, ("historico", 3))
+        self.assertEqual(fk_retiros[0]["referred_table"], "puntos_retiro")
+        self.assertEqual(fk_retiros[0]["options"].get("ondelete"), "RESTRICT")
+        self.assertEqual(
+            {(fk["constrained_columns"][0], fk["referred_table"], fk["options"].get("ondelete")) for fk in fk_asociaciones},
+            {("retiro_id", "retiros_starken", "RESTRICT"), ("envio_id", "envios", "RESTRICT")},
+        )
+        self.assertTrue(any("re_bultos_snapshot >= 1" in item["sqltext"] for item in checks))
+        self.assertTrue(indices["uq_retiro_envios_envio_vigente"]["unique"])
+        self.assertEqual(str(columnas_retiro["rs_anulado"]["default"]), "0")
+        self.assertEqual(str(columnas_asociacion["re_vigente"]["default"]), "1")
+
+    def test_downgrade_retiro_vuelve_a_03_sin_tocar_envios(self):
+        self._alembic("upgrade", "head")
+        engine = create_engine(self.database_url)
+        try:
+            with engine.begin() as connection:
+                connection.execute(text(
+                    "INSERT INTO envios ("
+                    "e_remitente, e_destinatario, e_direccion, e_comuna, "
+                    "e_tipo_envio, e_bultos, e_kilos, e_estado, e_anulado"
+                    ") VALUES ('Persistente', 'Destino', 'Direccion', 'Comuna', "
+                    "'Domicilio', 1, 1, 'historico', 0)"
+                ))
+        finally:
+            engine.dispose()
+
+        self._alembic("downgrade", "20260828_03")
+        engine = create_engine(self.database_url)
+        try:
+            tablas = set(inspect(engine).get_table_names())
+            with engine.connect() as connection:
+                total = connection.execute(text("SELECT COUNT(*) FROM envios")).scalar_one()
+        finally:
+            engine.dispose()
+        self.assertNotIn("retiros_starken", tablas)
+        self.assertNotIn("retiro_envios", tablas)
+        self.assertEqual(total, 1)
 
     def test_secuencia_postgresql_de_pk_es_equivalente_al_autoincrement(self):
         columna = Base.metadata.tables["envios"].c.id
