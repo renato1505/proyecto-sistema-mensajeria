@@ -3,6 +3,8 @@ from flask import render_template
 from database.conexion import SessionLocal
 from database.modelos import Envio
 from services.avisos import contar_lotes_avisos_pendientes
+from services.metricas_operacion import obtener_metricas_retiros_hoy
+from services.retiros import obtener_resumen_envios_elegibles
 
 
 def _resumen_pendientes(envios):
@@ -157,10 +159,14 @@ def _metricas_operacion(db):
         .filter(Envio.e_estado == "en_proceso", Envio.e_resultado_of == "ERROR")
         .count()
     )
+    retiros_hoy = obtener_metricas_retiros_hoy(db)
+    listos_retiro = obtener_resumen_envios_elegibles(db)
 
     return {
         "pendientes": pendientes,
         "lotes_en_proceso": lotes_en_proceso,
         "avisos_pendientes": contar_lotes_avisos_pendientes(db),
         "errores_of": errores_of,
+        "retiros_hoy": retiros_hoy,
+        "listos_retiro": listos_retiro,
     }

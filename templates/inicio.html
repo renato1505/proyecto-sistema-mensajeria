@@ -18,5 +18,17 @@
             <dl class="status-list"><div><dt>Lotes en proceso</dt><dd>{{ metricas.lotes_en_proceso }}</dd></div><div><dt>Avisos pendientes</dt><dd>{{ metricas.avisos_pendientes }}</dd></div><div class="{% if metricas.errores_of %}attention{% endif %}"><dt>Errores OF</dt><dd>{{ metricas.errores_of }}</dd></div></dl>
         </div>
     </section>
+    <section class="retirement-today page-surface" aria-labelledby="retirosHoyTitulo">
+        <div>
+            <span class="section-label">Retiro f&iacute;sico</span>
+            <h2 id="retirosHoyTitulo">Bultos retirados hoy</h2>
+            <div class="retirement-kpi"><strong>{{ metricas.retiros_hoy.bultos }}</strong><span>{{ metricas.retiros_hoy.envios }} env&iacute;o{% if metricas.retiros_hoy.envios != 1 %}s{% endif %} retirado{% if metricas.retiros_hoy.envios != 1 %}s{% endif %}</span></div>
+        </div>
+        <div class="retirement-pending">
+            <strong>{{ metricas.listos_retiro.envios }} env&iacute;o{% if metricas.listos_retiro.envios != 1 %}s{% endif %} esperando retiro</strong>
+            <span>{{ metricas.listos_retiro.bultos }} bulto{% if metricas.listos_retiro.bultos != 1 %}s{% endif %} pendientes</span>
+            <a class="text-action" href="/operacion/retiros">Ver listos para retiro <span aria-hidden="true">&rarr;</span></a>
+        </div>
+    </section>
 </div>
 {% endblock %}

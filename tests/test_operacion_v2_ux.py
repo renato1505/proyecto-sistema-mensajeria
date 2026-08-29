@@ -10,6 +10,7 @@ os.environ["LOGIN_REQUIRED"] = "1"
 
 from main import app
 import routes.auth as auth
+from services.metricas_operacion import MetricasRetirosDia
 
 
 class OperacionV2UXTest(unittest.TestCase):
@@ -52,6 +53,26 @@ class OperacionV2UXTest(unittest.TestCase):
         self.assertIn('href="/nuevo_envio"', html)
         self.assertIn('href="/carga_masiva"', html)
         self.assertIn('href="/operacion"', html)
+
+    def test_inicio_y_operacion_muestran_metricas_reales_de_retiro(self):
+        self._autenticar()
+        with patch(
+            "routes.paginas.obtener_metricas_retiros_hoy",
+            return_value=MetricasRetirosDia(envios=12, bultos=27),
+        ), patch(
+            "routes.paginas.obtener_resumen_envios_elegibles",
+            return_value={"envios": 18, "bultos": 64},
+        ):
+            inicio = self.client.get("/").get_data(as_text=True)
+            operacion = self.client.get("/operacion").get_data(as_text=True)
+
+        self.assertIn("Bultos retirados hoy", inicio)
+        self.assertIn('<strong>27</strong>', inicio)
+        self.assertIn("12 env&iacute;os retirados", inicio)
+        self.assertIn("18 env&iacute;os esperando retiro", inicio)
+        self.assertIn('href="/operacion/retiros"', inicio)
+        self.assertIn("18 env&iacute;os &middot; 64 bultos", operacion)
+        self.assertIn("12 env&iacute;os &middot; 27 bultos", operacion)
 
     def test_operacion_responde_y_agrupa_superficies_existentes(self):
         self._autenticar()

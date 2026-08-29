@@ -75,9 +75,9 @@ def _existe_retiro_vigente():
     )
 
 
-def obtener_envios_elegibles(db):
+def _consulta_envios_elegibles(db):
     retiro_vigente = _existe_retiro_vigente()
-    filas = (
+    return (
         db.query(Envio, PuntoRetiro)
         .join(PuntoRetiro, PuntoRetiro.id == Envio.e_punto_retiro_id)
         .filter(
@@ -90,6 +90,12 @@ def obtener_envios_elegibles(db):
             PuntoRetiro.pr_activo.is_(True),
             ~retiro_vigente,
         )
+    )
+
+
+def obtener_envios_elegibles(db):
+    filas = (
+        _consulta_envios_elegibles(db)
         .order_by(Envio.e_fecha_of.asc(), Envio.id.asc())
         .all()
     )
@@ -107,6 +113,18 @@ def obtener_envios_elegibles(db):
         )
         for envio, punto in filas
     ]
+
+
+def obtener_resumen_envios_elegibles(db):
+    cantidad, bultos = (
+        _consulta_envios_elegibles(db)
+        .with_entities(
+            func.count(Envio.id),
+            func.coalesce(func.sum(Envio.e_bultos), 0),
+        )
+        .one()
+    )
+    return {"envios": int(cantidad or 0), "bultos": int(bultos or 0)}
 
 
 def _normalizar_ids_envios(envio_ids):
