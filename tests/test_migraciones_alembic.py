@@ -65,6 +65,7 @@ class AlembicBaselineTest(unittest.TestCase):
         self.assertIn("puntos_retiro", tablas)
         self.assertIn("retiros_starken", tablas)
         self.assertIn("retiro_envios", tablas)
+        self.assertIn("avisos_envio", tablas)
 
     def test_current_history_y_auditoria_coinciden_con_metadata(self):
         self._alembic("upgrade", "head")
@@ -72,11 +73,12 @@ class AlembicBaselineTest(unittest.TestCase):
         history = self._alembic("history").stdout
         auditoria = ejecutar_auditoria(self.database_url)
 
-        self.assertIn("20260829_04", current)
+        self.assertIn("20260829_05", current)
         self.assertIn("20260826_01", history)
         self.assertIn("20260828_02", history)
         self.assertIn("20260828_03", history)
         self.assertIn("20260829_04", history)
+        self.assertIn("20260829_05", history)
         self.assertEqual(auditoria["diferencias_metadata"], [])
         self.assertEqual(auditoria["resumen_diferencias"], {"criticas": 0, "relevantes": 0, "informativas": 0})
         self.assertEqual(auditoria["datos"]["total_envios"], [[0]])
@@ -220,6 +222,89 @@ class AlembicBaselineTest(unittest.TestCase):
         self.assertNotIn("retiro_envios", tablas)
         self.assertEqual(total, 1)
 
+    def test_migracion_avisos_desde_04_es_aditiva_y_crea_integridad(self):
+        self._alembic("upgrade", "20260829_04")
+        engine = create_engine(self.database_url)
+        try:
+            with engine.begin() as connection:
+                connection.execute(text(
+                    "INSERT INTO envios ("
+                    "e_remitente, e_destinatario, e_direccion, e_comuna, "
+                    "e_tipo_envio, e_bultos, e_kilos, e_estado, e_estado_correo, "
+                    "e_aviso_funcionario_estado, e_anulado"
+                    ") VALUES ("
+                    "'Legacy avisos', 'Destino', 'Direccion', 'Comuna', "
+                    "'Domicilio', 1, 1, 'historico', 'enviado', 'pendiente', 0"
+                    ")"
+                ))
+        finally:
+            engine.dispose()
+
+        self._alembic("upgrade", "head")
+        engine = create_engine(self.database_url)
+        try:
+            inspector = inspect(engine)
+            fk = inspector.get_foreign_keys("avisos_envio")
+            checks = {item["name"]: item["sqltext"] for item in inspector.get_check_constraints("avisos_envio")}
+            uniques = {
+                item["name"]: tuple(item["column_names"])
+                for item in inspector.get_unique_constraints("avisos_envio")
+            }
+            indices = {item["name"] for item in inspector.get_indexes("avisos_envio")}
+            with engine.connect() as connection:
+                conteos = connection.execute(text(
+                    "SELECT (SELECT COUNT(*) FROM envios), "
+                    "(SELECT COUNT(*) FROM avisos_envio)"
+                )).one()
+                legacy = connection.execute(text(
+                    "SELECT e_estado_correo, e_aviso_funcionario_estado FROM envios"
+                )).one()
+        finally:
+            engine.dispose()
+
+        self.assertEqual(conteos, (1, 0))
+        self.assertEqual(legacy, ("enviado", "pendiente"))
+        self.assertEqual(fk[0]["referred_table"], "envios")
+        self.assertEqual(fk[0]["options"].get("ondelete"), "RESTRICT")
+        self.assertIn("ck_avisos_envio_tipo_valido", checks)
+        self.assertIn("ck_avisos_envio_estado_valido", checks)
+        self.assertIn("ck_avisos_envio_intentos_no_negativo", checks)
+        self.assertEqual(uniques["uq_avisos_envio_envio_tipo"], ("envio_id", "av_tipo"))
+        self.assertEqual(uniques["uq_avisos_envio_clave_idempotencia"], ("av_clave_idempotencia",))
+        self.assertEqual(indices, {
+            "ix_avisos_envio_envio_id",
+            "ix_avisos_envio_av_estado",
+            "ix_avisos_envio_av_tipo",
+            "ix_avisos_envio_av_fecha_creacion",
+        })
+
+    def test_downgrade_avisos_vuelve_a_04_sin_tocar_envios(self):
+        self._alembic("upgrade", "head")
+        engine = create_engine(self.database_url)
+        try:
+            with engine.begin() as connection:
+                connection.execute(text(
+                    "INSERT INTO envios ("
+                    "e_remitente, e_destinatario, e_direccion, e_comuna, "
+                    "e_tipo_envio, e_bultos, e_kilos, e_estado, e_anulado"
+                    ") VALUES ('Persistente avisos', 'Destino', 'Direccion', 'Comuna', "
+                    "'Domicilio', 1, 1, 'historico', 0)"
+                ))
+        finally:
+            engine.dispose()
+
+        self._alembic("downgrade", "20260829_04")
+        engine = create_engine(self.database_url)
+        try:
+            tablas = set(inspect(engine).get_table_names())
+            with engine.connect() as connection:
+                total = connection.execute(text("SELECT COUNT(*) FROM envios")).scalar_one()
+        finally:
+            engine.dispose()
+        self.assertNotIn("avisos_envio", tablas)
+        self.assertIn("retiros_starken", tablas)
+        self.assertEqual(total, 1)
+
     def test_secuencia_postgresql_de_pk_es_equivalente_al_autoincrement(self):
         columna = Base.metadata.tables["envios"].c.id
         self.assertTrue(_es_secuencia_pk_equivalente(columna, "nextval('envios_id_seq'::regclass)"))
@@ -233,7 +318,7 @@ class AlembicBaselineTest(unittest.TestCase):
         self.assertIn("from config.settings import DATABASE_URL", env)
         self.assertNotIn("postgresql://", ini)
         self.assertNotIn("password", ini.lower())
-        for elemento_futuro in ("puntos_retiro", "retiros_starken", "retiro_envios", "e_fecha_of", "e_punto_retiro_id"):
+        for elemento_futuro in ("puntos_retiro", "retiros_starken", "retiro_envios", "avisos_envio", "e_fecha_of", "e_punto_retiro_id"):
             self.assertNotIn(elemento_futuro, baseline)
 
     def test_consultas_de_auditoria_son_read_only(self):

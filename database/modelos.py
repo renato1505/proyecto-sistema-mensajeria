@@ -7,14 +7,60 @@ from sqlalchemy import (
     Index,
     Integer,
     String,
+    text,
+    UniqueConstraint,
     false,
     true,
 )
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.orm import declarative_base, relationship, validates
 
 from utils.fechas import ahora_chile
 
 Base = declarative_base()
+
+
+AVISO_TIPO_FUNCIONARIO = "FUNCIONARIO"
+AVISO_TIPO_DESTINATARIO = "DESTINATARIO"
+AVISO_TIPOS_VALIDOS = frozenset({AVISO_TIPO_FUNCIONARIO, AVISO_TIPO_DESTINATARIO})
+
+AVISO_ESTADO_PENDIENTE = "PENDIENTE"
+AVISO_ESTADO_PROCESANDO = "PROCESANDO"
+AVISO_ESTADO_ENVIADO = "ENVIADO"
+AVISO_ESTADO_ERROR = "ERROR"
+AVISO_ESTADO_INCIERTO = "INCIERTO"
+AVISO_ESTADO_CANCELADO = "CANCELADO"
+AVISO_ESTADOS_VALIDOS = frozenset({
+    AVISO_ESTADO_PENDIENTE,
+    AVISO_ESTADO_PROCESANDO,
+    AVISO_ESTADO_ENVIADO,
+    AVISO_ESTADO_ERROR,
+    AVISO_ESTADO_INCIERTO,
+    AVISO_ESTADO_CANCELADO,
+})
+
+
+def validar_tipo_aviso(valor):
+    tipo = str(valor or "").strip().upper()
+    if tipo not in AVISO_TIPOS_VALIDOS:
+        raise ValueError(f"Tipo de aviso no permitido: {valor}")
+    return tipo
+
+
+def validar_estado_aviso(valor):
+    estado = str(valor or "").strip().upper()
+    if estado not in AVISO_ESTADOS_VALIDOS:
+        raise ValueError(f"Estado de aviso no permitido: {valor}")
+    return estado
+
+
+def construir_clave_idempotencia_aviso(envio_id, tipo):
+    try:
+        identificador = int(envio_id)
+    except (TypeError, ValueError):
+        raise ValueError("El envio del aviso debe tener un ID valido") from None
+    if identificador < 1:
+        raise ValueError("El envio del aviso debe tener un ID valido")
+    return f"ENVIO-{identificador}-{validar_tipo_aviso(tipo)}"
 
 
 class Remitente(Base):
@@ -150,6 +196,57 @@ class Envio(Base):
     # Fechas internas
     e_fecha_creacion = Column(DateTime, default=ahora_chile, index=True)
     retiro_asociaciones = relationship("RetiroEnvio", back_populates="envio", passive_deletes=True)
+    avisos = relationship("AvisoEnvio", back_populates="envio", passive_deletes=True)
+
+
+class AvisoEnvio(Base):
+    __tablename__ = "avisos_envio"
+    __table_args__ = (
+        CheckConstraint(
+            "av_tipo IN ('FUNCIONARIO', 'DESTINATARIO')",
+            name="ck_avisos_envio_tipo_valido",
+        ),
+        CheckConstraint(
+            "av_estado IN ('PENDIENTE', 'PROCESANDO', 'ENVIADO', 'ERROR', 'INCIERTO', 'CANCELADO')",
+            name="ck_avisos_envio_estado_valido",
+        ),
+        CheckConstraint("av_intentos >= 0", name="ck_avisos_envio_intentos_no_negativo"),
+        UniqueConstraint("envio_id", "av_tipo", name="uq_avisos_envio_envio_tipo"),
+        UniqueConstraint("av_clave_idempotencia", name="uq_avisos_envio_clave_idempotencia"),
+    )
+
+    id = Column(Integer, primary_key=True)
+    envio_id = Column(
+        Integer,
+        ForeignKey("envios.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    av_tipo = Column(String(30), nullable=False, index=True)
+    av_correo_snapshot = Column(String(255), nullable=True)
+    av_estado = Column(
+        String(30),
+        default=AVISO_ESTADO_PENDIENTE,
+        nullable=False,
+        index=True,
+    )
+    av_intentos = Column(Integer, default=0, server_default=text("0"), nullable=False)
+    av_fecha_creacion = Column(DateTime, default=ahora_chile, nullable=False, index=True)
+    av_fecha_procesamiento = Column(DateTime, nullable=True)
+    av_fecha_envio = Column(DateTime, nullable=True)
+    av_ultimo_error = Column(String(1500), nullable=True)
+    av_clave_idempotencia = Column(String(160), nullable=False)
+    av_message_id = Column(String(255), nullable=True)
+
+    envio = relationship("Envio", back_populates="avisos")
+
+    @validates("av_tipo")
+    def _validar_tipo(self, _clave, valor):
+        return validar_tipo_aviso(valor)
+
+    @validates("av_estado")
+    def _validar_estado(self, _clave, valor):
+        return validar_estado_aviso(valor)
 
 
 class RetiroStarken(Base):

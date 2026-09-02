@@ -246,3 +246,48 @@ downgrade solo se utiliza cuando fue revisado y probado con datos equivalentes.
   futuro, tolerando diferencias menores de reloj o digitación.
 - Anular un retiro no borra registros: marca el retiro como anulado y todas sus
   asociaciones vigentes como inactivas dentro de la misma transacción.
+
+## Persistencia de Avisos V2
+
+La revisión `20260829_05` agrega `avisos_envio` sin modificar ni poblar
+`envios`. Durante la transición conviven dos representaciones:
+
+```text
+Avisos legacy en envios
+    -> coexistencia temporal
+AvisoEnvio V2
+    -> migracion funcional posterior
+```
+
+Cada fila V2 representa un aviso lógico independiente de tipo `FUNCIONARIO` o
+`DESTINATARIO`. `UNIQUE(envio_id, av_tipo)` evita duplicar el mismo aviso y
+`av_clave_idempotencia`, con formato estable `ENVIO-{envio_id}-{tipo}`, aporta
+una segunda defensa que no depende de la dirección de correo. El correo previsto
+se conserva en `av_correo_snapshot`; cambiar posteriormente el correo del envío
+no altera ese destinatario histórico.
+
+Los estados admitidos son:
+
+- `PENDIENTE`: todavía no se inicia un intento;
+- `PROCESANDO`: existe un intento en curso;
+- `ENVIADO`: el proveedor confirmó la aceptación del correo;
+- `ERROR`: el intento falló de forma conocida y podrá reintentarse;
+- `INCIERTO`: no puede determinarse con seguridad si el proveedor aceptó el
+  correo; no equivale a `ERROR` y requerirá revisión antes de reintentar;
+- `CANCELADO`: el aviso lógico no debe procesarse.
+
+`av_intentos` comienza en cero y tiene un `CHECK` que impide valores negativos.
+Las fechas de creación, procesamiento y envío son hechos distintos y no se
+infieren entre sí. La FK hacia `envios` usa `ON DELETE RESTRICT`, sin cascadas
+destructivas.
+
+Esta revisión no conecta el flujo de correo existente a la tabla nueva. Los
+campos legacy `e_estado_correo`, `e_aviso_funcionario_estado`,
+`e_fecha_envio_correo` y `e_fecha_aviso_funcionario` permanecen intactos. La
+creación, claim, reintentos y reconciliación funcional se implementarán en una
+fase posterior.
+
+Se crean índices individuales para `envio_id`, `av_estado`, `av_tipo` y
+`av_fecha_creacion`. No se agrega todavía un índice compuesto: la forma exacta
+de consulta de la futura cola debe medirse antes de duplicar índices de baja
+cardinalidad.
