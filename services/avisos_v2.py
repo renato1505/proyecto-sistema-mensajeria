@@ -90,7 +90,7 @@ def _correo_valido(valor):
     return correo if email_valido(correo) else None
 
 
-def _es_elegible(db, envio_id):
+def envio_es_elegible_avisos(db, envio_id):
     return _consulta_elegibles(db).filter(Envio.id == envio_id).first() is not None
 
 
@@ -122,7 +122,7 @@ def _sincronizar_intento(db, envio_id):
     if envio is None:
         raise AvisosV2ValidacionError(f"No existe el envio {envio_id}")
 
-    elegible = _es_elegible(db, envio_id)
+    elegible = envio_es_elegible_avisos(db, envio_id)
     existentes = {
         aviso.av_tipo: aviso
         for aviso in db.query(AvisoEnvio).filter(AvisoEnvio.envio_id == envio_id).all()

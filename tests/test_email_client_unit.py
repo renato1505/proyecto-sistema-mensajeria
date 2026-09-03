@@ -103,6 +103,7 @@ class EmailClientTests(unittest.TestCase):
 
         smtp = MagicMock()
         smtp.__enter__.return_value = smtp
+        smtp.send_message.return_value = {}
 
         with patch.object(email_client, "BREVO_SMTP_HOST", "smtp-relay.brevo.com"), patch.object(
             email_client,

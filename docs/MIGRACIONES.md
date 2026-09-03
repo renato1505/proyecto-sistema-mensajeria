@@ -318,3 +318,68 @@ ciclo de retiro. Se mantiene `UNIQUE(envio_id, av_tipo)`: un retiro posterior
 del mismo envío no crea otro aviso y un aviso `CANCELADO` no se reactiva
 automáticamente. Cualquier reactivación o reenvío futuro deberá ser una acción
 explícita y auditada.
+
+### Motor seguro de Avisos V2
+
+El motor procesa cada `AvisoEnvio` como una unidad independiente. Primero hace
+un claim condicional de `PENDIENTE` (o `ERROR` con autorización explícita), lo
+cambia a `PROCESANDO`, incrementa `av_intentos`, registra la fecha y confirma la
+transacción. Solo después de ese commit llama al proveedor. El resultado se
+persiste y confirma en una sesión nueva, por lo que el fallo de un aviso no puede
+revertir avisos enviados anteriormente.
+
+`ENVIADO`, `INCIERTO`, `PROCESANDO` y `CANCELADO` no son procesables. Un `ERROR`
+solo se reclama mediante reintento explícitamente autorizado. Si antes del claim
+el envío perdió elegibilidad o el snapshot ya no es utilizable, `PENDIENTE` o
+`ERROR` se cancela sin invocar al proveedor ni incrementar intentos. El destino
+del correo siempre es `av_correo_snapshot`; nunca se reconstruye desde el envío.
+
+Un resultado confirmado por el proveedor produce `ENVIADO`; un rechazo que
+confirma que no fue aceptado produce `ERROR`; un timeout, corte o resultado
+ambiguo produce `INCIERTO`. El `message_id`, cuando existe, prueba aceptación o
+identificación del proveedor, no entrega final al destinatario. Los errores se
+limitan y sanitizan antes de persistirse.
+
+Existe una ventana inevitable: el proveedor puede aceptar el correo y el proceso
+puede morir antes de guardar `ENVIADO`. Sin idempotencia externa no puede
+prometerse entrega "exactly once". La garantía es estado persistente, ausencia de
+reintento automático para resultados ambiguos y resolución explícita del operador.
+Los `PROCESANDO` antiguos solo se detectan; no se resetean automáticamente y deben
+tratarse como potencialmente inciertos.
+
+El flujo legacy agrupa varios envíos de un funcionario en un correo. El modelo
+V2 procesa por ahora una unidad persistente por aviso/envío; conservar o cambiar
+el agrupamiento se resolverá en 3E.5 sin debilitar el claim individual ni crear
+doble envío entre los motores legacy y V2.
+
+#### Contrato del cliente de correo
+
+`services.email_client.enviar_mensaje()` sigue siendo el único punto de entrada
+y ahora devuelve un `ResultadoEmail` cuando existe aceptación confirmada. Los
+consumidores legacy pueden ignorar el retorno y conservan el contrato de recibir
+una excepción cuando la aceptación no puede confirmarse.
+
+Los transportes disponibles son:
+
+- `EMAIL_PROVIDER=brevo`: API HTTPS de Brevo. Solo `HTTP 201`, JSON válido y
+  `messageId` confirman aceptación; ese identificador puede persistirse en V2.
+- `EMAIL_PROVIDER=smtp`: Gmail SMTP. Una respuesta final sin destinatarios
+  rechazados confirma aceptación, pero no entrega un ID real del proveedor.
+- `EMAIL_PROVIDER=brevo_smtp`: relay SMTP de Brevo, con la misma ausencia de un
+  `messageId` confiable en el contrato utilizado.
+
+Los rechazos HTTP 400, 401, 403, 404, 422 y 429 son `ErrorCorreoConfirmado`.
+HTTP 5xx, timeout, interrupción, JSON inválido o respuesta exitosa sin
+`messageId` son `ResultadoCorreoIncierto`, porque la aceptación no puede
+descartarse con seguridad. El adaptador V2 consume estas excepciones tipadas y
+no clasifica errores por expresiones regulares.
+
+En Gmail SMTP, el fallback SSL a STARTTLS solo ocurre si el fallo fue anterior a
+`send_message()`. Una interrupción durante el envío es incierta y no inicia un
+segundo transporte automático. Un error al cerrar después de una respuesta final
+de aceptación tampoco provoca reenvío. `messageId` representa aceptación o
+identificación del proveedor, nunca entrega final al destinatario.
+
+Esta adaptación no cambia automáticamente el transporte desplegado. Activar
+Brevo API en producción mediante `EMAIL_PROVIDER=brevo` es una decisión de
+configuración y despliegue separada.
