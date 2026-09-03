@@ -291,3 +291,30 @@ Se crean índices individuales para `envio_id`, `av_estado`, `av_tipo` y
 `av_fecha_creacion`. No se agrega todavía un índice compuesto: la forma exacta
 de consulta de la futura cola debe medirse antes de duplicar índices de baja
 cardinalidad.
+
+### Elegibilidad y sincronización de Avisos V2
+
+La fuente de verdad para crear avisos es el retiro físico vigente: el envío debe
+tener OF y fecha OF, no estar anulado y estar asociado mediante un
+`RetiroEnvio.re_vigente=true` a un `RetiroStarken` no anulado. El estado textual
+del envío, su lote o la OF por sí solos no lo vuelven elegible.
+
+La sincronización crea, como máximo, un aviso `FUNCIONARIO` y uno
+`DESTINATARIO` por envío. Captura una sola vez los correos legacy normalizados;
+las ejecuciones posteriores no cambian el snapshot, los intentos ni el estado.
+Un correo ausente o inválido genera directamente un aviso `CANCELADO`, sin
+snapshot ni error artificial. Esta decisión evita tratar un dato faltante como
+un fallo transitorio de entrega.
+
+Si desaparece la elegibilidad, solo `PENDIENTE` y `ERROR` pasan a `CANCELADO`.
+`PROCESANDO`, `INCIERTO`, `ENVIADO` y `CANCELADO` se conservan para no afirmar
+un resultado que la sincronización no conoce. La operación es atómica por envío;
+en PostgreSQL bloquea el envío y los `UNIQUE` absorben carreras como defensa
+final. Una ejecución masiva confirma cada envío de forma independiente y se
+detiene ante un error inesperado, conservando los anteriores ya completados.
+
+La identidad definitiva de `AvisoEnvio` pertenece al envío y al tipo, no al
+ciclo de retiro. Se mantiene `UNIQUE(envio_id, av_tipo)`: un retiro posterior
+del mismo envío no crea otro aviso y un aviso `CANCELADO` no se reactiva
+automáticamente. Cualquier reactivación o reenvío futuro deberá ser una acción
+explícita y auditada.
