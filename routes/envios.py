@@ -1,7 +1,8 @@
 from flask import flash, redirect, render_template, request
 
 from database.conexion import SessionLocal
-from database.modelos import Envio
+from database.modelos import AvisoEnvio, Envio, ExcepcionEnvio, RetiroEnvio
+from services.of_processor import resultado_h2h_ambiguo
 from services.puntos_retiro import asignar_punto_retiro_nuevo_envio
 from utils.texto import (
     normalizar_correo_operativo,
@@ -132,6 +133,24 @@ def _guardar_envio_desde_form(envio):
     return None
 
 
+def _tiene_trazabilidad_operativa(db, envio):
+    # Solo se permite borrar pendientes que nunca entraron en una operacion.
+    campos_operativos = (
+        "e_lote", "e_fila_excel", "e_fecha_exportacion", "e_resultado_of",
+        "e_detalle_of", "e_orden_flete", "e_fecha_of", "e_nombre_archivo",
+        "e_correo_destino", "e_fecha_envio_correo", "e_estado_correo",
+        "e_aviso_funcionario_estado", "e_fecha_aviso_funcionario",
+    )
+    if envio.e_estado != "pendiente" or envio.e_anulado:
+        return True
+    if any(getattr(envio, campo) is not None for campo in campos_operativos):
+        return True
+    return any(
+        db.query(modelo.id).filter(modelo.envio_id == envio.id).first() is not None
+        for modelo in (RetiroEnvio, AvisoEnvio, ExcepcionEnvio)
+    )
+
+
 def registrar_rutas_envios(app):
     @app.route("/nuevo_envio", methods=["GET", "POST"])
     def nuevo_envio():
@@ -158,14 +177,33 @@ def registrar_rutas_envios(app):
     @app.route("/eliminar_envio/<int:id>", methods=["POST"])
     def eliminar_envio(id):
         db = SessionLocal()
-        envio = db.query(Envio).filter(Envio.id == id).first()
-
-        if envio:
-            db.delete(envio)
-            db.commit()
-            flash("Envio eliminado correctamente", "danger")
-
-        db.close()
+        try:
+            envio = db.query(Envio).filter(Envio.id == id).with_for_update().first()
+            if envio:
+                if resultado_h2h_ambiguo(envio):
+                    db.rollback()
+                    flash(
+                        "No se puede eliminar: el envio requiere verificacion de OF "
+                        "por un antecedente H2H ambiguo. Debe conservarse su evidencia.",
+                        "warning",
+                    )
+                    return redirect("/envios")
+                if _tiene_trazabilidad_operativa(db, envio):
+                    db.rollback()
+                    flash(
+                        "No se puede eliminar un envio con trazabilidad operativa. "
+                        "Debe conservarse el registro y utilizar una anulacion cuando corresponda.",
+                        "warning",
+                    )
+                    return redirect("/envios")
+                db.delete(envio)
+                db.commit()
+                flash("Envio eliminado correctamente", "danger")
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            db.close()
         return redirect("/envios")
 
     @app.route("/editar_envio/<int:id>", methods=["GET", "POST"])

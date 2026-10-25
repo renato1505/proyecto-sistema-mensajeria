@@ -1,4 +1,5 @@
 from database.modelos import Envio
+from services.of_processor import resultado_h2h_ambiguo
 from services.starken import generar_csv_starken
 
 
@@ -34,6 +35,11 @@ def obtener_envios_seleccionados_para_lote(db, valores):
         raise ValueError(
             "Uno o mas envios seleccionados ya no estan pendientes. "
             "Recarga la pantalla antes de generar el lote."
+        )
+    if any(resultado_h2h_ambiguo(envio) for envio in envios):
+        raise ValueError(
+            "La seleccion contiene un antecedente H2H ambiguo. "
+            "Debe verificarse la OF antes de generar otro lote."
         )
     if any(envio.e_tipo_envio == "Agencia" and not envio.e_codigo_agencia for envio in envios):
         raise ValueError(

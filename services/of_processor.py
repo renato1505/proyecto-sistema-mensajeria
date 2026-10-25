@@ -1,3 +1,5 @@
+import re
+
 import pandas as pd
 
 from database.modelos import Envio
@@ -7,6 +9,17 @@ from utils.fechas import ahora_chile
 
 class OFProcessingError(Exception):
     pass
+
+
+def resultado_h2h_ambiguo(envio):
+    """Un ERROR que menciona H2H no confirma que Starken no haya creado la OF.
+
+    No se infiere ambiguedad de una OF vacia ni de cualquier otro ERROR.
+    La presencia de una OF tampoco descarta la incertidumbre del resultado.
+    """
+    resultado = str(envio.e_resultado_of or "").strip().upper()
+    detalle = str(envio.e_detalle_of or "")
+    return resultado == "ERROR" and re.search(r"\bh2h\b", detalle, re.IGNORECASE) is not None
 
 
 def _leer_excel_of(archivo, nombre_archivo):
@@ -33,17 +46,29 @@ def _validar_columnas(df):
 
 def procesar_archivo_of(db, lote, archivo, nombre_archivo):
     """Valida y aplica un archivo OF, ya sea subido manualmente o tomado del correo."""
-    df = _normalizar_columnas(_leer_excel_of(archivo, nombre_archivo))
-    _validar_columnas(df)
-
-    envios_lote = (
+    # El antecedente persistido prevalece sobre cualquier respuesta posterior,
+    # incluso OK. Su resolucion requiere una verificacion explicita futura.
+    envios_del_lote = (
         db.query(Envio)
-        .filter(Envio.e_lote == lote, Envio.e_estado == "en_proceso")
+        .filter(Envio.e_lote == lote)
+        .order_by(Envio.id.asc())
+        .with_for_update()
         .all()
     )
+    if any(resultado_h2h_ambiguo(envio) for envio in envios_del_lote):
+        db.rollback()
+        raise OFProcessingError(
+            "Este lote requiere verificacion de OF por un antecedente H2H ambiguo. "
+            "No se importo la nueva respuesta, aunque indique OK. "
+            "Debe verificarse el resultado con Starken antes de resolver el bloqueo."
+        )
 
+    envios_lote = [envio for envio in envios_del_lote if envio.e_estado == "en_proceso"]
     if not envios_lote:
         raise OFProcessingError("No se encontraron envios en proceso para este lote")
+
+    df = _normalizar_columnas(_leer_excel_of(archivo, nombre_archivo))
+    _validar_columnas(df)
 
     df_validas = df[df["fila"].notna()].copy()
     cantidad_filas_archivo = len(df_validas)

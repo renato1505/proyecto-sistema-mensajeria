@@ -24,10 +24,19 @@ from sqlalchemy.pool import StaticPool
 
 from database.modelos import Base, Envio
 from routes import avisos as avisos_routes
+from routes import envios as envios_routes
 from routes import starken_lotes
 from services import avisos
-from services.lotes import buscar_lote_por_nombre_archivo, lote_coincide_con_archivo
-from services.of_processor import OFProcessingError, procesar_archivo_of
+from services.lotes import (
+    buscar_lote_por_nombre_archivo,
+    lote_coincide_con_archivo,
+    obtener_envios_seleccionados_para_lote,
+)
+from services.of_processor import (
+    OFProcessingError,
+    procesar_archivo_of,
+    resultado_h2h_ambiguo,
+)
 from services.starken import HEADERS_STARKEN, generar_csv_starken
 
 
@@ -449,6 +458,413 @@ class AvisosRegresionTests(SQLiteTestCase):
             self.assertEqual(estados, ["pendiente", "pendiente"])
         finally:
             verificacion.close()
+
+
+class CancelacionH2HTests(SQLiteTestCase):
+    def setUp(self):
+        super().setUp()
+        from utils.csrf import validar_csrf
+
+        self.app = Flask(__name__)
+        self.app.config.update(TESTING=True, SECRET_KEY="h2h-test-local")
+        self.app.before_request(validar_csrf)
+        starken_lotes.registrar_rutas_starken_lotes(self.app)
+        envios_routes.registrar_rutas_envios(self.app)
+        self.client = self.app.test_client()
+        with self.client.session_transaction() as sesion:
+            sesion["_csrf_token"] = "csrf-h2h-test"
+
+    def _guardar(self, *envios):
+        self.db.add_all(envios)
+        self.db.commit()
+        return [envio.id for envio in envios]
+
+    def _snapshot(self):
+        # Sesion nueva: compara todas las columnas realmente persistidas.
+        with self.Session() as db:
+            return [
+                {columna.name: getattr(envio, columna.name) for columna in Envio.__table__.columns}
+                for envio in db.query(Envio).order_by(Envio.id.asc()).all()
+            ]
+
+    def _cancelar(self, lote=LOTE, **datos):
+        with patch.object(starken_lotes, "SessionLocal", self.Session):
+            return self.client.post(
+                f"/cancelar_lote/{lote}",
+                data={"csrf_token": "csrf-h2h-test", **datos},
+            )
+
+    def _ambiguo(self, **cambios):
+        datos = {
+            "e_resultado_of": "ERROR",
+            "e_detalle_of": "Error al enviar fila 2 a servicio H2H",
+            "e_fecha_exportacion": datetime(2026, 8, 22, 12, 0),
+            "e_estado_correo": "enviado",
+        }
+        datos.update(cambios)
+        return crear_envio(**datos)
+
+    def test_regla_usa_resultado_y_h2h_sin_depender_de_of_vacia(self):
+        casos = [
+            ("ERROR", "Error al enviar fila 2 a servicio H2H", None, True),
+            (" error ", "Error: servicio h2h no responde", "OF-FICTICIA", True),
+            ("ERROR", "Timeout H2H: resultado desconocido", None, True),
+            ("ERROR", "Codigo de agencia invalido", None, False),
+            ("ERROR", "Error HTTP sin respuesta", None, False),
+            ("ERROR", "Error H2HTTP", None, False),
+            ("OK", "Procesado por servicio H2H", "OF-FICTICIA", False),
+            (None, None, None, False),
+            ("ERROR", None, None, False),
+        ]
+        for resultado, detalle, of, esperado in casos:
+            with self.subTest(resultado=resultado, detalle=detalle, of=of):
+                envio = crear_envio(e_resultado_of=resultado, e_detalle_of=detalle, e_orden_flete=of)
+                self.assertEqual(resultado_h2h_ambiguo(envio), esperado)
+
+    def test_ambiguo_bloquea_y_conserva_todas_las_columnas(self):
+        self._guardar(self._ambiguo())
+        antes = self._snapshot()
+        respuesta = self._cancelar()
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertTrue(respuesta.location.endswith("/en_proceso"))
+        self.assertEqual(self._snapshot(), antes)
+        with self.client.session_transaction() as sesion:
+            mensajes = " ".join(mensaje for _, mensaje in sesion["_flashes"])
+        self.assertIn("requiere verificación de OF", mensajes)
+        self.assertIn("evitar duplicaciones", mensajes)
+
+    def test_un_ambiguo_bloquea_lote_completo_incluso_otras_etapas(self):
+        self._guardar(
+            crear_envio(e_fila_excel=2),
+            self._ambiguo(e_fila_excel=3),
+            crear_envio(e_fila_excel=4, e_resultado_of="ERROR", e_detalle_of="Direccion invalida"),
+            crear_envio(e_fila_excel=5, e_estado="historico", e_resultado_of="OK", e_orden_flete="OF-DEMO"),
+        )
+        antes = self._snapshot()
+        self._cancelar()
+        self.assertEqual(self._snapshot(), antes)
+
+    def test_repetir_cancelacion_bloqueada_no_altera_registros(self):
+        self._guardar(self._ambiguo(), crear_envio(e_fila_excel=3))
+        antes = self._snapshot()
+        for _ in range(3):
+            self._cancelar()
+            self.assertEqual(self._snapshot(), antes)
+
+    def test_lote_sin_resultados_conserva_cancelacion_permitida(self):
+        self._guardar(crear_envio(), crear_envio(e_fila_excel=3))
+        self._cancelar()
+        for envio in self._snapshot():
+            self.assertEqual(envio["e_estado"], "pendiente")
+            for campo in ("e_lote", "e_fila_excel", "e_resultado_of", "e_detalle_of", "e_orden_flete"):
+                self.assertIsNone(envio[campo])
+
+    def test_error_no_h2h_se_cancela_sin_modificar_historico(self):
+        self._guardar(
+            crear_envio(e_resultado_of="ERROR", e_detalle_of="Codigo de agencia invalido"),
+            crear_envio(e_fila_excel=3, e_estado="historico", e_resultado_of="OK", e_orden_flete="OF-DEMO"),
+        )
+        historico = self._snapshot()[1]
+        self._cancelar()
+        despues = self._snapshot()
+        self.assertEqual(despues[0]["e_estado"], "pendiente")
+        self.assertEqual(despues[1], historico)
+
+    def test_post_directo_no_permite_forzar_cancelacion_ambigua(self):
+        self._guardar(self._ambiguo(e_orden_flete="OF-POR-VERIFICAR"))
+        antes = self._snapshot()
+        self._cancelar(forzar="1", e_resultado_of="OK", e_detalle_of="", e_estado="pendiente")
+        self.assertEqual(self._snapshot(), antes)
+
+    def test_ambiguo_de_otro_lote_no_bloquea_lote_valido(self):
+        self._guardar(crear_envio(), self._ambiguo(e_lote="LOTE-OTRO"))
+        otro = self._snapshot()[1]
+        self._cancelar()
+        despues = self._snapshot()
+        self.assertEqual(despues[0]["e_estado"], "pendiente")
+        self.assertEqual(despues[1], otro)
+
+    def test_ambiguo_persistido_fuera_de_en_proceso_tambien_bloquea(self):
+        self._guardar(crear_envio(), self._ambiguo(e_fila_excel=3, e_estado="historico"))
+        antes = self._snapshot()
+        self._cancelar()
+        self.assertEqual(self._snapshot(), antes)
+
+    def test_of_importada_con_h2h_impide_cancelar_y_generar_nuevo_lote(self):
+        ids = self._guardar(crear_envio(), crear_envio(e_fila_excel=3))
+        archivo = excel_of_bytes([
+            {"estado": "ERROR", "fila": 2, "orden flete": "", "detalle": "Error al enviar fila 2 a servicio H2H"},
+            {"estado": "ERROR", "fila": 3, "orden flete": "", "detalle": "Codigo de agencia invalido"},
+        ])
+        procesar_archivo_of(self.db, LOTE, archivo, "of_demo.xlsx")
+        antes = self._snapshot()
+        self._cancelar()
+        self.assertEqual(self._snapshot(), antes)
+        with self.Session() as db:
+            with self.assertRaisesRegex(ValueError, "ya no estan pendientes"):
+                obtener_envios_seleccionados_para_lote(db, [str(identificador) for identificador in ids])
+
+    def test_cancelacion_sigue_exigiendo_csrf(self):
+        self._guardar(crear_envio())
+        antes = self._snapshot()
+        with patch.object(starken_lotes, "SessionLocal", self.Session):
+            respuesta = self.client.post(f"/cancelar_lote/{LOTE}")
+        self.assertEqual(respuesta.status_code, 400)
+        self.assertEqual(self._snapshot(), antes)
+
+
+    def _comprobar_reimportacion_bloqueada(self, estado, detalle):
+        ids = self._guardar(
+            crear_envio(e_resultado_of="ERROR", e_detalle_of="Error ordinario"),
+            self._ambiguo(e_fila_excel=3),
+        )
+        antes = self._snapshot()
+        archivo = excel_of_bytes([
+            {"estado": "OK", "fila": 2, "orden flete": "OF-DEMO-2", "detalle": "OK"},
+            {"estado": estado, "fila": 3, "orden flete": "OF-DEMO-3" if estado == "OK" else "", "detalle": detalle},
+        ])
+        with self.assertRaisesRegex(OFProcessingError, "antecedente H2H ambiguo"):
+            procesar_archivo_of(self.db, LOTE, archivo, "respuesta_demo.xlsx")
+        self.assertFalse(self.db.in_transaction())
+        self.assertEqual(self._snapshot(), antes)
+        self._cancelar()
+        self.assertEqual(self._snapshot(), antes)
+        with patch.object(starken_lotes, "SessionLocal", self.Session), patch.object(
+            starken_lotes, "guardar_respaldo_lote"
+        ) as respaldo, patch.object(starken_lotes, "enviar_archivo_starken") as enviar:
+            respuesta = self.client.post(
+                "/generar_excel",
+                data={"csrf_token": "csrf-h2h-test", "accion": "descargar", "envio_ids": ids},
+            )
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertTrue(respuesta.location.endswith("/envios"))
+        respaldo.assert_not_called()
+        enviar.assert_not_called()
+        self.assertEqual(self._snapshot(), antes)
+
+    def test_reimportacion_error_ordinario_no_borra_antecedente_h2h(self):
+        self._comprobar_reimportacion_bloqueada("ERROR", "Codigo de agencia invalido")
+
+    def test_reimportacion_detalle_vacio_no_borra_antecedente_h2h(self):
+        self._comprobar_reimportacion_bloqueada("ERROR", "")
+
+    def test_reimportacion_ok_no_concilia_automaticamente_h2h(self):
+        self._comprobar_reimportacion_bloqueada("OK", "Procesado")
+
+    def test_post_carga_manual_bloquea_ok_posterior_sin_enviar_respaldo(self):
+        self._guardar(self._ambiguo())
+        antes = self._snapshot()
+        archivo = excel_of_bytes([
+            {"estado": "OK", "fila": 2, "orden flete": "OF-DEMO-2", "detalle": "OK"},
+        ])
+        db = self.Session()
+        with patch.object(starken_lotes, "SessionLocal", return_value=db), patch.object(
+            starken_lotes, "_enviar_respaldo_post_of"
+        ) as respaldo, patch.object(db, "close", wraps=db.close) as cerrar:
+            respuesta = self.client.post(
+                f"/cargar_of/{LOTE}",
+                data={"csrf_token": "csrf-h2h-test", "archivo_of": (archivo, "respuesta_demo.xlsx")},
+            )
+            cerrar.assert_called_once()
+        self.assertFalse(db.in_transaction())
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertTrue(respuesta.location.endswith("/en_proceso"))
+        respaldo.assert_not_called()
+        self.assertEqual(self._snapshot(), antes)
+        with self.client.session_transaction() as sesion:
+            self.assertTrue(any("antecedente H2H ambiguo" in mensaje for _, mensaje in sesion["_flashes"]))
+
+    def test_post_of_correo_bloquea_respuesta_y_conserva_evidencia(self):
+        self._guardar(self._ambiguo())
+        antes = self._snapshot()
+        contenido = excel_of_bytes([
+            {"estado": "ERROR", "fila": 2, "orden flete": "", "detalle": "Otro error"},
+        ]).getvalue()
+        db = self.Session()
+        with patch.object(starken_lotes, "SessionLocal", return_value=db), patch.object(
+            starken_lotes, "descargar_adjunto_of", return_value=("respuesta_demo.xlsx", contenido, NOMBRE_CSV)
+        ), patch.object(starken_lotes, "_enviar_respaldo_post_of") as respaldo, patch.object(
+            db, "close", wraps=db.close
+        ) as cerrar:
+            respuesta = self.client.post(
+                "/procesar_of_correo",
+                data={"csrf_token": "csrf-h2h-test", "lote": LOTE, "uid": "demo", "indice_adjunto": "0"},
+            )
+            cerrar.assert_called_once()
+        self.assertFalse(db.in_transaction())
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertTrue(respuesta.location.endswith("/of_correo?buscar=1"))
+        respaldo.assert_not_called()
+        self.assertEqual(self._snapshot(), antes)
+
+    def _eliminar(self, envio_id, **datos):
+        with patch.object(envios_routes, "SessionLocal", self.Session):
+            return self.client.post(
+                f"/eliminar_envio/{envio_id}", data={"csrf_token": "csrf-h2h-test", **datos}
+            )
+
+    def test_eliminacion_directa_h2h_no_puede_forzarse(self):
+        ids = self._guardar(self._ambiguo())
+        antes = self._snapshot()
+        respuesta = self._eliminar(ids[0], forzar="1", e_estado="pendiente", e_resultado_of="OK")
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertEqual(self._snapshot(), antes)
+
+    def test_eliminacion_h2h_pendiente_tambien_conserva_evidencia(self):
+        ids = self._guardar(self._ambiguo(e_estado="pendiente", e_lote=None))
+        antes = self._snapshot()
+        self._eliminar(ids[0])
+        self.assertEqual(self._snapshot(), antes)
+
+    def test_eliminacion_rechaza_etapas_y_huellas_operativas(self):
+        casos = [
+            {"e_estado": "en_proceso"}, {"e_estado": "historico"},
+            {"e_lote": LOTE}, {"e_fila_excel": 2},
+            {"e_fecha_exportacion": datetime(2026, 8, 22)},
+            {"e_resultado_of": "ERROR"}, {"e_detalle_of": "Detalle previo"},
+            {"e_orden_flete": "OF-DEMO"}, {"e_fecha_of": datetime(2026, 8, 22)},
+            {"e_nombre_archivo": NOMBRE_CSV}, {"e_estado_correo": "enviado"},
+            {"e_correo_destino": "demo@example.invalid"},
+            {"e_fecha_envio_correo": datetime(2026, 8, 22)},
+            {"e_aviso_funcionario_estado": "pendiente"},
+            {"e_fecha_aviso_funcionario": datetime(2026, 8, 22)},
+            {"e_anulado": True},
+        ]
+        for cambios in casos:
+            with self.subTest(cambios=cambios):
+                envio = crear_envio(e_estado="pendiente", e_lote=None, e_fila_excel=None, e_nombre_archivo=None)
+                for campo, valor in cambios.items():
+                    setattr(envio, campo, valor)
+                ids = self._guardar(envio)
+                antes = self._snapshot()
+                self._eliminar(ids[0])
+                self.assertEqual(self._snapshot(), antes)
+
+    def test_eliminacion_rechaza_asociaciones_sin_depender_de_fk(self):
+        from database.modelos import AvisoEnvio, ExcepcionEnvio, RetiroEnvio
+
+        # Estas consultas deben bloquear aun si el estado legacy indica pendiente.
+        for modelo in (RetiroEnvio, AvisoEnvio, ExcepcionEnvio):
+            with self.subTest(modelo=modelo.__name__):
+                ids = self._guardar(crear_envio(
+                    e_estado="pendiente", e_lote=None, e_fila_excel=None, e_nombre_archivo=None
+                ))
+                if modelo is AvisoEnvio:
+                    asociacion = modelo(
+                        envio_id=ids[0], av_tipo="FUNCIONARIO", av_estado="CANCELADO",
+                        av_clave_idempotencia=f"ENVIO-{ids[0]}-FUNCIONARIO",
+                    )
+                elif modelo is ExcepcionEnvio:
+                    asociacion = modelo(envio_id=ids[0], x_tipo="demo")
+                else:
+                    # SQLite de esta fixture no activa FK: demuestra validacion de backend.
+                    asociacion = modelo(envio_id=ids[0], retiro_id=999, re_bultos_snapshot=1, re_vigente=False)
+                self.db.add(asociacion)
+                self.db.commit()
+                antes = self._snapshot()
+                self._eliminar(ids[0])
+                self.assertEqual(self._snapshot(), antes)
+                self.assertIsNotNone(self.db.get(modelo, asociacion.id))
+
+    def test_eliminacion_pendiente_sin_operaciones_sigue_permitida(self):
+        ids = self._guardar(crear_envio(
+            e_estado="pendiente", e_lote=None, e_fila_excel=None, e_nombre_archivo=None
+        ))
+        respuesta = self._eliminar(ids[0])
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertEqual(self._snapshot(), [])
+
+    def test_reimportacion_sin_h2h_sigue_procesando_ok(self):
+        self._guardar(crear_envio(e_resultado_of="ERROR", e_detalle_of="Error ordinario"))
+        archivo = excel_of_bytes([
+            {"estado": "OK", "fila": 2, "orden flete": "OF-DEMO-2", "detalle": "OK"},
+        ])
+        resultado = procesar_archivo_of(self.db, LOTE, archivo, "respuesta_demo.xlsx")
+        self.assertEqual(resultado["total_ok"], 1)
+        self.assertEqual(self._snapshot()[0]["e_estado"], "historico")
+
+    def test_excepcion_al_cancelar_revierte_todo_y_cierra_sesion(self):
+        self._guardar(crear_envio(), crear_envio(e_fila_excel=3))
+        antes = self._snapshot()
+        db = self.Session()
+
+        def fallar_despues_de_flush():
+            db.flush()
+            raise RuntimeError("Fallo de commit simulado")
+
+        with patch.object(starken_lotes, "SessionLocal", return_value=db), patch.object(
+            db, "commit", side_effect=fallar_despues_de_flush
+        ), patch.object(db, "close", wraps=db.close) as cerrar:
+            with self.assertRaisesRegex(RuntimeError, "Fallo de commit"):
+                self.client.post(f"/cancelar_lote/{LOTE}", data={"csrf_token": "csrf-h2h-test"})
+            cerrar.assert_called_once()
+        self.assertFalse(db.in_transaction())
+        self.assertEqual(self._snapshot(), antes)
+
+    def test_excepcion_al_eliminar_revierte_borrado_y_cierra_sesion(self):
+        ids = self._guardar(crear_envio(
+            e_estado="pendiente", e_lote=None, e_fila_excel=None, e_nombre_archivo=None
+        ))
+        antes = self._snapshot()
+        db = self.Session()
+
+        def fallar_despues_de_flush():
+            db.flush()
+            raise RuntimeError("Fallo de commit simulado")
+
+        with patch.object(envios_routes, "SessionLocal", return_value=db), patch.object(
+            db, "commit", side_effect=fallar_despues_de_flush
+        ), patch.object(db, "close", wraps=db.close) as cerrar:
+            with self.assertRaisesRegex(RuntimeError, "Fallo de commit"):
+                self.client.post(f"/eliminar_envio/{ids[0]}", data={"csrf_token": "csrf-h2h-test"})
+            cerrar.assert_called_once()
+        self.assertFalse(db.in_transaction())
+        self.assertEqual(self._snapshot(), antes)
+
+
+    def test_csv_rechaza_h2h_aunque_figure_pendiente(self):
+        ids = self._guardar(self._ambiguo(e_estado="pendiente"))
+        antes = self._snapshot()
+        with patch.object(starken_lotes, "SessionLocal", self.Session), patch.object(
+            starken_lotes, "guardar_respaldo_lote"
+        ) as respaldo, patch.object(starken_lotes, "enviar_archivo_starken") as enviar:
+            respuesta = self.client.post(
+                "/generar_excel",
+                data={"csrf_token": "csrf-h2h-test", "accion": "descargar", "envio_ids": ids},
+            )
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertTrue(respuesta.location.endswith("/envios"))
+        respaldo.assert_not_called()
+        enviar.assert_not_called()
+        self.assertEqual(self._snapshot(), antes)
+
+    def test_excepcion_importacion_permitida_revierte_todo_y_cierra_sesion(self):
+        self._guardar(crear_envio(), crear_envio(e_fila_excel=3))
+        antes = self._snapshot()
+        archivo = excel_of_bytes([
+            {"estado": "OK", "fila": 2, "orden flete": "OF-DEMO-2", "detalle": "OK"},
+            {"estado": "ERROR", "fila": 3, "orden flete": "", "detalle": "Error ordinario"},
+        ])
+        db = self.Session()
+
+        def fallar_despues_de_flush():
+            db.flush()
+            raise RuntimeError("Fallo de commit simulado")
+
+        with patch.object(starken_lotes, "SessionLocal", return_value=db), patch.object(
+            db, "commit", side_effect=fallar_despues_de_flush
+        ), patch.object(db, "close", wraps=db.close) as cerrar, patch.object(
+            starken_lotes, "_enviar_respaldo_post_of"
+        ) as respaldo, patch.object(starken_lotes.logger, "exception"):
+            respuesta = self.client.post(
+                f"/cargar_of/{LOTE}",
+                data={"csrf_token": "csrf-h2h-test", "archivo_of": (archivo, "respuesta_demo.xlsx")},
+            )
+            cerrar.assert_called_once()
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertFalse(db.in_transaction())
+        respaldo.assert_not_called()
+        self.assertEqual(self._snapshot(), antes)
 
 
 if __name__ == "__main__":

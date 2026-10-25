@@ -28,7 +28,11 @@ from services.lotes import (
     preparar_lote_starken,
     preparar_correos_of_para_lotes,
 )
-from services.of_processor import OFProcessingError, procesar_archivo_of
+from services.of_processor import (
+    OFProcessingError,
+    procesar_archivo_of,
+    resultado_h2h_ambiguo,
+)
 from services.starken import guardar_respaldo_lote
 from utils.fechas import ahora_chile
 
@@ -313,30 +317,48 @@ def registrar_rutas_starken_lotes(app):
     @app.route("/cancelar_lote/<lote>", methods=["POST"])
     def cancelar_lote(lote):
         db = SessionLocal()
+        try:
+            # Revisar el lote completo antes de limpiar cualquier dato. El bloqueo
+            # serializa cambios sobre sus envios en PostgreSQL hasta decidir.
+            envios_lote = (
+                db.query(Envio)
+                .filter(Envio.e_lote == lote)
+                .order_by(Envio.id.asc())
+                .with_for_update()
+                .all()
+            )
+            if any(resultado_h2h_ambiguo(envio) for envio in envios_lote):
+                db.rollback()
+                flash(
+                    "Este lote requiere verificación de OF. "
+                    "Starken informó un error H2H, pero existe la posibilidad de que "
+                    "la orden de flete haya sido generada. Para evitar duplicaciones, "
+                    "no es posible cancelar este lote hasta verificar el resultado con Starken.",
+                    "warning",
+                )
+                return redirect("/en_proceso")
 
-        envios_lote = (
-            db.query(Envio)
-            .filter(Envio.e_lote == lote, Envio.e_estado == "en_proceso")
-            .all()
-        )
+            en_proceso = [envio for envio in envios_lote if envio.e_estado == "en_proceso"]
+            if not en_proceso:
+                flash("No se encontro el lote o ya no esta en proceso", "warning")
+                return redirect("/en_proceso")
 
-        if not envios_lote:
+            for envio in en_proceso:
+                envio.e_estado = "pendiente"
+                envio.e_lote = None
+                envio.e_fila_excel = None
+                envio.e_fecha_exportacion = None
+                envio.e_resultado_of = None
+                envio.e_detalle_of = None
+                envio.e_orden_flete = None
+                envio.e_estado_correo = None
+
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
+        finally:
             db.close()
-            flash("No se encontro el lote o ya no esta en proceso", "warning")
-            return redirect("/en_proceso")
-
-        for envio in envios_lote:
-            envio.e_estado = "pendiente"
-            envio.e_lote = None
-            envio.e_fila_excel = None
-            envio.e_fecha_exportacion = None
-            envio.e_resultado_of = None
-            envio.e_detalle_of = None
-            envio.e_orden_flete = None
-            envio.e_estado_correo = None
-
-        db.commit()
-        db.close()
 
         flash("Lote cancelado correctamente. Los envios volvieron a pendientes", "warning")
         return redirect("/en_proceso")
