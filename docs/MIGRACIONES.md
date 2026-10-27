@@ -383,3 +383,100 @@ identificación del proveedor, nunca entrega final al destinatario.
 Esta adaptación no cambia automáticamente el transporte desplegado. Activar
 Brevo API en producción mediante `EMAIL_PROVIDER=brevo` es una decisión de
 configuración y despliegue separada.
+
+
+## Fase 1.2B: persistencia OF y conciliaciones H2H
+
+Revision `20261025_06`, posterior a `20260829_05`. Crea exclusivamente
+`intentos_of`, `registros_of`, `conciliaciones_h2h` y `movimientos_envio`.
+No modifica `envios`, no realiza backfill y no conecta estas tablas al flujo
+operativo, a Avisos V2 ni a nuevas pantallas.
+
+- `IntentoOF` conserva envio, secuencia, transportista, lote, fila, archivo y
+  predecesor. Las secuencias son positivas y unicas por envio. Un indice parcial
+  admite un solo intento ABIERTO o EN_VERIFICACION por envio. Los otros estados
+  son CON_OF, SIN_OF_VERIFICADA y CANCELADO. El predecesor debe pertenecer al
+  mismo envio y solo admite un sucesor directo.
+- `RegistroOF` conserva la OF como texto sin longitud fija ni conversion a entero.
+  El ORM recorta espacios exteriores, preserva ceros iniciales y rechaza numeros
+  recibidos como enteros. La unicidad es por transportista normalizado y OF;
+  tambien hay un solo registro por intento. Una FK compuesta valida envio y
+  transportista contra el intento. No se presume todavia un formato numerico
+  exclusivo, longitud, ni ambito adicional por cuenta de transporte.
+- `ConciliacionH2H` es unica por intento y conserva snapshots originales.
+  PENDIENTE no exige observacion ni fecha de verificacion. OF_EXISTENTE y
+  OF_INEXISTENTE exigen fecha, operador, metodo y observacion no vacios.
+  OF_EXISTENTE requiere un RegistroOF del mismo intento/envio. El metodo
+  habitual se identifica como PLATAFORMA_STARKEN, sin afirmar una consulta
+  externa automatica. La referencia de respaldo es opcional.
+- `ch_intento_sucesor_id` solo se admite en OF_INEXISTENTE y debe apuntar a un
+  sucesor directo del mismo envio. Su unicidad permite representar un consumo
+  unico. No se implementa aun la accion de autorizacion ni su consumo atomico;
+  esa transicion pertenece a la siguiente capa de servicio.
+- `MovimientoEnvio` conserva eventos independientes, actor y snapshot JSON.
+  La clave de idempotencia es opcional y unica cuando existe. El intento opcional
+  debe pertenecer al envio. Los hooks ORM rechazan actualizar o borrar eventos
+  y sobrescribir identidad/evidencia original de conciliaciones. SQL directo y
+  actualizaciones masivas pueden eludir esos hooks: no se afirma inmutabilidad
+  frente a administradores de base de datos ni se agregan triggers implicitos.
+
+Las FK usan RESTRICT. Los snapshots y relaciones no tienen cascadas destructivas.
+La fecha de creacion corresponde al registro nuevo, no a una fecha historica
+inferida. La deteccion H2H admite NULL cuando no se dispone de esa fecha.
+
+La revision es estatica y no importa modelos actuales al ejecutarse. Las pruebas
+usan SQLite aislada con FK habilitadas, upgrade desde 20260829_05, auditoria
+contra metadata y comprobacion de que los registros legacy permanecen intactos.
+El DDL PostgreSQL se compila sin conexion; no sustituye una prueba autorizada
+sobre una base PostgreSQL aislada.
+
+Antes de integrar: definir formato real de OF, reglas de transicion e idempotencia,
+consumo de autorizacion, adopcion explicita de registros legacy y prohibicion de
+borrado en rutas ante las nuevas relaciones. No reconstruir historial inexistente.
+El downgrade elimina las cuatro tablas nuevas: no usarlo con datos operativos
+sin un procedimiento revisado. No se autoriza ninguna migracion externa.
+
+
+### Fase 1.2B.1: conservacion mediante ORM ordinario
+
+No modifica el esquema de `20261025_06` ni agrega migraciones, triggers o
+procedimientos. Las restricciones FK, UNIQUE y CHECK siguen siendo las de 1.2B.
+
+Contrato de registros persistidos:
+
+- `IntentoOF`: todos los campos son inmutables por ORM, incluido el estado.
+  No se han definido aun transiciones funcionales; no se habilita una edicion
+  generica para resolverlas. Todo intento persistido constituye evidencia y no
+  se elimina mediante Session.delete().
+- `RegistroOF`: identidad, envio, intento, transportista, numero textual, fecha
+  y origen son inmutables. No se elimina por ORM, conservando la reserva del numero.
+- `ConciliacionH2H`: identidad, asociaciones y snapshot original permanecen
+  inmutables. No se elimina por ORM. Mientras es PENDIENTE puede completar sus
+  metadatos de verificacion y registrar una resolucion definitiva, sujeta a los
+  CHECK existentes. Una resolucion definitiva conserva estado, fecha, operador,
+  metodo, justificacion, referencia y registro OF; no vuelve a PENDIENTE.
+- `MovimientoEnvio`: se mantienen las guardas ORM contra actualizacion y borrado.
+
+Consumo de autorizacion: NULL en `ch_intento_sucesor_id` significa que no hay un
+sucesor registrado como consumidor. Un valor identifica un unico sucesor directo
+validado por FK. Solo OF_INEXISTENTE puede registrarlo. Una vez asignado, el ORM
+impide limpiarlo o sustituirlo. La existencia de un intento con io_anterior_id no
+constituye por si sola el consumo de una autorizacion de conciliacion. La futura
+capa de servicio debera crear y vincular el sucesor en la misma transaccion.
+
+Los hooks de actualizacion comparan con la fila persistida y usan FOR UPDATE
+cuando el motor lo admite; no dependen de valores viejos disponibles en memoria.
+Esto cubre objetos expirados o desactualizados en el flush ORM ordinario. Las
+correcciones futuras requieren movimientos explicitos y una politica revisada;
+no hay flags para saltarse las guardas ni acciones funcionales nuevas.
+
+Limite de garantias: SQLAlchemy Core, SQL directo y bulk updates/deletes pueden
+eludir los hooks. PostgreSQL aplica directamente las FK, UNIQUE y CHECK, pero
+estos no garantizan inmutabilidad historica ni consumo irreversible por SQL.
+No se afirma proteccion frente a cambios administrativos en la base. SQLite
+solo aplica las FK si se habilitan en cada conexion. La concurrencia real de
+PostgreSQL requiere una prueba posterior autorizada.
+
+Despliegue futuro: aplicar Alembic antes de arrancar/importar la version nueva.
+El create_all() que main.py conserva podria crear tablas sin avanzar la revision;
+no resolver esa situacion mediante stamp ciego. No se ejecuto despliegue alguno.

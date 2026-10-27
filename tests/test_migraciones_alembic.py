@@ -73,12 +73,13 @@ class AlembicBaselineTest(unittest.TestCase):
         history = self._alembic("history").stdout
         auditoria = ejecutar_auditoria(self.database_url)
 
-        self.assertIn("20260829_05", current)
+        self.assertIn("20261025_06", current)
         self.assertIn("20260826_01", history)
         self.assertIn("20260828_02", history)
         self.assertIn("20260828_03", history)
         self.assertIn("20260829_04", history)
         self.assertIn("20260829_05", history)
+        self.assertIn("20261025_06", history)
         self.assertEqual(auditoria["diferencias_metadata"], [])
         self.assertEqual(auditoria["resumen_diferencias"], {"criticas": 0, "relevantes": 0, "informativas": 0})
         self.assertEqual(auditoria["datos"]["total_envios"], [[0]])
@@ -304,6 +305,180 @@ class AlembicBaselineTest(unittest.TestCase):
         self.assertNotIn("avisos_envio", tablas)
         self.assertIn("retiros_starken", tablas)
         self.assertEqual(total, 1)
+
+    def test_migracion_of_desde_05_preserva_datos_y_no_hace_backfill(self):
+        self._alembic("upgrade", "20260829_05")
+        engine = create_engine(self.database_url)
+        try:
+            with engine.begin() as connection:
+                connection.execute(text(
+                    "INSERT INTO envios (e_remitente, e_destinatario, e_direccion, e_comuna, "
+                    "e_tipo_envio, e_bultos, e_kilos, e_estado, e_lote, e_fila_excel, "
+                    "e_resultado_of, e_detalle_of, e_anulado) VALUES "
+                    "('Ficticio', 'Destino demo', 'Direccion demo', 'Comuna demo', 'Domicilio', "
+                    "1, 1, 'en_proceso', 'LOTE-DEMO', 2, 'ERROR', 'servicio H2H', 0)"
+                ))
+                antes = connection.execute(text("SELECT * FROM envios")).all()
+        finally:
+            engine.dispose()
+        self._alembic("upgrade", "head")
+        engine = create_engine(self.database_url)
+        try:
+            inspector = inspect(engine)
+            with engine.connect() as connection:
+                despues = connection.execute(text("SELECT * FROM envios")).all()
+                for tabla in ("intentos_of", "registros_of", "conciliaciones_h2h", "movimientos_envio"):
+                    self.assertIn(tabla, inspector.get_table_names())
+                    self.assertEqual(connection.execute(text(f"SELECT COUNT(*) FROM {tabla}")).scalar_one(), 0)
+            self.assertEqual(antes, despues)
+            fk = inspector.get_foreign_keys("registros_of")
+            self.assertTrue(any(
+                item["constrained_columns"] == ["intento_id", "envio_id", "ro_transportista"]
+                and item["options"].get("ondelete") == "RESTRICT" for item in fk
+            ))
+            indice = {item["name"]: item for item in inspector.get_indexes("intentos_of")}
+            self.assertTrue(indice["uq_intentos_of_envio_abierto"]["unique"])
+            uniques = {item["name"] for item in inspector.get_unique_constraints("registros_of")}
+            self.assertIn("uq_registros_of_transporte_numero", uniques)
+        finally:
+            engine.dispose()
+
+    def test_esquema_of_migrado_rechaza_duplicados_y_relaciones_incorrectas(self):
+        from datetime import datetime
+        from sqlalchemy.orm import sessionmaker
+        from database.modelos import ConciliacionH2H, Envio, IntentoOF, MovimientoEnvio, RegistroOF
+        from sqlalchemy.exc import IntegrityError
+
+        self._alembic("upgrade", "head")
+        engine = create_engine(self.database_url)
+        try:
+            with engine.connect() as connection:
+                connection.exec_driver_sql("PRAGMA foreign_keys=ON")
+                connection.commit()
+                with sessionmaker(bind=connection)() as db:
+                    envio = Envio(e_remitente="Demo", e_destinatario="Demo", e_direccion="Demo",
+                                  e_comuna="Demo", e_tipo_envio="Domicilio", e_bultos=1, e_kilos=1)
+                    db.add(envio)
+                    db.flush()
+                    intento = IntentoOF(envio_id=envio.id, io_secuencia=1, io_transportista="STARKEN")
+                    db.add(intento)
+                    db.flush()
+                    caso = ConciliacionH2H(intento_id=intento.id, envio_id=envio.id,
+                                          ch_resultado_original="ERROR", ch_detalle_original="servicio H2H")
+                    registro = RegistroOF(intento_id=intento.id, envio_id=envio.id, ro_transportista="STARKEN",
+                                          ro_numero="000012345678901234567890", ro_origen="DEMO")
+                    db.add_all([caso, registro, MovimientoEnvio(envio_id=envio.id, intento_id=intento.id,
+                                                             me_tipo="DEMO", me_actor="demo", me_detalle={"original": True})])
+                    db.commit()
+                    self.assertEqual(registro.ro_numero, "000012345678901234567890")
+                    envio_id, intento_id = envio.id, intento.id
+                    with self.assertRaises(IntegrityError):
+                        db.add(IntentoOF(envio_id=envio_id, io_secuencia=1, io_transportista="STARKEN", io_estado="CANCELADO"))
+                        db.commit()
+                    db.rollback()
+                    with self.assertRaises(IntegrityError):
+                        db.add(MovimientoEnvio(envio_id=99999, intento_id=intento_id, me_tipo="DEMO", me_actor="demo"))
+                        db.commit()
+                    db.rollback()
+                    with self.assertRaises(IntegrityError):
+                        db.execute(text("UPDATE conciliaciones_h2h SET ch_estado='OF_INEXISTENTE'"))
+                        db.commit()
+                    db.rollback()
+        finally:
+            engine.dispose()
+
+    def test_downgrade_of_a_05_conserva_envios(self):
+        self._alembic("upgrade", "head")
+        engine = create_engine(self.database_url)
+        try:
+            with engine.begin() as connection:
+                connection.execute(text(
+                    "INSERT INTO envios (e_remitente, e_destinatario, e_direccion, e_comuna, "
+                    "e_tipo_envio, e_bultos, e_kilos, e_estado, e_anulado) "
+                    "VALUES ('Demo', 'Demo', 'Demo', 'Demo', 'Domicilio', 1, 1, 'pendiente', 0)"
+                ))
+                antes = connection.execute(text("SELECT * FROM envios")).all()
+        finally:
+            engine.dispose()
+        self._alembic("downgrade", "20260829_05")
+        engine = create_engine(self.database_url)
+        try:
+            tablas = set(inspect(engine).get_table_names())
+            self.assertTrue({"intentos_of", "registros_of", "conciliaciones_h2h", "movimientos_envio"}.isdisjoint(tablas))
+            self.assertIn("avisos_envio", tablas)
+            with engine.connect() as connection:
+                self.assertEqual(connection.execute(text("SELECT * FROM envios")).all(), antes)
+        finally:
+            engine.dispose()
+
+    def test_guardas_orm_conservan_evidencia_en_esquema_creado_por_alembic(self):
+        from sqlalchemy.orm import Session
+        from database.modelos import ConciliacionH2H, Envio, IntentoOF, RegistroOF
+
+        self._alembic("upgrade", "head")
+        engine = create_engine(self.database_url)
+        try:
+            with engine.connect() as connection:
+                connection.exec_driver_sql("PRAGMA foreign_keys=ON")
+                connection.commit()
+                with Session(bind=connection) as db:
+                    envio = Envio(e_remitente="Demo", e_destinatario="Demo", e_direccion="Demo",
+                                  e_comuna="Demo", e_tipo_envio="Domicilio", e_bultos=1, e_kilos=1)
+                    db.add(envio)
+                    db.flush()
+                    intento = IntentoOF(envio_id=envio.id, io_secuencia=1, io_transportista="STARKEN",
+                                        io_lote="LOTE-DEMO", io_estado="CON_OF")
+                    db.add(intento)
+                    db.flush()
+                    registro = RegistroOF(intento_id=intento.id, envio_id=envio.id,
+                                          ro_transportista="STARKEN", ro_numero="000123", ro_origen="DEMO")
+                    caso = ConciliacionH2H(intento_id=intento.id, envio_id=envio.id,
+                                          ch_resultado_original="ERROR", ch_detalle_original="servicio H2H")
+                    db.add_all([registro, caso])
+                    db.commit()
+
+                    def snapshot():
+                        with db.no_autoflush:
+                            return {
+                                modelo.__tablename__: [dict(fila) for fila in db.execute(
+                                    modelo.__table__.select().order_by(modelo.id)
+                                ).mappings()]
+                                for modelo in (Envio, IntentoOF, RegistroOF, ConciliacionH2H)
+                            }
+
+                    antes = snapshot()
+                    for objeto, campo, valor in [
+                        (intento, "io_lote", "LOTE-ALTERADO"),
+                        (registro, "ro_numero", "OTRA-OF"),
+                        (caso, "ch_detalle_original", "Detalle alterado"),
+                    ]:
+                        with self.subTest(campo=campo):
+                            setattr(objeto, campo, valor)
+                            with self.assertRaises(ValueError):
+                                db.commit()
+                            db.rollback()
+                            self.assertEqual(snapshot(), antes)
+                    for objeto in (intento, registro, caso):
+                        with self.subTest(borrado=type(objeto).__name__):
+                            db.delete(objeto)
+                            with self.assertRaises(ValueError):
+                                db.commit()
+                            db.rollback()
+                            self.assertEqual(snapshot(), antes)
+        finally:
+            engine.dispose()
+
+    def test_ddl_of_compila_para_postgresql_sin_conexion(self):
+        from sqlalchemy.dialects import postgresql
+        from sqlalchemy.schema import CreateIndex, CreateTable
+
+        for nombre in ("intentos_of", "registros_of", "conciliaciones_h2h", "movimientos_envio"):
+            with self.subTest(tabla=nombre):
+                tabla = Base.metadata.tables[nombre]
+                ddl = str(CreateTable(tabla).compile(dialect=postgresql.dialect()))
+                self.assertIn("CREATE TABLE", ddl)
+                for indice in tabla.indexes:
+                    self.assertIn("CREATE", str(CreateIndex(indice).compile(dialect=postgresql.dialect())))
 
     def test_secuencia_postgresql_de_pk_es_equivalente_al_autoincrement(self):
         columna = Base.metadata.tables["envios"].c.id
