@@ -16,3 +16,4 @@ auditoria_*.json
 *.tmp
 tmp_cargas/
 static/uploads/
+.vscode/

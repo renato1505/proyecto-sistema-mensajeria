@@ -1,6 +1,6 @@
 from sqlalchemy import func
 
-from database.modelos import Comuna, Destinatario, Remitente
+from database.modelos import Destinatario, Remitente
 from utils.validaciones import (
     centro_costo_valido,
     email_valido,

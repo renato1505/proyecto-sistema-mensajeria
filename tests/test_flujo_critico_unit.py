@@ -5,7 +5,6 @@ import sys
 import unittest
 from datetime import datetime
 from pathlib import Path
-from types import SimpleNamespace
 from unittest.mock import patch
 
 

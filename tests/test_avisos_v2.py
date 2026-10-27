@@ -18,7 +18,6 @@ from database.modelos import (
     AVISO_ESTADO_INCIERTO,
     AVISO_ESTADO_PENDIENTE,
     AVISO_ESTADO_PROCESANDO,
-    AVISO_TIPO_DESTINATARIO,
     AVISO_TIPO_FUNCIONARIO,
     AvisoEnvio,
     Base,

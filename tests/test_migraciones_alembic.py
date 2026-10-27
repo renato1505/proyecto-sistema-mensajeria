@@ -344,7 +344,6 @@ class AlembicBaselineTest(unittest.TestCase):
             engine.dispose()
 
     def test_esquema_of_migrado_rechaza_duplicados_y_relaciones_incorrectas(self):
-        from datetime import datetime
         from sqlalchemy.orm import sessionmaker
         from database.modelos import ConciliacionH2H, Envio, IntentoOF, MovimientoEnvio, RegistroOF
         from sqlalchemy.exc import IntegrityError
