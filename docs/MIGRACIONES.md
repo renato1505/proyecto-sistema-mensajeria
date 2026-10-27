@@ -1,5 +1,27 @@
 # Migraciones de base de datos
 
+## Lectura vigente y condiciones de ejecución
+
+Actualización documental L1, 27 de octubre de 2026. Las decisiones y contratos
+técnicos originales se conservan debajo. Las secciones de baseline y etapas
+previas expresan su alcance histórico; Retiro V2 ya tiene servicio/interfaz y
+Avisos V2 tiene sincronización/motor sin conexión a las rutas legacy.
+El estado consolidado está en [Estado del proyecto](ESTADO_PROYECTO.md).
+
+Los bloques Alembic de este documento son referencias para procedimientos
+autorizados, no pasos automáticos de onboarding. Verificar el destino antes de
+cualquier comando; no usar producción o QA remota para probar. Para SQLite local
+usar una base nueva descartable y el entorno sin correo de
+[Desarrollo](DESARROLLO.md). Para PostgreSQL, una copia aislada autorizada y
+respaldo/restauración comprobados. Tampoco asumir que autogenerate es de lectura:
+se conecta a la base configurada y crea un archivo de revisión.
+
+No importar ni arrancar main.py para inspeccionar un esquema: su startup escribe
+estructura y normaliza datos. Aplicar/adoptar Alembic antes de arrancar la versión
+nueva. El helper create_all() puede crear tablas sin registrar revisión; ante
+esa situación auditar y conciliar, nunca hacer stamp ciego. Un downgrade puede
+eliminar evidencia. Ningún comando de esta guía autoriza intervenir Render.
+
 ## Alcance y decisión técnica
 
 El proyecto usa Alembic directamente, sin Flask-Migrate. Los modelos son
@@ -173,7 +195,7 @@ sobre una restauración PostgreSQL.
 
 ## Producción, backup y rollback
 
-Procedimiento futuro:
+Procedimiento futuro, sujeto a autorización expresa del destino y ventana:
 
 1. backup PostgreSQL consistente;
 2. restauración en base aislada;
@@ -193,7 +215,7 @@ nuevas, antes que ejecutar un downgrade destructivo. No eliminar automáticament
 estructuras que ya contengan datos. Ante corrupción, restaurar el backup. Un
 downgrade solo se utiliza cuando fue revisado y probado con datos equivalentes.
 
-## Decisiones de diseño Retiro todavía no implementadas
+## Decisiones de diseño Retiro en la etapa inicial (antecedente)
 
 - `MENSAJERIA_LOCAL` será el punto de retiro predeterminado.
 - `ACADEMIA` será una clasificación logística separada.

@@ -6,22 +6,15 @@ bajo `%TEMP%\mensajeria-v2-demo`.
 
 ## Inicio y limpieza
 
+Usar una consola dedicada sin variables PostgreSQL/productivas. El script se
+contrasta en [scripts/run_demo.ps1](../scripts/run_demo.ps1); configura SQLite,
+correo bloqueado y datos ficticios antes de importar la app. No necesita secretos
+reales. Ver [Desarrollo](DESARROLLO.md) para crear el venv y las dependencias.
+
 Desde la raíz del repositorio:
 
 ```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\venv\Scripts\Activate.ps1
-.\scripts\run_demo.ps1 -Clean
-.\scripts\run_demo.ps1 -Seed
-```
-
-Ejemplo del equipo local actual:
-
-```powershell
-cd "C:\Users\Renato\Desktop\Proyecto Sistema de Gestion de Mensajería\sistema_mensajeria"
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\venv\Scripts\Activate.ps1
-.\scripts\run_demo.ps1 -Clean
 .\scripts\run_demo.ps1 -Seed
 ```
 
@@ -77,3 +70,23 @@ e IMAP se configuran con proveedores inválidos, puerto local cero y correos
 
 `H2H_AMBIGUO` reproduce el texto `Error al enviar fila X a servicio H2H`. Este
 error no garantiza ausencia de OF y el simulador no intenta regenerar envíos.
+
+## Alcance y límites
+
+El startup demo usa create_all() e importa main.py: escribe y normaliza su base
+descartable; no es una prueba read-only ni valida la adopción Alembic. El smoke
+se documenta por separado en [Desarrollo](DESARROLLO.md#smoke-y-arranque).
+
+Para limpiar, detener antes el servidor y confirmar que se desea perder todo
+el entorno demo fijo, incluidos datos y archivos de ensayos anteriores:
+
+```powershell
+.\scripts\run_demo.ps1 -Clean
+```
+
+No usar -Clean como requisito rutinario: es destructivo dentro del directorio
+demo. Los escenarios generan archivos/OF ficticias locales, nunca una solicitud
+real al transportista. No subir sus CSV ni sus OF a plataformas externas.
+
+La demo no implementa conciliación manual, transición de estados de IntentoOF
+ni integración de Avisos V2. Un escenario H2H no autoriza regeneración.

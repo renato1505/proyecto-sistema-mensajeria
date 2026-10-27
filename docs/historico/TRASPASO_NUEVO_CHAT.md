@@ -1,3 +1,15 @@
+# Documento histórico: TRASPASO_NUEVO_CHAT.md
+
+> Archivado el 27 de octubre de 2026 durante la limpieza L1.
+> El contenido original se conserva íntegro debajo de este aviso. Describe una etapa anterior,
+> puede citar archivos retirados, autenticación obsoleta y comandos que escriben o destruyen datos.
+> **No ejecutar sus procedimientos como guía vigente**, ni siquiera comandos llamados diagnóstico o smoke.
+> Las rutas citadas en el original son referencias históricas desde la raíz del repositorio.
+> Consultar [README](../../README.md), [Desarrollo](../DESARROLLO.md),
+> [Estado del proyecto](../ESTADO_PROYECTO.md) y [Migraciones](../MIGRACIONES.md).
+
+---
+
 # Traspaso para nuevo chat o nuevo equipo
 
 Este documento es el punto de partida recomendado si se continua el proyecto en otro chat, otro PC o con otra persona. Resume contexto, decisiones, reglas de negocio, arquitectura, estilo visual, riesgos y forma de trabajo.

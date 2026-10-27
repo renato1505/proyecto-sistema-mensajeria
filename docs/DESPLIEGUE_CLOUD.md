@@ -1,203 +1,123 @@
-# Despliegue Cloud
+# Despliegue cloud
 
-Esta guia resume los pasos para publicar el Portal Operativo en un servicio cloud y acceder desde navegador mediante una URL.
+Referencia para preparar un despliegue futuro expresamente autorizado.
+Esta guía no certifica configuración ni estado actual de Render y no autoriza
+conectar, migrar o desplegar. La validación local está en
+[Desarrollo](DESARROLLO.md) y [QA](QA_CHECKLIST.md).
 
-## Objetivo
+## Configuración verificable en el repositorio
 
-Pasar desde ejecucion local:
-
-```text
-http://127.0.0.1:5000
-```
-
-a una URL web protegida:
-
-```text
-https://tu-servicio.onrender.com
-```
-
-## Plataforma recomendada inicial
-
-Para una primera publicacion simple se recomienda Render o Railway.
-
-Render es una buena primera opcion porque permite:
-
-- Conectar repositorio GitHub.
-- Crear Web Service Python.
-- Crear PostgreSQL administrado.
-- Configurar variables de entorno.
-- Desplegar automaticamente al hacer push.
-
-## Requisitos previos
-
-Antes de desplegar:
-
-1. El proyecto debe estar actualizado en GitHub.
-2. `.env` no debe subirse al repositorio.
-3. La app debe usar PostgreSQL.
-4. Debe existir una clave fuerte en `SECRET_KEY`.
-5. Debe activarse login con `LOGIN_REQUIRED=1`.
-6. Debe existir un usuario activo con hash Werkzeug en `usuarios_sistema`.
-7. Debe definirse `SESSION_TIMEOUT_MINUTES` segun la politica de inactividad deseada.
-
-## Variables de entorno obligatorias
-
-Configurar en el panel cloud:
-
-```text
-DATABASE_URL=postgresql+psycopg2://...
-SECRET_KEY=clave-larga-y-segura
-FLASK_DEBUG=0
-LOGIN_REQUIRED=1
-SESSION_TIMEOUT_MINUTES=30
-
-CORREO_EMISOR=correo-del-sistema@gmail.com
-CORREO_DESTINO_STARKEN=correo-destino-starken
-CORREO_RESPALDO_MENSAJERIA=mensajeria.alcantara@loreal.com
-EMAIL_PROVIDER=smtp
-CORREO_CLAVE_APP=clave-app-gmail
-
-OF_IMAP_HOST=imap.gmail.com
-OF_IMAP_PORT=993
-OF_CORREO_FILTRO_REMITENTE=infoweb@starken.cl
-OF_CORREO_FILTRO_TEXTO=
-
-CLAVE_ELIMINACION_HISTORICO=clave-para-eliminar-historico
-```
-
-Variables opcionales si se activa Brevo transaccional:
-
-```text
-EMAIL_PROVIDER=brevo
-BREVO_API_KEY=api-key-brevo
-BREVO_SENDER_NAME=Portal Operativo
-
-# Alternativa solo si se decide usar Brevo por SMTP en vez de API.
-EMAIL_PROVIDER=brevo_smtp
-BREVO_SMTP_HOST=smtp-relay.brevo.com
-BREVO_SMTP_PORT=587
-BREVO_SMTP_LOGIN=login-smtp-brevo
-BREVO_SMTP_PASSWORD=clave-smtp-brevo
-```
-
-## Configuracion de servicio web
-
-Build command:
-
-```text
-pip install -r requirements.txt
-```
-
-Start command:
-
-```text
-gunicorn main:app
-```
-
-El archivo `Procfile` tambien contiene:
+[requirements.txt](../requirements.txt) contiene las dependencias Python.
+[Procfile](../Procfile) declara:
 
 ```text
 web: gunicorn main:app
 ```
 
-## Base de datos
+El comando de instalación es `pip install -r requirements.txt`.
+El proceso web es `gunicorn main:app`; importa la aplicación y puede modificar
+esquema y datos. Revisar esos efectos antes de habilitar el servicio.
 
-Crear una base PostgreSQL en la plataforma cloud y copiar su URL de conexion en `DATABASE_URL`.
+El repositorio no demuestra qué rama despliega Render, qué auto-deploy está
+habilitado ni qué proveedor de correo está activo. Verificarlo en una revisión
+autorizada de la plataforma, sin exponer secretos. No asumir que un push a
+`refactor/v2-foundation` deba desplegar ni cambiar `main` para hacerlo.
 
-El sistema crea tablas base al iniciar y ejecuta columnas operativas faltantes mediante `database/schema.py`.
+## Variables y acceso
 
-## Consideraciones de archivos locales
+Configurar secretos en el entorno del servicio, nunca en archivos versionados.
+No reutilizar claves de demo. El destino PostgreSQL debe ser explícito y aprobado.
 
-En plataformas cloud, las carpetas locales pueden no ser persistentes despues de un redeploy.
+| Variable | Requisito |
+| --- | --- |
+| `DATABASE_URL` | URL PostgreSQL del destino aprobado, gestionada como secreto |
+| `SECRET_KEY` | Secreto propio y seguro, distinto del fallback de desarrollo |
+| `LOGIN_REQUIRED` | `1` |
+| `RENDER` / `APP_ENV` | Render declara `true`; fuera de Render usar `production` |
+| `FLASK_DEBUG` | `0` |
+| `SESSION_TIMEOUT_MINUTES` | Política de inactividad acordada |
+| `CLAVE_ELIMINACION_HISTORICO` | Secreto separado si se habilita esa operación |
+| `LOGS_DIR`, `RESPALDOS_LOTES_DIR` | Rutas según política de persistencia |
 
-Revisar especialmente:
+La aplicación rechaza producción sin secreto válido o login habilitado.
+La conexión requiere una URL no vacía. Estas validaciones no prueban que una URL
+corresponda al entorno correcto.
 
-- `respaldos_lotes`
-- `respaldos_historico`
-- `logs`
-- `tmp_cargas`
+Debe existir una cuenta activa con hash Werkzeug en `usuarios_sistema`.
+No hay Admin web para crear usuarios ni credenciales de fallback por
+`APP_USERS`/`APP_ACCESS_PASSWORD`. La provisión inicial exige un procedimiento
+administrativo revisado; el script de reset solo actúa sobre usuarios existentes.
+Ver [Autenticación](AUTENTICACION_V2.md).
 
-Para uso cloud estable se recomienda:
+## Transporte de correo e IMAP
 
-- Mantener respaldo por correo.
-- Usar base de datos para informacion critica.
-- Evaluar disco persistente o almacenamiento externo si se requiere conservar archivos.
+Los transportes implementados son:
 
-En Render, el modo actual estable es Gmail SMTP:
+- `EMAIL_PROVIDER=smtp`: Gmail SMTP con `CORREO_EMISOR` y `CORREO_CLAVE_APP`.
+- `EMAIL_PROVIDER=brevo`: API con `BREVO_API_KEY`, `CORREO_EMISOR` y,
+  si corresponde, `BREVO_SENDER_NAME`.
+- `EMAIL_PROVIDER=brevo_smtp`: `BREVO_SMTP_HOST`, `BREVO_SMTP_PORT`,
+  `BREVO_SMTP_LOGIN` y `BREVO_SMTP_PASSWORD`, además del emisor.
 
-```text
-EMAIL_PROVIDER=smtp
-CORREO_CLAVE_APP=...
-```
+Definir y verificar `CORREO_DESTINO_STARKEN` y
+`CORREO_RESPALDO_MENSAJERIA`; no confiar en un destinatario por defecto.
+No se ha comprobado aquí cuál transporte usa el servicio remoto.
+Cambiar de transporte es una decisión separada de integrar Avisos V2.
 
-Brevo queda preparado como alternativa mas robusta para envio transaccional cuando la cuenta tenga activado el modulo SMTP/transaccional:
+La lectura OF por Gmail IMAP utiliza credenciales de correo aunque el envío use
+Brevo: revisar `OF_IMAP_HOST`, `OF_IMAP_PORT`,
+`OF_CORREO_FILTRO_REMITENTE` y `OF_CORREO_FILTRO_TEXTO`.
+No activar credenciales reales en pruebas locales.
 
-```text
-EMAIL_PROVIDER=brevo
-BREVO_API_KEY=...
-BREVO_SENDER_NAME=Portal Operativo
-```
+Un resultado aceptado por el proveedor no acredita entrega final.
+Los avisos legacy pueden duplicarse al reintentar tras fallo parcial.
+El motor V2 aún no está integrado a la interfaz y no debe activarse en paralelo.
 
-Aunque se use Brevo para enviar, `CORREO_CLAVE_APP` sigue siendo necesario si el sistema lee respuestas OF desde Gmail por IMAP.
+## Orden de adopción y migraciones
 
-En produccion cloud, la eliminacion de historico no debe depender de `respaldos_historico`.
-Antes de borrar registros, el sistema envia un Excel de respaldo a:
+**Bloqueo previo:** el startup ejecuta `Base.metadata.create_all()`,
+`asegurar_columnas_operativas()` y `normalizar_datos_operativos()`.
+La normalización puede reescribir envíos y fusionar/eliminar remitentes.
+No arrancar workers nuevos para averiguar si falta esquema.
 
-- `CORREO_RESPALDO_MENSAJERIA`
-- `CORREO_EMISOR`
+Antes de un despliegue que incluya nuevas tablas:
 
-Si ese correo no se puede enviar, la eliminacion se bloquea.
+1. Identificar revisión de código, destino, esquema y versión Alembic existentes.
+2. Obtener un respaldo completo consistente y demostrar restauración en una copia
+   aislada autorizada; un Excel operativo no satisface este requisito.
+3. Auditar la copia y resolver diferencias de baseline/metadata.
+4. Probar la cadena Alembic y conservar conteos/datos legacy en esa copia.
+5. Verificar comportamiento PostgreSQL, FK, índices, concurrencia y rollback.
+6. Aprobar ventana, acceso y plan de reversión antes de modificar el destino.
+7. Aplicar el procedimiento Alembic aprobado **antes de arrancar/importar**
+   la nueva versión web y verificar esquema y revisión.
+8. Iniciar servicio y realizar verificación autorizada sin envíos/OF de prueba reales.
 
-## Seguridad minima
+Los comandos y decisiones de baseline están en [Migraciones](MIGRACIONES.md).
+No hay aquí un comando universal de recuperación ni un permiso implícito para
+ejecutar `upgrade` o `stamp` contra Render. Si `create_all()` ya creó tablas
+sin avanzar Alembic, detenerse y auditar; nunca resolverlo con `stamp` ciego.
 
-No publicar la app sin:
+La revisión `20261025_06` es aditiva y no hace backfill; el downgrade elimina
+las cuatro tablas H2H y puede perder datos. Preferir una reversión de aplicación
+compatible, evaluada sobre copia, a borrar tablas que ya contengan evidencia.
 
-- `LOGIN_REQUIRED=1`.
-- Al menos un usuario activo en `usuarios_sistema` con clave hasheada.
-- `SESSION_TIMEOUT_MINUTES` definido.
-- `SECRET_KEY` fuerte.
-- HTTPS activo.
-- `.env` fuera de Git.
+## Persistencia de archivos y recuperación
 
-El sistema maneja datos personales como nombres, correos, telefonos, direcciones, RUT y ordenes de flete.
+El almacenamiento local del servicio puede ser efímero. Revisar logs,
+`respaldos_lotes/`, `respaldos_historico/` y `tmp_cargas/` y definir custodia,
+retención y almacenamiento persistente según necesidad. No confundir correo
+de respaldo de lote o histórico con restauración íntegra de base y evidencias.
 
-La unica fuente de autenticacion es `usuarios_sistema`. Para restablecer una clave desde una Shell administrativa o de Render, seguir `docs/AUTENTICACION_V2.md` y usar `scripts/reset_password.py`.
+`scripts/migrar_bd_cloud.py` es un clonador legacy parcial de cuatro modelos.
+Incluso su diagnóstico crea esquema de destino y no respalda todos los datos V2.
+No usarlo como respaldo/restauración ni ejecutar opciones destructivas como parte
+de este procedimiento. Falta formalizar y ensayar recuperación integral.
 
-## Flujo sugerido de despliegue
+## Verificación posterior autorizada
 
-1. Crear cuenta en Render o Railway.
-2. Crear base PostgreSQL.
-3. Crear Web Service desde GitHub.
-4. Configurar build/start command.
-5. Agregar variables de entorno.
-6. Desplegar.
-7. Abrir URL generada.
-8. Probar login.
-9. Probar rutas principales.
-10. Cargar datos iniciales o migrar base local.
-
-## Pruebas posteriores
-
-Despues de desplegar validar:
-
-- Login.
-- Nuevo envio.
-- Carga masiva.
-- Generacion CSV.
-- En proceso.
-- Procesamiento OF.
-- Historico.
-- Avisos.
-- Catalogos.
-- Envio de correos.
-- Hora correcta de Chile en correos, lotes y respaldos.
-- Pantalla de exito OF con primera y ultima OF.
-
-## Pendiente para produccion estable
-
-- Definir estrategia de respaldo de base de datos.
-- Definir estrategia de respaldo de archivos Excel/CSV.
-- Mantener un usuario `admin` robusto y probado.
-- Evaluar dominio propio.
-- Evaluar almacenamiento persistente para respaldos.
-- Evaluar proveedor de correo transaccional si Gmail SMTP deja de ser estable.
+Revisar login, sesión/CSRF, lectura de pantallas activas, revisión Alembic y
+logs sin publicar datos personales. Las pruebas de escritura deben quedarse
+en datos ficticios aislados. Las de correo, importación IMAP y Starken requieren
+un plan separado con destinatarios y efectos aprobados.
+No ejecutar el smoke contra la base productiva: importa la app y puede escribir.

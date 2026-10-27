@@ -1,112 +1,65 @@
-# Portal Operativo
+# Sistema de Mensajería V2
 
-Aplicacion Flask para centralizar procesos operativos internos. El modulo principal actual es Mensajeria: registra envios, genera archivos CSV para Starken, carga respuestas OF y mantiene historico descargable.
+Herramienta interna para registrar envíos, preparar archivos Starken, procesar
+respuestas de órdenes de flete (OF) y conservar seguimiento operativo. Reemplaza
+planillas y avisos manuales repetitivos con validación y trazabilidad por envío.
 
-Actualmente el modulo opera con normalizacion de telefonos, OF, nombres y textos operativos para reducir duplicados por acentos, mayusculas inconsistentes o valores pegados desde Excel.
+## Funcionalidades actuales
 
-## Flujo principal
+- Envíos individuales y carga masiva Excel con revisión antes de confirmar.
+- Catálogos de remitentes y destinatarios y autocompletado de comunas.
+- Selección de pendientes y generación de CSV Starken por lote.
+- Importación de respuestas OF manual o asistida por correo.
+- Bloqueos ante resultados H2H ambiguos para evitar regeneraciones accidentales.
+- Registro de retiros físicos V2, búsqueda y selección de envíos elegibles.
+- Histórico filtrable, exportación, anulación y eliminación con respaldo.
+- Avisos legacy a funcionarios y destinatarios, gestionados por el operador.
+- Login contra usuarios de base de datos, CSRF y vencimiento por inactividad.
 
-1. Registrar envios en estado pendiente.
-2. Revisar y editar pendientes antes de enviarlos a Starken.
-3. Generar CSV Starken y elegir si se descarga o se envia por correo.
-4. Cargar archivo OF manualmente o desde correo.
-5. Mover envios OK al historico y enviar respaldo a Mensajeria.
-6. Enviar avisos a funcionarios cuando corresponda.
-7. Exportar o respaldar historico cuando corresponda.
+La persistencia de intentos OF y conciliaciones H2H está implementada, pero aún
+no se integra al flujo operativo. La conciliación manual y la integración de
+Avisos V2 están pendientes. Admin y Reportes no son módulos activos.
 
-## Preparacion
+## Arquitectura e instalación
 
-1. Crear o activar un entorno virtual de Python.
-2. Instalar dependencias:
+Flask, Jinja y JavaScript; SQLAlchemy y Alembic; SQLite para desarrollo aislado
+y PostgreSQL como destino de despliegue. Gunicorn inicia el servicio mediante
+[Procfile](Procfile). Las dependencias están en [requirements.txt](requirements.txt).
 
-```powershell
-python -m pip install -r requirements.txt
-```
+Se necesita Git, Python con entorno virtual y las dependencias instaladas.
+La última validación registrada utilizó Python 3.14 del `venv`.
+Seguir [desarrollo local](docs/DESARROLLO.md) para instalar y probar sin
+credenciales reales. Para explorar la interfaz con datos ficticios, usar la
+[demo operativa](docs/DEMO_OPERATIVA_V2.md).
 
-3. Copiar `.env.example` como `.env` y completar las claves reales.
-4. Verificar que PostgreSQL tenga creada la base `sistema_mensajeria`.
-5. Aplicar indices si es una instalacion nueva o si se actualizo el modelo:
+**Antes de arrancar:** importar o ejecutar `main.py` puede crear tablas,
+agregar columnas y normalizar datos existentes. No es una operación de lectura.
+Nunca usar una base real para verificar una instalación o ejecutar pruebas.
 
-```powershell
-python scripts\aplicar_indices.py
-```
+## Documentación vigente
 
-## Ejecutar
+| Necesidad | Documento |
+| --- | --- |
+| Preparar otro equipo y trabajar con Git | [Desarrollo](docs/DESARROLLO.md) |
+| Usar el sistema | [Operación](docs/OPERACION.md) |
+| Comprender módulos, datos y límites | [Arquitectura](docs/ARQUITECTURA.md) |
+| Login y restablecimiento externo | [Autenticación V2](docs/AUTENTICACION_V2.md) |
+| Esquema, baseline y decisiones técnicas | [Migraciones](docs/MIGRACIONES.md) |
+| Preparar un despliegue autorizado | [Despliegue cloud](docs/DESPLIEGUE_CLOUD.md) |
+| Pruebas y verificaciones manuales | [Checklist QA](docs/QA_CHECKLIST.md) |
+| Ensayar sin servicios externos | [Demo operativa V2](docs/DEMO_OPERATIVA_V2.md) |
+| Continuar el proyecto y revisar pendientes | [Estado del proyecto](docs/ESTADO_PROYECTO.md) |
 
-```powershell
-python main.py
-```
+## Estado actual
 
-La aplicacion queda disponible normalmente en:
+Base consolidada en `refactor/v2-foundation`:
+`e7cf93e4ebf318ac11d5d9158a769840ca173412`.
+Fases 1.1, 1.1.1, 1.2B y 1.2B.1 consolidadas. Última ejecución registrada:
+**273 pruebas aprobadas**; este cambio documental no vuelve a ejecutarlas.
+La etapa L1 actualiza documentación y queda pendiente de revisión y commit.
 
-```text
-http://127.0.0.1:5000/
-```
-
-## Demo local seguro en Windows
-
-Para revisar la aplicacion sin PostgreSQL ni correo real:
-
-```powershell
-.\scripts\run_demo.ps1
-```
-
-Credenciales locales: `demo` / `Demo1234!`. Base, logs y respaldos se guardan
-exclusivamente en `%TEMP%\mensajeria-v2-demo`.
-
-Para incluir datos ficticios:
-
-```powershell
-.\scripts\run_demo.ps1 -Seed
-```
-
-Para eliminar completamente el entorno demo despues de detener el servidor:
-
-```powershell
-.\scripts\run_demo.ps1 -Clean
-```
-
-El script aborta ante variables productivas o una `DATABASE_URL` PostgreSQL y
-deshabilita SMTP, Brevo e IMAP antes de importar la aplicacion.
-
-## Checks de calidad
-
-Antes de subir cambios o probar una version nueva:
-
-```powershell
-python -m compileall -q main.py config database routes services scripts tests
-python -m unittest discover -s tests -p "test_*.py"
-python tests\smoke_check.py
-```
-
-La prueba de correo envia un correo real, por eso exige confirmacion:
-
-```powershell
-python tests\test_correo.py --confirmar
-```
-
-## Scripts destructivos
-
-Estos scripts borran y recargan catalogos completos. Por seguridad exigen confirmacion explicita:
-
-```powershell
-python scripts\cargar_comunas.py --confirmar
-python scripts\cargar_remitentes.py --confirmar
-```
-
-## Datos sensibles
-
-No subir ni compartir `.env`, respaldos ni archivos Excel con datos reales. Esos archivos pueden contener correos, telefonos, direcciones y datos internos.
-
-## Documentacion
-
-- `docs/OPERACION.md`: procedimiento de uso diario.
-- `docs/ARQUITECTURA.md`: mapa tecnico del flujo, modulos y estados.
-- `docs/CALIDAD.md`: controles, checks y recomendaciones para GitHub.
-- `docs/GITHUB.md`: guia para subir el repositorio sin exponer datos sensibles.
-- `docs/CONTINUIDAD_PROYECTO.md`: contexto actual para continuar el desarrollo en otro chat o sesion.
-- `docs/TRASPASO_NUEVO_CHAT.md`: documento principal para que otro chat/desarrollador entienda historia, estado, arquitectura, reglas y proximo camino.
-- `docs/MIGRACION_PC.md`: pasos para mover el entorno a otro computador.
-- `docs/ADMINISTRACION.md`: uso y reglas del panel Admin.
-- `docs/QA_CHECKLIST.md`: checklist manual antes de deploy.
-- `docs/REVISION_CALIDAD_2026-06.md`: revision estricta de calidad, riesgos y prioridades.
+Los nueve originales de guías fusionadas e informes se conservan en
+[el archivo histórico](docs/historico/) y se identifican desde
+[Estado del proyecto](docs/ESTADO_PROYECTO.md#archivo-documental).
+Son antecedentes y no procedimientos vigentes. No subir `.env`, bases,
+respaldos, logs, archivos operativos ni datos personales a Git.
