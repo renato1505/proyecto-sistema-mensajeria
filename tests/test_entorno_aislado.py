@@ -130,8 +130,7 @@ else:
         self.assertIn("ORDEN_RECHAZADO", resultado.stdout)
 
     def test_preparacion_explicita_funciona_sin_operaciones_legacy(self):
-        # Ensayo de S2B: se neutralizan únicamente las tres llamadas conocidas
-        # dentro de este proceso de prueba. main.py sigue intacto en S2A.
+        # El fixture pasa su contrato explícito; la validación real no se mockea.
         codigo = """
 from unittest.mock import patch
 from tests.fixtures_app import preparar_base_app
@@ -146,10 +145,10 @@ def registrar(c, cursor, sql, params, context, many):
 with patch('sqlalchemy.MetaData.create_all') as crear, \
      patch('database.schema.asegurar_columnas_operativas') as columnas, \
      patch('services.normalizacion_operativa.normalizar_datos_operativos') as normalizar:
-    from main import app
+    from aplicacion import crear_app
+    app = crear_app(contrato=contrato_fixture_sqlite())
     assert app.test_client().get('/login').status_code == 200
-    # Documenta el arranque actual, no exige que ya cumpla S2B.
-    assert crear.call_count == columnas.call_count == normalizar.call_count == 1
+    assert crear.call_count == columnas.call_count == normalizar.call_count == 0
 assert not any(s.startswith(('CREATE', 'ALTER', 'INSERT', 'UPDATE', 'DELETE', 'DROP')) for s in sentencias)
 print('ENSAYO_S2B_OK')
 """
@@ -157,13 +156,14 @@ print('ENSAYO_S2B_OK')
                                            capture_output=True, text=True, check=True)
         self.assertIn("ENSAYO_S2B_OK", resultado.stdout)
 
-    def test_main_conserva_las_tres_llamadas_legacy(self):
-        ruta = Path(__file__).resolve().parent.parent / "main.py"
-        tree = ast.parse(ruta.read_text(encoding="utf-8"))
-        llamadas = {ast.unparse(n.value.func) for n in tree.body
-                    if isinstance(n, ast.Expr) and isinstance(n.value, ast.Call)}
-        self.assertTrue({"Base.metadata.create_all", "asegurar_columnas_operativas",
-                         "normalizar_datos_operativos"}.issubset(llamadas))
+    def test_main_no_invoca_operaciones_legacy(self):
+        raiz = Path(__file__).resolve().parent.parent
+        prohibidas = {"Base.metadata.create_all", "asegurar_columnas_operativas",
+                      "normalizar_datos_operativos"}
+        for nombre in ("main.py", "aplicacion.py"):
+            tree = ast.parse((raiz / nombre).read_text(encoding="utf-8"))
+            llamadas = {ast.unparse(n.func) for n in ast.walk(tree) if isinstance(n, ast.Call)}
+            self.assertFalse(prohibidas.intersection(llamadas))
 
     def _codigo_arranque(self):
         return "from tests.entorno_aislado import preparar_entorno_pruebas; preparar_entorno_pruebas(); print('AUTORIZADO')"

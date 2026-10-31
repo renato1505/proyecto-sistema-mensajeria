@@ -15,8 +15,8 @@ web: gunicorn main:app
 ```
 
 El comando de instalación es `pip install -r requirements.txt`.
-El proceso web es `gunicorn main:app`; importa la aplicación y puede modificar
-esquema y datos. Revisar esos efectos antes de habilitar el servicio.
+El proceso web es `gunicorn main:app`; importa la aplicación y valida su esquema
+mediante lectura. Una incompatibilidad bloquea el inicio; preparar el destino antes de habilitar el servicio.
 
 El repositorio no demuestra qué rama despliega Render, qué auto-deploy está
 habilitado ni qué proveedor de correo está activo. Verificarlo en una revisión
@@ -75,10 +75,12 @@ El motor V2 aún no está integrado a la interfaz y no debe activarse en paralel
 
 ## Orden de adopción y migraciones
 
-**Bloqueo previo:** el startup ejecuta `Base.metadata.create_all()`,
-`asegurar_columnas_operativas()` y `normalizar_datos_operativos()`.
-La normalización puede reescribir envíos y fusionar/eliminar remitentes.
-No arrancar workers nuevos para averiguar si falta esquema.
+**S2B local:** el proceso web valida el contrato de esquema mediante lectura
+antes de registrar rutas. Ya no crea tablas, agrega columnas o normaliza datos.
+Una base incompatible detiene el arranque; no hay reparación automática.
+
+Esto no demuestra que Render esté preparado. No arrancar workers para averiguar
+qué migración falta ni reactivar helpers legacy para resolver el rechazo.
 
 Antes de un despliegue que incluya nuevas tablas:
 
@@ -95,7 +97,7 @@ Antes de un despliegue que incluya nuevas tablas:
 
 Los comandos y decisiones de baseline están en [Migraciones](MIGRACIONES.md).
 No hay aquí un comando universal de recuperación ni un permiso implícito para
-ejecutar `upgrade` o `stamp` contra Render. Si `create_all()` ya creó tablas
+ejecutar `upgrade` o `stamp` contra Render. Si una versión anterior creó tablas con `create_all()`
 sin avanzar Alembic, detenerse y auditar; nunca resolverlo con `stamp` ciego.
 
 La revisión `20261025_06` es aditiva y no hace backfill; el downgrade elimina
@@ -120,4 +122,8 @@ Revisar login, sesión/CSRF, lectura de pantallas activas, revisión Alembic y
 logs sin publicar datos personales. Las pruebas de escritura deben quedarse
 en datos ficticios aislados. Las de correo, importación IMAP y Starken requieren
 un plan separado con destinatarios y efectos aprobados.
-No ejecutar el smoke contra la base productiva: importa la app y puede escribir.
+El smoke de S2B crea su fixture aislado y valida una fábrica Flask sin reparaciones.
+No sustituye una comprobación del destino desplegado ni debe adaptarse para usar datos reales.
+
+Revertir a código anterior a S2B puede reactivar creación de esquema y normalización
+histórica al arrancar. Evaluar ese riesgo antes de aprobar rollback de aplicación.

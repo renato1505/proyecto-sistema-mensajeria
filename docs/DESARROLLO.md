@@ -107,8 +107,8 @@ punto de entrada. No guardar estado o código operativo en la raíz temporal.
 
 Los fixtures pueden crear tablas y datos ficticios explícitamente.
 [fixtures_app.py](../tests/fixtures_app.py) prepara la base global antes de
-importar `main.app`; las pruebas que la utilizan no dependen de su creación
-implícita. Las pruebas Alembic migran exclusivamente sus archivos SQLite
+construir Flask mediante su contrato explícito; las pruebas no dependen de
+creación implícita durante el arranque. Las pruebas Alembic migran exclusivamente sus archivos SQLite
 temporales; no son una autorización para migraciones externas.
 
 La referencia previa a S2A es 273 pruebas aprobadas. Las nuevas pruebas cubren
@@ -153,24 +153,41 @@ a otro proceso. El lanzador debe emitir su propio permiso para cada hijo.
 
 ## Smoke y arranque
 
-[tests/smoke_check.py](../tests/smoke_check.py) instala el mismo aislamiento antes
-de importar configuración o aplicación y utiliza el fixture explícito.
-Desactiva login únicamente en su proceso, por lo que no prueba autenticación.
+[tests/smoke_check.py](../tests/smoke_check.py) instala el aislamiento antes de
+importar configuración y obtiene una aplicación mediante el fixture explícito.
+Desactiva login solo en su proceso; no prueba autenticación.
 
-```powershell
-.\venv\Scripts\python.exe tests/smoke_check.py
-if ($LASTEXITCODE -ne 0) { throw "El smoke fallo" }
-```
+Para ejecutarlo desde la raíz: python tests/smoke_check.py con el Python del venv.
 
-Sigue escribiendo en su base temporal: prepara tablas/referencias y el arranque
-legacy aún ejecuta las tres llamadas automáticas. No es una auditoría de lectura
-ni valida un despliegue. No ofrecer una URL operativa al smoke.
+El fixture escribe únicamente su SQLite en memoria: prepara tablas y referencias.
+La fábrica Flask valida después mediante lectura; no ejecuta creación de tablas,
+aseguramiento de columnas ni normalización histórica. El smoke completo sigue
+sin ser una auditoría de lectura porque incluye esa preparación ficticia.
 
-S2A no conecta el validador al arranque ni retira llamadas de `main.py`.
-Para explorar la interfaz, seguir la [demo](DEMO_OPERATIVA_V2.md).
-Ejecutar `python main.py` conserva sus efectos legacy y requiere verificar el
-destino; no sustituye una adopción Alembic. Ver el
-[contrato de lectura S2A](MIGRACIONES.md#s2a-validador-de-lectura-y-preparación-de-s2b).
+### S2B: arranque normal y contrato de fixture
+
+[main.py](../main.py) conserva la entrada local y Gunicorn main:app. Delega la
+construcción en [aplicacion.py](../aplicacion.py), que exige el contrato versionado
+20261025_06 y referencias correctas antes de registrar rutas. Si el esquema no
+cumple, registra un diagnóstico sin credenciales y rechaza el arranque.
+No hay migraciones, stamp, normalizaciones ni reparaciones como fallback.
+
+Las pruebas pasan expresamente contrato_fixture_sqlite() a crear_app().
+La fábrica acepta ese contrato exacto solo sobre SQLite en memoria y fuera de
+producción. Lo rechaza para archivos SQLite, PostgreSQL o contratos alterados.
+No existe una variable de entorno para omitir la revisión: APP_ENV=test por sí
+solo no habilita la excepción. main:app siempre utiliza el contrato versionado.
+
+Para una instalación local nueva, preferir la [demo](DEMO_OPERATIVA_V2.md).
+Su script prepara explícitamente una SQLite demo vacía mediante Alembic y luego
+arranca con el contrato versionado normal. Una demo existente incompatible se
+rechaza sin adopción o stamp; recrearla es una decisión explícita y destructiva
+limitada a sus datos ficticios.
+
+Ejecutar python main.py sobre una base de desarrollo existente requiere revisar
+antes URL, historial Alembic, estructura y referencias. No usar una base real
+para completar onboarding ni resolver el rechazo restaurando llamadas legacy.
+Ver [Migraciones](MIGRACIONES.md#s2b-arranque-validado-sin-reparaciones).
 
 ## Esquema y scripts
 

@@ -1,5 +1,8 @@
-"""Preparación explícita de la base global usada por pruebas de main.app."""
+"""Preparación explícita de SQLite en memoria para la fábrica Flask."""
 from tests.entorno_aislado import preparar_entorno_pruebas, validar_destino_pruebas
+
+
+_APP = None
 
 
 def preparar_base_app():
@@ -9,8 +12,7 @@ def preparar_base_app():
     from sqlalchemy.orm import Session
 
     validar_destino_pruebas(engine.url, raiz)
-    # Es preparación de fixture, no parte del arranque operativo. S2B conservará
-    # este paso aun cuando main deje de crear tablas y normalizar registros.
+    # El fixture prepara tablas y referencias; la fábrica valida sin repararlas.
     Base.metadata.create_all(engine)
     with Session(engine) as db:
         for codigo, local in (("MENSAJERIA_LOCAL", True), ("ACADEMIA", False)):
@@ -24,6 +26,10 @@ def preparar_base_app():
 
 
 def obtener_app_aislada():
+    global _APP
     preparar_base_app()
-    from main import app
-    return app
+    if _APP is None:
+        from aplicacion import crear_app
+        from database.validacion_esquema import contrato_fixture_sqlite
+        _APP = crear_app(contrato=contrato_fixture_sqlite())
+    return _APP

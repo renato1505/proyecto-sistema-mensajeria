@@ -13,6 +13,7 @@ os.environ["LOGIN_REQUIRED"] = "0"
 
 from tests.fixtures_app import obtener_app_aislada
 
+# La preparaci?n es del fixture; crear_app valida sin escribir en la base.
 app = obtener_app_aislada()
 
 

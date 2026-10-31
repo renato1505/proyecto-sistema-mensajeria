@@ -6,18 +6,18 @@ para probar en producción, QA remota, enviar correos o generar OF reales.
 ## Verificación técnica
 
 - [ ] Revisar rama, cambios locales y alcance de la tarea.
-- [ ] Configurar el bloque de aislamiento de [Desarrollo](DESARROLLO.md#pruebas-con-destino-explícito-y-descartable) antes de importar código.
+- [ ] Utilizar el bootstrap de aislamiento de [Desarrollo](DESARROLLO.md#pruebas-con-destino-explícito-y-descartable) antes de importar código.
 - [ ] Ejecutar con Python del venv la suite completa:
   `python -m unittest discover -s tests -p "test_*.py"`.
 - [ ] Ejecutar `python -m compileall -q main.py config database routes services scripts tests migrations`.
 - [ ] Ejecutar `git diff --check` y revisar `git status --short --branch`.
 - [ ] Si corresponde smoke, hacerlo solo con el entorno aislado documentado.
-  Importa `main.py`, puede escribir esquema/datos y desactiva el login.
+  Prepara su fixture SQLite en memoria, usa la fábrica validada y desactiva el login.
 - [ ] Confirmar que `.env`, bases, logs, cargas temporales, respaldos y
   `.vscode/` no se incluyan accidentalmente.
 
-Última ejecución registrada antes de L1: **273 pruebas aprobadas**.
-L1 solo cambia documentación; no se vuelve a ejecutar aplicación, suite o migración.
+Baseline consolidado antes de S2B: **333 pruebas aprobadas**. Mantenerlas y
+agregar las regresiones de arranque. Las pruebas Alembic usan solo fixtures aislados.
 
 ## Login y seguridad
 
@@ -115,3 +115,17 @@ controlados. IMAP y transporte externo también se validan por separado.
 
 La aprobación de QA local no autoriza despliegue. Ver
 [Despliegue cloud](DESPLIEGUE_CLOUD.md) y sus condiciones previas.
+
+## Arranque S2B
+
+- [ ] Ejecutar python -m unittest tests.test_arranque_seguro dentro del aislamiento.
+- [ ] Importar main realmente en un hijo autorizado con esquema versionado completo.
+- [ ] Observar solo consultas de lectura y rollback, sin DDL, DML o commit.
+- [ ] Repetir importación sin cambiar el archivo, nombres históricos ni duplicados.
+- [ ] Rechazar base vacía, revisión ausente/insuficiente, columnas/tablas o referencias faltantes.
+- [ ] Confirmar diagnóstico sanitizado y ausencia de reparaciones ante cada rechazo.
+- [ ] Admitir fixture explícito solo en SQLite en memoria y fuera de producción.
+- [ ] Rechazar fixture para PostgreSQL, archivos SQLite y contratos alterados.
+- [ ] Confirmar que APP_ENV=test no omite la revisión del arranque normal.
+- [ ] Preparar demo vacía mediante su procedimiento explícito y comprobar arranque versionado.
+- [ ] No usar resultados SQLite como certificación de PostgreSQL o Render.

@@ -16,11 +16,12 @@ usar una base nueva descartable y el entorno sin correo de
 respaldo/restauración comprobados. Tampoco asumir que autogenerate es de lectura:
 se conecta a la base configurada y crea un archivo de revisión.
 
-No importar ni arrancar main.py para inspeccionar un esquema: su startup escribe
-estructura y normaliza datos. Aplicar/adoptar Alembic antes de arrancar la versión
-nueva. El helper create_all() puede crear tablas sin registrar revisión; ante
-esa situación auditar y conciliar, nunca hacer stamp ciego. Un downgrade puede
-eliminar evidencia. Ningún comando de esta guía autoriza intervenir Render.
+S2B valida la base mediante lectura al importar main.py, pero también inicializa
+configuración y logging y conecta al destino. No importarlo en una auditoría que
+prohíba conexiones. Las versiones anteriores sí creaban esquema y normalizaban.
+Aplicar/adoptar Alembic antes de arrancar la versión nueva; si helpers antiguos
+crearon tablas sin registrar revisión, auditar y conciliar sin stamp ciego.
+Un downgrade puede eliminar evidencia. Esta guía no autoriza intervenir Render.
 
 ## Alcance y decisión técnica
 
@@ -32,9 +33,9 @@ Alembic toma `Base.metadata` desde `database/modelos.py` y obtiene la conexión
 desde `DATABASE_URL` mediante `config/settings.py`. `alembic.ini` no contiene
 credenciales. Importar la aplicación no ejecuta migraciones.
 
-## Diagnóstico del startup legacy
+## Diagnóstico del startup legacy (antecedente anterior a S2B)
 
-Al importar `main.py` se ejecutan actualmente tres mecanismos:
+Antes de S2B, importar `main.py` ejecutaba estos tres mecanismos:
 
 1. `Base.metadata.create_all(bind=engine)` crea tablas ausentes. No modifica
    tablas existentes ni versiona el cambio.
@@ -46,9 +47,10 @@ Al importar `main.py` se ejecutan actualmente tres mecanismos:
 Los dos primeros son gestión de esquema. El tercero es una migración de datos
 repetida en cada arranque. Ninguno reemplaza un historial de migraciones.
 
-Durante la transición permanecen activos para no romper despliegues existentes.
-No deben añadirse nuevas alteraciones a `database/schema.py`. Una vez que todas
-las bases estén auditadas y marcadas con el baseline, deben retirarse por fases:
+Estos mecanismos se conservaron durante la transición. S2B retira sus llamadas
+del arranque web, manteniendo los módulos. No añadir alteraciones a database/schema.py.
+La siguiente lista conserva la secuencia de adopción diseñada; la preparación del
+destino sigue siendo requisito para desplegar la retirada:
 
 1. desplegar Alembic sin retirar helpers;
 2. auditar y hacer stamp controlado en cada entorno existente;
@@ -500,14 +502,15 @@ solo aplica las FK si se habilitan en cada conexion. La concurrencia real de
 PostgreSQL requiere una prueba posterior autorizada.
 
 Despliegue futuro: aplicar Alembic antes de arrancar/importar la version nueva.
-El create_all() que main.py conserva podria crear tablas sin avanzar la revision;
-no resolver esa situacion mediante stamp ciego. No se ejecuto despliegue alguno.
+En la etapa 1.2B, main.py conservaba create_all() y podia crear tablas sin avanzar
+la revision. S2B retira esa llamada; las divergencias anteriores siguen requiriendo
+auditoria, nunca stamp ciego. No se ejecuto despliegue alguno.
 
 ## S2A: validador de lectura y preparación de S2B
 
-Implementación local pendiente de revisión; **S2B no está implementada**.
-Las tres llamadas de main.py permanecen intactas y el servicio web no invoca aún
-el validador. Los riesgos de startup descritos arriba continúan existiendo.
+S2A y S2A.1 quedaron consolidadas en 558dcd30dfa9bbc617d4d7a47170d49c4d7e4d87.
+En esa etapa las llamadas legacy seguían presentes. Su retirada e integración
+local se describen en la sección S2B al final de este documento.
 
 [database/validacion_esquema.py](../database/validacion_esquema.py) recibe un
 Engine explícito y devuelve un ResultadoEsquema con estado, nombre de contrato,
@@ -560,7 +563,7 @@ las comprobaciones estructurales y referencias y se rechaza para PostgreSQL.
 Es una decisión expresa del fixture, nunca una inferencia desde APP_ENV,
 un fallback productivo ni un stamp implícito.
 
-Antes de S2B:
+Plan de transición definido en S2A (la preparación remota sigue pendiente):
 
 1. Revisar este contrato y comprobarlo sobre una copia PostgreSQL autorizada.
 2. Auditar/adoptar el esquema real y sus referencias sin stamp automático.
@@ -587,4 +590,44 @@ una forma textual conocida de reflexión PostgreSQL, sin conectarse a PostgreSQL
 
 La autorización de raíces temporales y subprocesos de pruebas se describe en
 [Desarrollo](DESARROLLO.md#s2a1-procedencia-y-puntos-de-entrada-corregidos).
-Estas correcciones no conectan el validador al arranque ni implementan S2B.
+S2A.1 no conectó el validador al arranque; esa integración corresponde a la sección S2B.
+
+## S2B: arranque validado sin reparaciones
+
+Implementación local para revisión, sin despliegue ni verificación de Render.
+main.py delega en aplicacion.crear_app(); el arranque normal exige CONTRATO_V2
+y valida antes de registrar rutas. No invoca create_all(),
+asegurar_columnas_operativas() ni normalizar_datos_operativos().
+Sus módulos originales se conservan para mantenimiento explícito posterior;
+no se ejecutan como fallback.
+
+Una incompatibilidad produce ArranqueIncompatible con estado y diagnóstico
+sanitizados, se registra como error y no permite atender solicitudes.
+La validación usa conexión propia y rollback; en PostgreSQL declara transacción
+READ ONLY. No hace DDL, DML, commit, upgrade, stamp, backfill ni inserta referencias.
+
+La fábrica admite únicamente el contrato productivo fijo o el contrato exacto
+de fixture seleccionado mediante una llamada Python explícita. El contrato de
+fixture solo se admite con SQLite en memoria y ES_PRODUCCION=False; nunca con
+archivos SQLite o PostgreSQL. No se selecciona desde APP_ENV ni por una revisión
+ausente. main:app usa siempre el contrato versionado completo.
+
+La preparación del fixture permanece en tests/fixtures_app.py. El smoke usa esa
+fábrica con contrato explícito y conserva sus comprobaciones funcionales.
+Las pruebas de importación real de main utilizan bases preparadas expresamente
+con revisión y referencias; comprueban SQL emitido, ausencia de commit y
+conservación del archivo y de remitentes duplicados/textos históricos.
+
+El demo ahora aplica Alembic solo cuando su SQLite autorizada está vacía, como
+parte de su preparación explícita. Si encuentra tablas existentes incompatibles
+rechaza continuar; no hace stamp ni intenta adoptar una base creada desde metadata.
+Los datos demo, usuario y escenarios siguen siendo preparación explícita local.
+
+Antes de desplegar S2B es obligatorio identificar revisión y estructura reales,
+demostrar respaldo/restauración sobre una copia, revisar puntos de retiro,
+aprobar las migraciones necesarias y probar el orden migración-validación-arranque.
+No se asume que Render ya cumple este contrato y no se consultó su base.
+
+Revertir solo el código no deshace cambios de datos/esquema. Volver a una versión
+anterior a S2B reactivaría sus escrituras de startup; evaluar ese rollback en una
+copia antes de aprobarlo. No usar downgrade destructivo como recuperación automática.

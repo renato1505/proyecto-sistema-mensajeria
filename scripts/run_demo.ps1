@@ -133,14 +133,21 @@ $SetupDemo = @'
 from werkzeug.security import generate_password_hash
 from sqlalchemy import inspect
 from datetime import timedelta
+from pathlib import Path
+import os
+from alembic import command
+from alembic.config import Config
+from config.settings import DATABASE_URL
+from database.validacion_esquema import validar_esquema
 
 from database.conexion import SessionLocal, engine
-from database.modelos import Base, Envio, PuntoRetiro, UsuarioSistema
+from database.modelos import Envio, PuntoRetiro, UsuarioSistema
 from services.demo_starken import (
     crear_lote_demo,
     generar_envios_ficticios,
     procesar_respuesta_of_demo,
     raiz_demo_permitida,
+    validar_entorno_demo,
 )
 from services.puntos_retiro import (
     PUNTO_ACADEMIA,
@@ -148,6 +155,8 @@ from services.puntos_retiro import (
     asignar_punto_retiro_nuevo_envio,
 )
 from utils.fechas import ahora_chile
+
+validar_entorno_demo(DATABASE_URL, os.getenv("APP_ENV"), os.getenv("RENDER"), raiz_demo_permitida())
 
 tablas_existentes = set(inspect(engine).get_table_names())
 if "envios" in tablas_existentes:
@@ -160,7 +169,18 @@ if "envios" in tablas_existentes:
             f"{', '.join(faltantes)}. Ejecuta .\\scripts\\run_demo.ps1 -Clean"
         )
 
-Base.metadata.create_all(bind=engine)
+# Preparacion explicita del demo: migrar solo una base vacia. No adoptar ni
+# marcar automaticamente una SQLite anterior creada desde metadata.
+if not tablas_existentes:
+    configuracion = Config(str(Path.cwd() / "alembic.ini"))
+    command.upgrade(configuracion, "head")
+else:
+    resultado_esquema = validar_esquema(engine)
+    if not resultado_esquema.compatible:
+        raise RuntimeError(
+            "SQLite demo incompatible: " + resultado_esquema.estado
+            + ". No se aplicaron reparaciones. Revisar o recrear explicitamente el demo descartable."
+        )
 db = SessionLocal()
 try:
     puntos_demo = [
