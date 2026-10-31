@@ -1,5 +1,13 @@
+import sys as _sys
+from pathlib import Path as _Path
+
+_sys.path.insert(0, str(_Path(__file__).resolve().parent.parent))
+
+from tests.entorno_aislado import preparar_entorno_pruebas, ejecutar_python_aislado
+
+preparar_entorno_pruebas()
+
 import os
-import subprocess
 import sys
 import tempfile
 import unittest
@@ -44,8 +52,8 @@ class AlembicBaselineTest(unittest.TestCase):
             "from alembic.config import main; main()",
             *argumentos,
         ]
-        return subprocess.run(
-            comando,
+        return ejecutar_python_aislado(
+            comando[1:],
             cwd=PROJECT_DIR,
             env=self.env,
             check=True,

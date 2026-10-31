@@ -1,7 +1,18 @@
+import sys as _sys
+from pathlib import Path as _Path
+
+_sys.path.insert(0, str(_Path(__file__).resolve().parent.parent))
+
+from tests.entorno_aislado import preparar_entorno_pruebas
+
+preparar_entorno_pruebas()
+
 import re
 import unittest
 
-from main import app
+from tests.fixtures_app import obtener_app_aislada
+
+app = obtener_app_aislada()
 import routes.auth as auth
 
 

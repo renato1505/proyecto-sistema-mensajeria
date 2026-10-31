@@ -1,3 +1,12 @@
+import sys as _sys
+from pathlib import Path as _Path
+
+_sys.path.insert(0, str(_Path(__file__).resolve().parent.parent))
+
+from tests.entorno_aislado import preparar_entorno_pruebas
+
+preparar_entorno_pruebas()
+
 import os
 import time
 import unittest
@@ -8,7 +17,9 @@ from unittest.mock import patch
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 os.environ["LOGIN_REQUIRED"] = "1"
 
-from main import app
+from tests.fixtures_app import obtener_app_aislada
+
+app = obtener_app_aislada()
 import routes.auth as auth
 from services.metricas_operacion import MetricasRetirosDia
 

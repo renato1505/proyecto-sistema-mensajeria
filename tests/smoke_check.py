@@ -6,9 +6,14 @@ from pathlib import Path
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_DIR))
+from tests.entorno_aislado import preparar_entorno_pruebas
+
+preparar_entorno_pruebas()
 os.environ["LOGIN_REQUIRED"] = "0"
 
-from main import app
+from tests.fixtures_app import obtener_app_aislada
+
+app = obtener_app_aislada()
 
 
 def extraer_csrf(html):

@@ -71,36 +71,21 @@ Ver [Autenticación](AUTENTICACION_V2.md).
 
 ## Pruebas con destino explícito y descartable
 
-En una consola PowerShell dedicada, desde la raíz y antes de importar módulos,
-configurar este entorno. No ejecutarlo contra una base que deba conservarse.
-El bloque crea una carpeta temporal nueva y no lee el contenido de `.env`.
+S2A incorpora [el bootstrap de pruebas](../tests/entorno_aislado.py), invocado
+antes de configuración, conexión o aplicación por los módulos unittest.
+No requiere un `.env` de desarrollo preparado: fija valores ficticios, correo
+deshabilitado y SQLite en memoria o dentro de una raíz temporal nueva.
+No abre ni modifica `.env`; el cargador legacy de configuración sigue pudiendo
+leerlo al importar la aplicación, con las variables críticas ya fijadas.
+
+Usar una consola dedicada desde la raíz. Si el proceso hereda PostgreSQL, otra
+base, una SQLite fuera de la raíz de pruebas o indicadores de producción, el
+bootstrap rechaza la ejecución antes de importar la aplicación. No reutilizar
+la SQLite de trabajo ni resolver el rechazo copiando credenciales.
 
 ```powershell
-$validacionRoot = Join-Path $env:TEMP ("mensajeria-validacion-" + [guid]::NewGuid().ToString("N"))
-New-Item -ItemType Directory -Path $validacionRoot | Out-Null
-$validacionSqlite = (Join-Path $validacionRoot "validacion.sqlite3").Replace("\", "/")
-$env:DATABASE_URL = "sqlite:///$validacionSqlite"
-$env:APP_ENV = "test"
-$env:FLASK_ENV = "test"
-$env:RENDER = "false"
-$env:FLASK_DEBUG = "0"
-$env:SECRET_KEY = "solo-validacion-local-no-productiva"
-$env:LOGIN_REQUIRED = "1"
-$env:SESSION_TIMEOUT_MINUTES = "30"
-$env:EMAIL_PROVIDER = "disabled"
-$env:CORREO_EMISOR = "sistema@demo.invalid"
-$env:CORREO_DESTINO_STARKEN = "starken@demo.invalid"
-$env:CORREO_RESPALDO_MENSAJERIA = "respaldo@demo.invalid"
-$env:CORREO_CLAVE_APP = "LOCAL_DISABLED"
-$env:BREVO_API_KEY = "LOCAL_DISABLED"
-$env:BREVO_SMTP_LOGIN = "LOCAL_DISABLED"
-$env:BREVO_SMTP_PASSWORD = "LOCAL_DISABLED"
-$env:OF_IMAP_HOST = "127.0.0.1"
-$env:OF_IMAP_PORT = "0"
-$env:CLAVE_ELIMINACION_HISTORICO = "solo-datos-ficticios"
-$env:LOGS_DIR = Join-Path $validacionRoot "logs"
-$env:RESPALDOS_LOTES_DIR = Join-Path $validacionRoot "respaldos_lotes"
-if ($env:DATABASE_URL -notlike "sqlite:///*") { throw "Se requiere SQLite local" }
+.\venv\Scripts\python.exe -m unittest tests.test_validacion_esquema tests.test_entorno_aislado
+if ($LASTEXITCODE -ne 0) { throw "Las pruebas S2A fallaron" }
 .\venv\Scripts\python.exe -m unittest discover -s tests -p "test_*.py"
 if ($LASTEXITCODE -ne 0) { throw "La suite fallo" }
 .\venv\Scripts\python.exe -m compileall -q main.py config database routes services scripts tests migrations
@@ -109,36 +94,83 @@ git diff --check
 if ($LASTEXITCODE -ne 0) { throw "El diff contiene errores de formato" }
 ```
 
-Los sentinelas de credenciales son no vacíos porque asignar una cadena vacía
-puede quitar una variable en Windows PowerShell y permitir que `.env` la reponga.
-Este bloque configura aislamiento local; no es una barrera de red para código
-arbitrario. Revisar cambios de tests, fixtures y transportes antes de ejecutar
-una suite modificada. Los tests usan SQLite en memoria o archivos temporales y
-dobles de servicios; las pruebas Alembic migran únicamente sus fixtures locales.
+Se bloquean DNS y conexiones de sockets, SQLite fuera de la raíz temporal y
+conexiones SQLAlchemy de otros motores. Un acceso inesperado interrumpe unittest;
+no se transforma en éxito de un transporte simulado.
+Los subprocesos Python heredan las barreras mediante un `sitecustomize` generado
+en la raíz temporal y abortan si el bootstrap falla.
 
-El valor de referencia es 273 tests aprobados, no una promesa sobre futuras
-modificaciones. No usar una selección de tests o su orden de importación como
-única defensa frente a una URL real.
+Es aislamiento para los procesos Python y las dependencias actuales, no un sandbox
+del sistema operativo frente a código arbitrario, ejecutables nativos o un
+subproceso que elimine deliberadamente sus barreras. Revisar cualquier nuevo
+punto de entrada. No guardar estado o código operativo en la raíz temporal.
+
+Los fixtures pueden crear tablas y datos ficticios explícitamente.
+[fixtures_app.py](../tests/fixtures_app.py) prepara la base global antes de
+importar `main.app`; las pruebas que la utilizan no dependen de su creación
+implícita. Las pruebas Alembic migran exclusivamente sus archivos SQLite
+temporales; no son una autorización para migraciones externas.
+
+La referencia previa a S2A es 273 pruebas aprobadas. Las nuevas pruebas cubren
+compatibilidad y ausencia de reparaciones, barreras de aislamiento y preparación
+de S2B. No usar el orden de importación de tests como protección de una URL real.
+
+
+### S2A.1: procedencia y puntos de entrada corregidos
+
+Cada ejecución principal crea una raíz nueva y rechaza cualquier SQLite de archivo
+recibida por variables heredadas. No se abre una base para decidir si es de pruebas.
+Una raíz heredada, aunque tenga el prefijo esperado, se rechaza sin autorización.
+
+Los hijos se lanzan mediante `ejecutar_python_aislado()`. El principal conserva
+un manifiesto de sesión y emite un permiso aleatorio de un solo uso, con caducidad
+de 120 segundos, ligado a sesión, raíz, padre y URL SQLite exacta.
+El hijo verifica esa relación antes de instalar el entorno y consume el permiso.
+No puede reutilizarlo, cambiar de raíz o cambiar de destino.
+Los subprocesos de Alembic usan este mismo lanzador y solo sus fixtures temporales.
+
+En Windows se contempla el redirector de Python del venv: si el padre inmediato
+es ese intermediario, se comprueban su ejecutable completo y su padre real mediante
+consultas de lectura del sistema. Ante una identidad indeterminada se aborta.
+
+El nonce de entorno por sí solo no autoriza acceso: se contrasta con el manifiesto,
+el permiso existente y el proceso padre. Este protocolo evita adopciones accidentales;
+no ofrece garantía criptográfica absoluta frente a código hostil del mismo usuario
+que pueda modificar archivos, memoria o el lanzador. No es un sandbox del sistema.
+
+Los módulos unittest preparan `sys.path` antes de importar el bootstrap.
+Se preservan descubrimiento, ejecución por módulo y los formatos directos:
+
+```powershell
+.\venv\Scripts\python.exe -m unittest tests.test_flujo_critico_unit
+.\venv\Scripts\python.exe -m unittest tests.test_email_client_unit
+.\venv\Scripts\python.exe tests/test_flujo_critico_unit.py
+.\venv\Scripts\python.exe tests/test_email_client_unit.py
+```
+
+No restaurar la protección de hijos copiando solo `MENSAJERIA_TEST_ROOT` o una URL
+a otro proceso. El lanzador debe emitir su propio permiso para cada hijo.
 
 ## Smoke y arranque
 
-[tests/smoke_check.py](../tests/smoke_check.py) importa `main.py` y desactiva el
-login dentro de su proceso. No prueba autenticación y no es de solo lectura:
-el import ejecuta `create_all()`, helpers de columnas y normalización.
-Puede alterar datos aun cuando las peticiones del smoke sean consultas o
-validaciones negativas.
-
-Solo después de configurar el entorno descartable anterior, en esa misma consola:
+[tests/smoke_check.py](../tests/smoke_check.py) instala el mismo aislamiento antes
+de importar configuración o aplicación y utiliza el fixture explícito.
+Desactiva login únicamente en su proceso, por lo que no prueba autenticación.
 
 ```powershell
 .\venv\Scripts\python.exe tests/smoke_check.py
 if ($LASTEXITCODE -ne 0) { throw "El smoke fallo" }
 ```
 
-No incluir el smoke en una auditoría exclusivamente de lectura.
+Sigue escribiendo en su base temporal: prepara tablas/referencias y el arranque
+legacy aún ejecuta las tres llamadas automáticas. No es una auditoría de lectura
+ni valida un despliegue. No ofrecer una URL operativa al smoke.
+
+S2A no conecta el validador al arranque ni retira llamadas de `main.py`.
 Para explorar la interfaz, seguir la [demo](DEMO_OPERATIVA_V2.md).
-Ejecutar `python main.py` solo después de verificar el destino local; no es un
-mecanismo de adopción Alembic ni un paso inocuo para recuperar una base existente.
+Ejecutar `python main.py` conserva sus efectos legacy y requiere verificar el
+destino; no sustituye una adopción Alembic. Ver el
+[contrato de lectura S2A](MIGRACIONES.md#s2a-validador-de-lectura-y-preparación-de-s2b).
 
 ## Esquema y scripts
 

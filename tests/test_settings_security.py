@@ -1,3 +1,12 @@
+import sys as _sys
+from pathlib import Path as _Path
+
+_sys.path.insert(0, str(_Path(__file__).resolve().parent.parent))
+
+from tests.entorno_aislado import preparar_entorno_pruebas
+
+preparar_entorno_pruebas()
+
 import unittest
 
 from config.settings import validar_configuracion_seguridad

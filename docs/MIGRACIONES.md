@@ -502,3 +502,89 @@ PostgreSQL requiere una prueba posterior autorizada.
 Despliegue futuro: aplicar Alembic antes de arrancar/importar la version nueva.
 El create_all() que main.py conserva podria crear tablas sin avanzar la revision;
 no resolver esa situacion mediante stamp ciego. No se ejecuto despliegue alguno.
+
+## S2A: validador de lectura y preparación de S2B
+
+Implementación local pendiente de revisión; **S2B no está implementada**.
+Las tres llamadas de main.py permanecen intactas y el servicio web no invoca aún
+el validador. Los riesgos de startup descritos arriba continúan existiendo.
+
+[database/validacion_esquema.py](../database/validacion_esquema.py) recibe un
+Engine explícito y devuelve un ResultadoEsquema con estado, nombre de contrato,
+revisiones conocidas y hallazgos estructurados. No importa main, configuración,
+conexión global ni metadata de los modelos.
+
+La política está fijada en
+[database/contrato_esquema.py](../database/contrato_esquema.py):
+el contrato V2 requiere y acepta 20261025_06. Las revisiones anteriores conocidas
+son insuficientes; una revisión desconocida o varias filas requieren revisión
+manual. No consulta la cabeza Alembic para ampliar permisos automáticamente.
+Cada versión futura deberá aprobar sus revisiones compatibles y su estructura;
+las revisiones aceptadas no pueden ser anteriores al mínimo del contrato.
+
+Estados del resultado:
+
+- COMPATIBLE: satisface el contrato declarado.
+- REVISION_AUSENTE: falta alembic_version.
+- REVISION_INSUFICIENTE: revisión conocida anterior al mínimo.
+- ESTRUCTURA_INCOMPLETA: faltan tablas o columnas.
+- REFERENCIAS_INCOMPLETAS: falta un punto obligatorio o está inactivo.
+- REVISION_MANUAL: versión desconocida/múltiple, garantías diferentes,
+  referencias incoherentes o error de conexión/reflexión.
+
+Se conservan todos los hallazgos, aunque el estado principal prioriza ausencia
+de revisión, revisión insuficiente y falta de estructura. Los valores de revisión
+desconocidos y los textos de errores del driver no se reproducen en el resultado.
+
+El snapshot comprueba columnas de las 19 tablas de la versión, unicidades
+declaradas, FK con destino/columnas/RESTRICT, los dos índices únicos parciales
+de retiro vigente e intento abierto y tres CHECK sencillos: bultos de retiro,
+secuencia de intento e intentos de aviso. Además exige MENSAJERIA_LOCAL y ACADEMIA
+activos, únicos y con clasificación logística coherente.
+
+La equivalencia de predicados reconoce únicamente las formas pequeñas declaradas
+para SQLite/PostgreSQL; una forma no reconocida exige revisión. No es auditoría
+completa de tipos, nullability, defaults, todos los CHECK, permisos, triggers,
+contenido operativo ni concurrencia. Reflejar una FK SQLite no acredita que cada
+conexión tenga activado PRAGMA foreign_keys. PostgreSQL aún requiere verificación
+autorizada sobre copia aislada; las pruebas SQLite no certifican ese backend.
+
+La validación abre una conexión propia y revierte su transacción. En PostgreSQL
+declara SET TRANSACTION READ ONLY antes de inspeccionar. No hace commit, DDL,
+DML, create_all, upgrade, stamp, normalización ni inserción de referencias.
+Preferir además un rol con permisos exclusivamente de lectura cuando corresponda.
+
+Una base creada explícitamente desde metadata puede validarse con
+contrato_fixture_sqlite(): omite solo el requisito de historial Alembic, conserva
+las comprobaciones estructurales y referencias y se rechaza para PostgreSQL.
+Es una decisión expresa del fixture, nunca una inferencia desde APP_ENV,
+un fallback productivo ni un stamp implícito.
+
+Antes de S2B:
+
+1. Revisar este contrato y comprobarlo sobre una copia PostgreSQL autorizada.
+2. Auditar/adoptar el esquema real y sus referencias sin stamp automático.
+3. Retirar las tres llamadas legacy y conectar la validación en modo lectura,
+   con un error claro si el resultado no es compatible.
+4. Mantener la preparación explícita de fixtures y adaptar el ensayo de arranque
+   que en S2A neutraliza las llamadas únicamente dentro de su subproceso de prueba.
+5. Conservar endpoints, normalización de entradas y lógica operativa; separar
+   el mantenimiento histórico en su etapa autorizada.
+
+El aislamiento y sus comandos están en [Desarrollo](DESARROLLO.md).
+
+### S2A.1: comparación conservadora de expresiones
+
+La comparación distingue tokens SQL y conserva los literales exactamente,
+incluidos mayúsculas, espacios internos y comillas escapadas. Solo reconoce
+las formas pequeñas de IN/ANY, retiro vigente y CHECK declaradas en el contrato,
+con diferencias de formato justificadas fuera de los literales.
+
+Una expresión desconocida no equivale ni siquiera a otra cadena desconocida
+idéntica: exige revisión manual. No se incorpora un parser SQL general.
+Las regresiones verifican índices SQLite reales con literales cambiados y
+una forma textual conocida de reflexión PostgreSQL, sin conectarse a PostgreSQL.
+
+La autorización de raíces temporales y subprocesos de pruebas se describe en
+[Desarrollo](DESARROLLO.md#s2a1-procedencia-y-puntos-de-entrada-corregidos).
+Estas correcciones no conectan el validador al arranque ni implementan S2B.
